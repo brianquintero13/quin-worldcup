@@ -192,6 +192,8 @@ nav{display:flex;gap:4px;}
 .add-player-form button:hover{background:#f0d45a;}
 .del-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:2px 5px;border-radius:4px;}
 .del-btn:hover{color:var(--red);}
+.adj-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:14px;font-weight:600;width:24px;height:24px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;line-height:1;}
+.adj-btn:hover{border-color:var(--accent);color:var(--accent);}
 .leader-note-small{font-size:11px;color:var(--muted);}
 .empty-row td{color:var(--muted);font-size:12px;padding:1rem!important;text-align:center!important;}
 /* ADMIN */
@@ -624,14 +626,20 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+let _saveTimer = null;
 function saveState(){
-  db.ref('state').set({
-    picks: picks,
-    drafters: drafters,
-    gScores: gScores,
-    koScores: koScores,
-    awardData: awardData
-  });
+  if(_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>{
+    _ignoreNext = true;
+    db.ref('state').set({
+      picks: picks,
+      drafters: drafters,
+      gScores: gScores,
+      koScores: koScores,
+      awardData: awardData
+    });
+    _saveTimer = null;
+  }, 300);
 }
 
 // Firebase stores arrays as objects with numeric keys — convert back
@@ -685,10 +693,12 @@ function loadState(cb){
 
 // Listen for real-time changes from other devices
 let _listening=false;
+let _ignoreNext=false;
 function listenState(){
   if(_listening) return;
   _listening=true;
   db.ref('state').on('value', snap=>{
+    if(_ignoreNext){ _ignoreNext=false; return; }
     applyState(snap.val());
     renderAll();
     renderScoresPage();
@@ -1093,38 +1103,63 @@ function renderAwardTable(key, bodyId, cols){
     body.innerHTML = '<tr class="empty-row"><td colspan="'+(cols+3)+'">No players added yet</td></tr>';
     return;
   }
-  // sort by first numeric col descending
   const sorted = [...data].map((p,i)=>({...p,_orig:i})).sort((a,b)=>{
     if(key==='boot') return b.goals-a.goals;
     if(key==='glove') return b.cs-a.cs;
-    if(key==='ball') return (b.goals+b.assists)-(a.goals+a.assists);
-    if(key==='young') return b.goals-a.goals;
     return 0;
   });
   body.innerHTML = sorted.map((p,rank)=>{
     const drafter = getDrafterForTeam(p.team);
     const teamObj = ALL_TEAMS.find(t=>t.name===p.team||p.team.includes(t.name)||t.name.includes(p.team));
     const flag = teamObj ? teamObj.flag : '🏳️';
-    let cells = '';
-    if(key==='boot')  cells = '<td>'+flag+' '+p.team+'</td><td><span class="award-num">'+p.goals+'</span></td>';
-    if(key==='glove') cells = '<td>'+flag+' '+p.team+'</td><td><span class="award-num">'+p.cs+'</span></td>';
-    if(key==='ball')  cells = '<td>'+flag+' '+p.team+'</td><td><span class="award-num">'+p.goals+'</span></td><td><span class="award-num">'+p.assists+'</span></td>';
-    if(key==='young') cells = '<td>'+flag+' '+p.team+'</td><td>'+p.age+'</td><td><span class="award-num">'+p.goals+'</span></td>';
     const drafterTag = drafter ? '<span class="award-drafter-tag">'+drafter+'</span>' : '<span style="font-size:11px;color:var(--muted)">—</span>';
+    const rankIcon = rank===0?'🥇':rank===1?'🥈':rank===2?'🥉':(rank+1);
+
+    let numCell = '';
+    if(key==='boot'){
+      numCell = '<td>'
+        +'<div style="display:flex;align-items:center;justify-content:center;gap:6px">'
+        +'<button class="adj-btn" data-key="'+key+'" data-idx="'+p._orig+'" data-field="goals" data-delta="-1">−</button>'
+        +'<span class="award-num">'+p.goals+'</span>'
+        +'<button class="adj-btn" data-key="'+key+'" data-idx="'+p._orig+'" data-field="goals" data-delta="1">+</button>'
+        +'</div></td>';
+    } else if(key==='glove'){
+      numCell = '<td>'
+        +'<div style="display:flex;align-items:center;justify-content:center;gap:6px">'
+        +'<button class="adj-btn" data-key="'+key+'" data-idx="'+p._orig+'" data-field="cs" data-delta="-1">−</button>'
+        +'<span class="award-num">'+p.cs+'</span>'
+        +'<button class="adj-btn" data-key="'+key+'" data-idx="'+p._orig+'" data-field="cs" data-delta="1">+</button>'
+        +'</div></td>';
+    }
+
     return '<tr>'
-      +'<td><span class="award-rank'+(rank===0?' first':'')+'">'+( rank===0?'🥇':rank===1?'🥈':rank===2?'🥉':(rank+1))+'</span></td>'
+      +'<td><span class="award-rank'+(rank===0?' first':'')+'">'+rankIcon+'</span></td>'
       +'<td style="font-weight:500">'+p.name+'</td>'
-      +cells
+      +'<td>'+flag+' '+p.team+'</td>'
+      +numCell
       +'<td>'+drafterTag+'</td>'
       +'<td><button class="del-btn" data-key="'+key+'" data-idx="'+p._orig+'" title="Remove">✕</button></td>'
       +'</tr>';
   }).join('');
+
+  // bind + / - buttons
+  body.querySelectorAll('.adj-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const idx=parseInt(btn.dataset.idx);
+      const field=btn.dataset.field;
+      const delta=parseInt(btn.dataset.delta);
+      awardData[btn.dataset.key][idx][field] = Math.max(0, (awardData[btn.dataset.key][idx][field]||0)+delta);
+      renderAllAwards();
+      saveState();
+    });
+  });
 
   // bind delete buttons
   body.querySelectorAll('.del-btn').forEach(btn=>{
     btn.addEventListener('click',()=>{
       awardData[btn.dataset.key].splice(parseInt(btn.dataset.idx),1);
       renderAllAwards();
+      saveState();
     });
   });
 }
@@ -1134,39 +1169,34 @@ function renderAllAwards(){
   renderAwardTable('glove', 'gloveBody', 2);
 }
 
-// add player helpers
-function bindAwardForm(key, formId, fields, buildFn){
-  document.getElementById(formId.replace('Form','Add')).addEventListener('click',()=>{
-    const vals = {};
-    let valid = true;
-    fields.forEach(f=>{
-      const el = document.getElementById(f.id);
-      const v = f.num ? (parseInt(el.value)||0) : el.value.trim();
-      if(f.required && !v && v!==0){el.style.borderColor='var(--red)';valid=false;}
-      else{el.style.borderColor='';vals[f.key]=v;}
-    });
-    if(!valid) return;
-    awardData[key].push(buildFn(vals));
-    fields.forEach(f=>{document.getElementById(f.id).value='';});
-    renderAllAwards();
-    saveState();
-  });
-  // enter key on last field
-  const lastId = fields[fields.length-1].id;
-  document.getElementById(lastId).addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById(formId.replace('Form','Add')).click();});
+// add player helpers — direct simple bindings
+function addAwardPlayer(key, nameId, teamId, numId, numKey){
+  const name = document.getElementById(nameId).value.trim();
+  const team = document.getElementById(teamId).value.trim();
+  const num  = parseInt(document.getElementById(numId).value) || 0;
+  if(!name){ document.getElementById(nameId).style.borderColor='var(--red)'; return; }
+  if(!team){ document.getElementById(teamId).style.borderColor='var(--red)'; return; }
+  document.getElementById(nameId).style.borderColor='';
+  document.getElementById(teamId).style.borderColor='';
+  const entry = {name, team};
+  entry[numKey] = num;
+  awardData[key].push(entry);
+  document.getElementById(nameId).value='';
+  document.getElementById(teamId).value='';
+  document.getElementById(numId).value='';
+  renderAllAwards();
+  saveState();
 }
 
-bindAwardForm('boot','bootForm',[
-  {id:'bootName',key:'name',required:true},
-  {id:'bootTeam',key:'team',required:true},
-  {id:'bootGoals',key:'goals',num:true,required:false}
-], v=>({name:v.name,team:v.team,goals:v.goals||0}));
-
-bindAwardForm('glove','gloveForm',[
-  {id:'gloveName',key:'name',required:true},
-  {id:'gloveTeam',key:'team',required:true},
-  {id:'gloveCS',key:'cs',num:true,required:false}
-], v=>({name:v.name,team:v.team,cs:v.cs||0}));
+// Use event delegation so bindings survive any re-renders
+document.addEventListener('click', function(e){
+  if(e.target && e.target.id==='bootAdd') addAwardPlayer('boot','bootName','bootTeam','bootGoals','goals');
+  if(e.target && e.target.id==='gloveAdd') addAwardPlayer('glove','gloveName','gloveTeam','gloveCS','cs');
+});
+document.addEventListener('keydown', function(e){
+  if(e.key==='Enter' && e.target && e.target.id==='bootGoals') addAwardPlayer('boot','bootName','bootTeam','bootGoals','goals');
+  if(e.key==='Enter' && e.target && e.target.id==='gloveCS') addAwardPlayer('glove','gloveName','gloveTeam','gloveCS','cs');
+});
 
 
 // re-render awards when picks change so drafter tags update
