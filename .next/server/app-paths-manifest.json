@@ -1,3 +1,4 @@
 {
-  "/api/sync-matches/route": "app/api/sync-matches/route.js"
+  "/api/sync-matches/route": "app/api/sync-matches/route.js",
+  "/page": "app/page.js"
 }
