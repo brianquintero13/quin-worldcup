@@ -268,14 +268,15 @@ export default function AutomatedDashboard() {
                 style={{
                     backgroundImage:
                         activeTab === 'draft' ? "url('/draft.png')" :
-                            (activeTab === 'matches' || activeTab === 'schedule') ? "url('/scores.png')" :
-                                activeTab === 'standings' ? "url('/leaderboard.png')" :
-                                    "url('/awards.png')"
+                            activeTab === 'matches' ? "url('/scores.png')" :
+                                activeTab === 'schedule' ? "url('/schedule.jpg')" :
+                                    activeTab === 'standings' ? "url('/leaderboard.png')" :
+                                        "url('/awards.png')"
                 }}
             />
 
-            {/* LIGHTER OVERLAY SO IMAGE POPS THROUGH MORE */}
-            <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#0f172a]/90 via-black/85 to-black/95" />
+            {/* DARKER OVERLAY FOR READABILITY */}
+            <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#0f172a]/95 via-black/90 to-black/95" />
 
             {/* MAIN CONTENT WRAPPER */}
             <div className="relative z-10 p-3 sm:p-5">
