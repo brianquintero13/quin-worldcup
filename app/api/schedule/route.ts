@@ -1,26 +1,53 @@
 import { NextResponse } from 'next/server';
 
 export async function GET(request: Request) {
-    // Grab the date from the URL (e.g., ?date=2026-06-17)
     const { searchParams } = new URL(request.url);
     const date = searchParams.get('date');
 
-    // Make sure the URL matches your specific RapidAPI provider (e.g., api-football)
-    const url = `https://api-football-v1.p.rapidapi.com/v3/fixtures?date=${date}`;
+    if (!date) {
+        return NextResponse.json({ error: 'Date is required' }, { status: 400 });
+    }
 
-    const options = {
-        method: 'GET',
-        headers: {
-            'X-RapidAPI-Key': process.env.RAPIDAPI_KEY as string,
-            'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com' // Adjust if using a different API
-        }
-    };
+    // Connects to your specific provider and handles the daily filter format
+    const API_KEY = process.env.FOOTBALL_DATA_KEY || '95a6c629704947a3be9860ba3031169b';
+    const url = `https://api.football-data.org/v4/competitions/2000/matches?dateFrom=${date}&dateTo=${date}`;
 
     try {
-        const response = await fetch(url, options);
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'X-Auth-Token': API_KEY,
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch schedule from football-data.org');
+        }
+
         const data = await response.json();
-        return NextResponse.json(data);
-    } catch (error) {
-        return NextResponse.json({ error: 'Failed to fetch schedule' }, { status: 500 });
+
+        // Exact same standardizer from your working sync-matches file
+        const normalizeTeamName = (name: string) => {
+            if (!name) return 'TBD';
+            if (name === 'Congo DR' || name === 'DR Congo') return 'DR Congo';
+            if (name.includes('Bosnia')) return 'Bosnia & Herz.';
+            if (name === 'United States' || name === 'United States of America' || name === 'USA') return 'USA';
+            if (name === 'Cape Verde Islands' || name === 'Cape Verde') return 'Cape Verde';
+            return name;
+        };
+
+        const processedMatches = (data.matches || []).map((match: any) => ({
+            id: match.id,
+            utcDate: match.utcDate,
+            status: match.status,
+            homeTeam: normalizeTeamName(match.homeTeam?.name),
+            awayTeam: normalizeTeamName(match.awayTeam?.name),
+            homeGoals: match.score?.fullTime?.home ?? match.score?.regularTime?.home ?? null,
+            awayGoals: match.score?.fullTime?.away ?? match.score?.regularTime?.away ?? null,
+        }));
+
+        return NextResponse.json({ success: true, matches: processedMatches });
+    } catch (error: any) {
+        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 }
