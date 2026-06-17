@@ -275,7 +275,7 @@ export default function AutomatedDashboard() {
             />
 
             {/* LIGHTER OVERLAY SO IMAGE POPS THROUGH MORE */}
-            <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#0f172a]/60 via-black/50 to-black/95" />
+            <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#0f172a]/90 via-black/85 to-black/95" />
 
             {/* MAIN CONTENT WRAPPER */}
             <div className="relative z-10 p-3 sm:p-5">
