@@ -68,24 +68,26 @@ export default function ScheduleTab() {
                     type="date"
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
-                    className="bg-black/60 backdrop-blur-md border border-white/20 text-slate-200 rounded-lg px-4 py-2 font-mono uppercase tracking-widest text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition cursor-pointer"
+                    className="bg-black/80 backdrop-blur-md border border-white/20 text-white rounded-lg px-4 py-2 font-mono uppercase tracking-widest text-sm focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition cursor-pointer shadow-lg"
                 />
             </div>
 
             {/* Game Board */}
             {isLoading ? (
-                <div className="text-center text-slate-400 font-bold mt-10 animate-pulse">Scanning Schedule...</div>
+                <div className="text-center text-slate-200 font-bold mt-10 animate-pulse bg-black/75 backdrop-blur-xl border border-white/20 py-8 rounded-xl shadow-2xl">
+                    Scanning Schedule...
+                </div>
             ) : games.length === 0 ? (
-                <div className="text-center text-slate-500 mt-10 bg-black/40 backdrop-blur-xl border border-dashed border-white/20 py-8 rounded-xl font-mono text-sm uppercase tracking-widest">
+                <div className="text-center text-slate-200 mt-10 bg-black/75 backdrop-blur-xl border border-dashed border-white/30 py-8 rounded-xl font-mono text-sm uppercase tracking-widest shadow-2xl">
                     No games scheduled for this date.
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {games.map((game, index) => (
-                        <div key={index} className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-5 flex flex-col items-center shadow-2xl hover:bg-white/5 transition duration-300">
+                        <div key={index} className="bg-black/75 backdrop-blur-xl border border-white/20 rounded-xl p-5 flex flex-col items-center shadow-2xl hover:bg-white/10 transition duration-300">
 
                             {/* Match Time / Status */}
-                            <div className="text-[11px] text-slate-400 mb-5 font-mono uppercase tracking-widest">
+                            <div className="text-[11px] text-slate-300 mb-5 font-mono uppercase tracking-widest">
                                 {game.status === 'FINISHED' ? 'Final' : new Date(game.utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                             </div>
 
@@ -93,18 +95,18 @@ export default function ScheduleTab() {
                             <div className="flex justify-between items-center w-full px-2">
                                 <div className="flex flex-col items-center flex-1 text-center min-w-0">
                                     <div className="mb-2"><FlagIcon teamName={game.homeTeam} /></div>
-                                    <span className="font-bold text-sm text-slate-200 truncate w-full">{game.homeTeam}</span>
+                                    <span className="font-bold text-sm text-white truncate w-full">{game.homeTeam}</span>
                                 </div>
 
-                                <div className="flex items-center justify-center gap-2 bg-black/50 px-4 py-2 rounded-lg border border-white/5 mx-4 shadow-inner">
+                                <div className="flex items-center justify-center gap-2 bg-black/80 px-4 py-2 rounded-lg border border-white/10 mx-4 shadow-inner">
                                     <span className={`text-2xl font-black text-[#fbbf24] w-4 text-center ${oswald.className}`}>{game.homeGoals ?? '-'}</span>
-                                    <span className="text-slate-500 text-sm">:</span>
+                                    <span className="text-slate-400 text-sm">:</span>
                                     <span className={`text-2xl font-black text-[#fbbf24] w-4 text-center ${oswald.className}`}>{game.awayGoals ?? '-'}</span>
                                 </div>
 
                                 <div className="flex flex-col items-center flex-1 text-center min-w-0">
                                     <div className="mb-2"><FlagIcon teamName={game.awayTeam} /></div>
-                                    <span className="font-bold text-sm text-slate-200 truncate w-full">{game.awayTeam}</span>
+                                    <span className="font-bold text-sm text-white truncate w-full">{game.awayTeam}</span>
                                 </div>
                             </div>
                         </div>
