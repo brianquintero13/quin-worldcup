@@ -271,8 +271,8 @@ export default function AutomatedDashboard() {
                 }}
             />
 
-            {/* BARELY-THERE OVERLAY - Lets the image pop brightly */}
-            <div className="fixed inset-0 z-0 bg-black/10" />
+            {/* BARELY-THERE GLOBAL OVERLAY - Lets the background image shine through at max brightness */}
+            <div className="fixed inset-0 z-0 bg-black/20" />
 
             {/* MAIN CONTENT WRAPPER */}
             <div className="relative z-10 p-3 sm:p-5">
@@ -365,7 +365,7 @@ export default function AutomatedDashboard() {
                                 <span className={`text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-fuchsia-500 to-rose-500 drop-shadow-lg ${oswald.className}`}>League World Cup</span>
                             </h1>
                         </div>
-                        <div className="flex overflow-x-auto no-scrollbar bg-black/75 backdrop-blur-xl p-1.5 rounded-lg border border-white/20 w-full md:w-auto shadow-2xl">
+                        <div className="flex overflow-x-auto no-scrollbar bg-black/30 backdrop-blur-md p-1.5 rounded-lg border border-white/20 w-full md:w-auto shadow-2xl">
                             {['draft', 'matches', 'schedule', 'standings', 'awards'].map(tab => (
                                 <button
                                     key={tab}
@@ -602,7 +602,7 @@ export default function AutomatedDashboard() {
                     {/* TAB: SCHEDULE */}
                     {activeTab === 'schedule' && (
                         <div className="max-w-7xl mx-auto space-y-5">
-                            <h2 className={`text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-md ${oswald.className}`}>MATCH SCHEDULE</h2>
+                            <h2 className={`text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-lg ${oswald.className}`}>MATCH SCHEDULE</h2>
                             <ScheduleTab />
                         </div>
                     )}
