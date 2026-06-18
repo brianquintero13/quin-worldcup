@@ -49,7 +49,6 @@ export default function AutomatedDashboard() {
     const [drafters, setDrafters] = useState<string[]>([]);
     const [matches, setMatches] = useState<any[]>([]);
 
-    // Added 'schedule' to the active tab type
     const [activeTab, setActiveTab] = useState<'draft' | 'matches' | 'schedule' | 'standings' | 'awards'>('standings');
 
     const [draftSearch, setDraftSearch] = useState<string>('');
@@ -245,7 +244,7 @@ export default function AutomatedDashboard() {
     return (
         <div className="relative min-h-screen font-sans text-slate-200 overflow-x-hidden">
 
-            {/* LUXURY CUSTOM ANIMATIONS - FASTER TIMING AS REQUESTED */}
+            {/* LUXURY CUSTOM ANIMATIONS */}
             <style jsx global>{`
                 @keyframes bgReveal {
                     0% { opacity: 0; transform: scale(1.05); }
@@ -255,13 +254,11 @@ export default function AutomatedDashboard() {
                     0% { opacity: 0; transform: translateY(20px); }
                     100% { opacity: 1; transform: translateY(0); }
                 }
-                /* Snappier 1.5s background reveal */
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
-                /* Shorter 0.8s delay so content comes in faster */
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
             `}</style>
 
-            {/* DYNAMIC SOCCER BACKGROUND IMAGE - USING LOCAL PNGs */}
+            {/* DYNAMIC SOCCER BACKGROUND IMAGE - FIXED TO .png */}
             <div
                 key={`bg-${activeTab}`}
                 className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-animate"
@@ -269,13 +266,13 @@ export default function AutomatedDashboard() {
                     backgroundImage:
                         activeTab === 'draft' ? "url('/draft.png')" :
                             activeTab === 'matches' ? "url('/scores.png')" :
-                                activeTab === 'schedule' ? "url('/schedule.jpg')" :
+                                activeTab === 'schedule' ? "url('/schedule.png')" :
                                     activeTab === 'standings' ? "url('/leaderboard.png')" :
                                         "url('/awards.png')"
                 }}
             />
 
-            {/* DARKER OVERLAY FOR READABILITY */}
+            {/* VERY DARK OVERLAY SO TEXT POPS */}
             <div className="fixed inset-0 z-0 bg-gradient-to-b from-[#0f172a]/95 via-black/90 to-black/95" />
 
             {/* MAIN CONTENT WRAPPER */}
@@ -508,7 +505,7 @@ export default function AutomatedDashboard() {
                                             </div>
 
                                             <div className="flex flex-col lg:flex-row">
-                                                {/* Left: FIFA Standings Table (Horizontal Scroll on Mobile) */}
+                                                {/* Left: FIFA Standings Table */}
                                                 <div className="w-full lg:w-[35%] xl:w-[30%] border-b lg:border-b-0 lg:border-r border-white/10 overflow-x-auto flex bg-black/20">
                                                     <table className="w-full text-left text-[11px] sm:text-[12px] min-w-[320px]">
                                                         <thead>
@@ -551,7 +548,6 @@ export default function AutomatedDashboard() {
                                                         const homeDrafter = getDrafterForTeam(m.homeTeam);
                                                         const awayDrafter = getDrafterForTeam(m.awayTeam);
 
-                                                        // Color Logic for Winners (Emerald) and Losers (Rose)
                                                         const isHomeWin = m.winner === m.homeTeam;
                                                         const isAwayWin = m.winner === m.awayTeam;
 
@@ -563,7 +559,6 @@ export default function AutomatedDashboard() {
 
                                                         return (
                                                             <div key={m.id} className="flex items-center justify-between p-2 sm:p-3 bg-white/5 border border-white/10 rounded-lg hover:bg-white/10 transition shadow-sm h-full">
-
                                                                 {/* Home Side */}
                                                                 <div className="flex-1 flex flex-col items-end text-right min-w-0">
                                                                     <div className="flex items-center gap-1.5 sm:gap-2 w-full justify-end min-w-0">
@@ -644,7 +639,7 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* TOP 3 PODIUM - MOBILED OPTIMIZED SPACING */}
+                            {/* TOP 3 PODIUM */}
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
                                 {overallLeaders.slice(0, 3).map((leader, i) => (
                                     <div key={leader.name} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-2 sm:p-6 text-center transition-all duration-300 ${
@@ -663,7 +658,7 @@ export default function AutomatedDashboard() {
                                 ))}
                             </div>
 
-                            {/* FULL STANDINGS TABLE (Horizontal Scroll on Mobile) */}
+                            {/* FULL STANDINGS TABLE */}
                             <div className="bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden shadow-2xl overflow-x-auto">
                                 <table className="w-full text-left text-[12px] sm:text-[14px] border-collapse min-w-[600px] sm:min-w-[700px]">
                                     <thead>
