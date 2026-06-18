@@ -5,21 +5,16 @@ import { ref, onValue } from 'firebase/database';
 import * as Flags from 'country-flag-icons/react/3x2';
 import { Oswald } from 'next/font/google';
 
-// IMPORTANT: Importing your new Schedule Tab component
 import ScheduleTab from './components/ScheduleTab';
 
-// Load aggressive sports font for numbers and main headers
 const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
-// ----------------------------------------------------------------------
-// HELPER: Flag Mapper (with UK Native Emoji Bypasses & Larger Sizes)
-// ----------------------------------------------------------------------
 const FlagIcon = ({ teamName }: { teamName: string }) => {
-    if (!teamName || teamName === 'TBD') return <span className="w-[22px] h-[15px] inline-block mr-1.5 bg-white/10 rounded-sm shadow-sm shrink-0" />;
+    if (!teamName || teamName === 'TBD') return <span className="w-[22px] h-[15px] inline-block mr-1.5 bg-white/20 rounded-sm shadow-sm shrink-0" />;
 
-    if (teamName === 'Scotland') return <span className="inline-block mr-1.5 text-[16px] leading-none shrink-0">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>;
-    if (teamName === 'England') return <span className="inline-block mr-1.5 text-[16px] leading-none shrink-0">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>;
-    if (teamName === 'Wales') return <span className="inline-block mr-1.5 text-[16px] leading-none shrink-0">🏴󠁧󠁢󠁷󠁬󠁳󠁿</span>;
+    if (teamName === 'Scotland') return <span className="inline-block mr-1.5 text-[16px] leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>;
+    if (teamName === 'England') return <span className="inline-block mr-1.5 text-[16px] leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>;
+    if (teamName === 'Wales') return <span className="inline-block mr-1.5 text-[16px] leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁷󠁬󠁳󠁿</span>;
 
     const map: { [key: string]: string } = {
         'USA': 'US', 'Argentina': 'AR', 'France': 'FR', 'Brazil': 'BR', 'Germany': 'DE',
@@ -36,14 +31,11 @@ const FlagIcon = ({ teamName }: { teamName: string }) => {
     };
 
     const code = map[teamName];
-    if (!code) return <span className="w-[22px] h-[15px] inline-block mr-1.5 bg-white/10 rounded-sm shadow-sm shrink-0" />;
+    if (!code) return <span className="w-[22px] h-[15px] inline-block mr-1.5 bg-white/20 rounded-sm shadow-sm shrink-0" />;
     const FlagComponent = (Flags as any)[code];
-    return FlagComponent ? <FlagComponent className="w-[22px] h-[15px] inline mr-1.5 rounded-sm shadow-sm object-cover shrink-0" /> : <span className="w-[22px] h-[15px] inline-block mr-1.5 bg-white/10 rounded-sm shadow-sm shrink-0" />;
+    return FlagComponent ? <FlagComponent className="w-[22px] h-[15px] inline mr-1.5 rounded-sm shadow-md object-cover shrink-0 drop-shadow-md" /> : <span className="w-[22px] h-[15px] inline-block mr-1.5 bg-white/20 rounded-sm shadow-sm shrink-0" />;
 };
 
-// ----------------------------------------------------------------------
-// MAIN DASHBOARD COMPONENT
-// ----------------------------------------------------------------------
 export default function AutomatedDashboard() {
     const [picks, setPicks] = useState<any[]>([]);
     const [drafters, setDrafters] = useState<string[]>([]);
@@ -55,7 +47,6 @@ export default function AutomatedDashboard() {
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
     const [selectedManager, setSelectedManager] = useState<any | null>(null);
 
-    // 1. Pull data
     useEffect(() => {
         const stateRef = ref(db, 'state');
         const unsubscribe = onValue(stateRef, (snapshot) => {
@@ -83,7 +74,6 @@ export default function AutomatedDashboard() {
         return () => clearInterval(interval);
     }, []);
 
-    // Helper logic
     const teamsMatch = (nameA: string, nameB: string): boolean => {
         if (!nameA || !nameB) return false;
         const norm = (str: string) => {
@@ -102,7 +92,6 @@ export default function AutomatedDashboard() {
         return pick ? pick.drafter : null;
     };
 
-    // 2. Engine: Compute Fantasy Points & Breakdowns
     const standings = drafters.map(name => {
         let totalPoints = 0, totalGoals = 0, totalCleanSheets = 0, wins = 0, draws = 0, losses = 0;
         const myTeams = picks.filter(p => p.drafter === name).map(p => p.team);
@@ -189,7 +178,6 @@ export default function AutomatedDashboard() {
     const bootLeaders = [...standings].sort((a, b) => b.totalGoals - a.totalGoals);
     const gloveLeaders = [...standings].sort((a, b) => b.totalCleanSheets - a.totalCleanSheets);
 
-    // 3. Compute Real FIFA Group Standings
     const getRealGroupStandings = (groupMatches: any[]) => {
         const table: Record<string, any> = {};
         groupMatches.forEach(m => {
@@ -223,7 +211,6 @@ export default function AutomatedDashboard() {
     const groupNames = Array.from(new Set(matches.map(m => m.group).filter(Boolean))).sort() as string[];
     const filteredGroupNames = selectedGroupFilter === 'ALL' ? groupNames : groupNames.filter(g => g === selectedGroupFilter);
 
-    // Draft Board Data
     const teamToGroup = new Map<string, string>();
     matches.forEach(m => {
         if (m.stage === 'Group' && m.group) {
@@ -242,7 +229,7 @@ export default function AutomatedDashboard() {
     });
 
     return (
-        <div className="relative min-h-screen font-sans text-slate-200 overflow-x-hidden">
+        <div className="relative min-h-screen font-sans text-slate-100 overflow-x-hidden">
 
             <style jsx global>{`
                 @keyframes bgReveal {
@@ -257,7 +244,6 @@ export default function AutomatedDashboard() {
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
             `}</style>
 
-            {/* DYNAMIC SOCCER BACKGROUND IMAGE */}
             <div
                 key={`bg-${activeTab}`}
                 className="fixed inset-0 z-0 bg-cover bg-center bg-no-repeat bg-animate"
@@ -271,25 +257,22 @@ export default function AutomatedDashboard() {
                 }}
             />
 
-            {/* BARELY-THERE GLOBAL OVERLAY - Lets the background image shine through at max brightness */}
-            <div className="fixed inset-0 z-0 bg-black/20" />
+            {/* ONLY 10% OPACITY GLOBAL TINT - MAX BRIGHTNESS */}
+            <div className="fixed inset-0 z-0 bg-black/10" />
 
-            {/* MAIN CONTENT WRAPPER */}
             <div className="relative z-10 p-3 sm:p-5">
 
-                {/* MANAGER BREAKDOWN MODAL */}
                 {selectedManager && (
-                    <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto backdrop-blur-sm" onClick={() => setSelectedManager(null)}>
-                        <div className="bg-black/90 backdrop-blur-3xl border border-white/20 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-
-                            <div className="p-4 sm:p-6 border-b border-white/10 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-white/5 rounded-t-xl shrink-0">
+                    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-3 sm:p-5 overflow-y-auto backdrop-blur-md" onClick={() => setSelectedManager(null)}>
+                        <div className="bg-black/40 backdrop-blur-3xl border border-white/30 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
+                            <div className="p-4 sm:p-6 border-b border-white/20 flex flex-col sm:flex-row gap-3 justify-between items-start sm:items-center bg-white/10 rounded-t-xl shrink-0">
                                 <div>
-                                    <h2 className={`text-xl font-black text-[#fbbf24] uppercase tracking-wider ${oswald.className}`}>{selectedManager.name}'S DASHBOARD</h2>
-                                    <p className="text-slate-400 font-mono text-xs mt-1 tracking-widest uppercase">
-                                        Total Points: <span className="text-white font-bold ml-1">{selectedManager.totalPoints} PTS</span>
+                                    <h2 className={`text-xl font-black text-[#fbbf24] uppercase tracking-wider drop-shadow-lg ${oswald.className}`}>{selectedManager.name}'S DASHBOARD</h2>
+                                    <p className="text-white font-mono text-xs mt-1 tracking-widest uppercase drop-shadow-md">
+                                        Total Points: <span className="text-[#fbbf24] font-bold ml-1">{selectedManager.totalPoints} PTS</span>
                                     </p>
                                 </div>
-                                <button onClick={() => setSelectedManager(null)} className="w-full sm:w-auto text-center text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 p-2 rounded-md transition text-xs font-mono uppercase tracking-widest px-4">Close</button>
+                                <button onClick={() => setSelectedManager(null)} className="w-full sm:w-auto text-center text-white hover:text-emerald-400 bg-white/10 hover:bg-white/20 border border-white/30 p-2 rounded-md transition text-xs font-mono uppercase tracking-widest px-4 shadow-lg">Close</button>
                             </div>
 
                             <div className="p-4 sm:p-6 overflow-y-auto space-y-6">
@@ -298,48 +281,48 @@ export default function AutomatedDashboard() {
                                     const teamTotal = logs.reduce((sum: number, l: any) => sum + l.points, 0);
 
                                     return (
-                                        <div key={team} className="bg-white/[0.02] border border-white/10 rounded-lg overflow-hidden shadow-sm">
-                                            <div className="bg-black/80 px-4 py-3 border-b border-white/10 flex justify-between items-center">
-                                                <h3 className="font-bold text-sm flex items-center text-white uppercase tracking-widest"><FlagIcon teamName={team} /> {team}</h3>
-                                                <span className={`text-[#fbbf24] font-black text-sm sm:text-base ${oswald.className}`}>{teamTotal} PTS</span>
+                                        <div key={team} className="bg-black/30 backdrop-blur-2xl border border-white/20 rounded-lg overflow-hidden shadow-2xl">
+                                            <div className="bg-black/40 px-4 py-3 border-b border-white/20 flex justify-between items-center">
+                                                <h3 className="font-bold text-sm flex items-center text-white uppercase tracking-widest drop-shadow-lg"><FlagIcon teamName={team} /> {team}</h3>
+                                                <span className={`text-[#fbbf24] font-black text-sm sm:text-base drop-shadow-lg ${oswald.className}`}>{teamTotal} PTS</span>
                                             </div>
 
                                             <div className="overflow-x-auto">
                                                 <table className="w-full text-left text-xs border-collapse min-w-[500px]">
                                                     <thead>
-                                                    <tr className="border-b border-white/5 text-slate-500 text-[10px] uppercase font-mono bg-black/40 tracking-widest">
-                                                        <th className="py-2 pl-4">Stage</th>
-                                                        <th className="py-2">Opponent</th>
-                                                        <th className="py-2 text-center">Score</th>
-                                                        <th className="py-2">Points Breakdown</th>
-                                                        <th className="py-2 text-right pr-4">Match PTS</th>
+                                                    <tr className="border-b border-white/20 text-white text-[10px] uppercase font-mono bg-black/40 tracking-widest">
+                                                        <th className="py-2 pl-4 drop-shadow-md">Stage</th>
+                                                        <th className="py-2 drop-shadow-md">Opponent</th>
+                                                        <th className="py-2 text-center drop-shadow-md">Score</th>
+                                                        <th className="py-2 drop-shadow-md">Points Breakdown</th>
+                                                        <th className="py-2 text-right pr-4 drop-shadow-md">Match PTS</th>
                                                     </tr>
                                                     </thead>
-                                                    <tbody className="divide-y divide-white/5">
+                                                    <tbody className="divide-y divide-white/10">
                                                     {logs.length === 0 ? (
                                                         <tr>
-                                                            <td colSpan={5} className="py-5 text-center text-slate-500 italic text-xs">No matches played yet.</td>
+                                                            <td colSpan={5} className="py-5 text-center text-white font-bold italic text-xs drop-shadow-md">No matches played yet.</td>
                                                         </tr>
                                                     ) : (
                                                         logs.map((log: any, i: number) => (
-                                                            <tr key={i} className="hover:bg-white/5 transition">
-                                                                <td className="py-3 pl-4 font-mono text-slate-400 text-xs uppercase">{log.stage}</td>
-                                                                <td className="py-3 font-bold text-slate-200 flex items-center">
+                                                            <tr key={i} className="hover:bg-white/10 transition">
+                                                                <td className="py-3 pl-4 font-mono text-white text-xs uppercase drop-shadow-md">{log.stage}</td>
+                                                                <td className="py-3 font-bold text-white flex items-center drop-shadow-lg">
                                                                     <FlagIcon teamName={log.opponent} /> {log.opponent}
                                                                 </td>
                                                                 <td className="py-3 text-center">
-                                                                        <span className={`font-mono ${log.result === 'W' ? 'text-emerald-400' : log.result === 'D' ? 'text-slate-300' : log.result === 'L' ? 'text-rose-400' : 'text-slate-500'}`}>
+                                                                        <span className={`font-mono drop-shadow-md font-bold ${log.result === 'W' ? 'text-emerald-400' : log.result === 'D' ? 'text-white' : log.result === 'L' ? 'text-rose-400' : 'text-white'}`}>
                                                                             {log.score} <span className="text-[10px] ml-1">({log.result})</span>
                                                                         </span>
                                                                 </td>
-                                                                <td className="py-3 font-mono text-[#fbbf24]/80 text-xs break-words whitespace-normal leading-tight" title={log.details.join(', ')}>
+                                                                <td className="py-3 font-mono text-[#fbbf24] text-xs break-words whitespace-normal leading-tight drop-shadow-md font-bold" title={log.details.join(', ')}>
                                                                     {log.details.join(', ')}
                                                                 </td>
                                                                 <td className="py-3 text-right pr-4">
                                                                     {log.points > 0 ? (
-                                                                        <span className={`font-black text-emerald-400 text-[13px] sm:text-[15px] bg-black/60 border border-white/5 px-2.5 py-1 rounded shadow-inner ${oswald.className}`}>+{log.points}</span>
+                                                                        <span className={`font-black text-emerald-400 text-[13px] sm:text-[15px] bg-black/40 border border-white/20 px-2.5 py-1 rounded shadow-xl drop-shadow-md ${oswald.className}`}>+{log.points}</span>
                                                                     ) : (
-                                                                        <span className="font-mono text-slate-600">0</span>
+                                                                        <span className="font-mono text-white drop-shadow-md font-bold">0</span>
                                                                     )}
                                                                 </td>
                                                             </tr>
@@ -356,21 +339,20 @@ export default function AutomatedDashboard() {
                     </div>
                 )}
 
-                {/* HEADER NAVIGATION */}
-                <header className="border-b border-white/10 pb-4 mb-5 max-w-7xl mx-auto content-animate">
+                <header className="border-b border-white/20 pb-4 mb-5 max-w-7xl mx-auto content-animate">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-3 sm:gap-4">
                         <div className="text-center md:text-left">
                             <h1 className="text-2xl sm:text-3xl font-black tracking-tight uppercase flex items-center gap-2 justify-center md:justify-start">
-                                <span className="text-2xl sm:text-3xl drop-shadow-md">🏆</span>
-                                <span className={`text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-fuchsia-500 to-rose-500 drop-shadow-lg ${oswald.className}`}>League World Cup</span>
+                                <span className="text-2xl sm:text-3xl drop-shadow-xl">🏆</span>
+                                <span className={`text-white drop-shadow-2xl ${oswald.className}`}>League World Cup</span>
                             </h1>
                         </div>
-                        <div className="flex overflow-x-auto no-scrollbar bg-black/30 backdrop-blur-md p-1.5 rounded-lg border border-white/20 w-full md:w-auto shadow-2xl">
+                        <div className="flex overflow-x-auto no-scrollbar bg-black/20 backdrop-blur-2xl p-1.5 rounded-lg border border-white/30 w-full md:w-auto shadow-2xl">
                             {['draft', 'matches', 'schedule', 'standings', 'awards'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab as any)}
-                                    className={`flex-1 md:flex-none whitespace-nowrap px-4 py-2 sm:py-1.5 rounded text-[11px] sm:text-xs uppercase tracking-wider font-bold transition-all duration-300 ${activeTab === tab ? 'bg-white/20 text-white shadow-sm border border-white/20' : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
+                                    className={`flex-1 md:flex-none whitespace-nowrap px-4 py-2 sm:py-1.5 rounded text-[11px] sm:text-xs uppercase tracking-wider font-black transition-all duration-300 drop-shadow-md ${activeTab === tab ? 'bg-white/30 text-white shadow-xl border border-white/40 scale-105' : 'text-white hover:text-[#fbbf24] hover:bg-white/10'}`}
                                 >
                                     {tab === 'draft' ? 'Draft' : tab === 'matches' ? 'Scores' : tab === 'schedule' ? 'Schedule' : tab === 'standings' ? 'Leaderboard' : 'Awards'}
                                 </button>
@@ -379,29 +361,26 @@ export default function AutomatedDashboard() {
                     </div>
                 </header>
 
-                {/* DYNAMIC CONTENT CONTAINER */}
                 <div key={`content-${activeTab}`} className="content-animate">
 
-                    {/* TAB: DRAFT BOARD */}
                     {activeTab === 'draft' && (
                         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto">
-                            {/* Drafters Column */}
-                            <div className="bg-black/75 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden flex flex-col h-[60vh] lg:h-[80vh] shadow-2xl">
-                                <div className="p-3.5 border-b border-white/20 bg-black/80">
-                                    <h2 className="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest">Drafters & Picks</h2>
+                            <div className="bg-black/20 backdrop-blur-2xl rounded-xl border border-white/30 overflow-hidden flex flex-col h-[60vh] lg:h-[80vh] shadow-2xl">
+                                <div className="p-3.5 border-b border-white/30 bg-black/40">
+                                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-widest drop-shadow-md">Drafters & Picks</h2>
                                 </div>
                                 <div className="overflow-y-auto p-3.5 space-y-4">
                                     {drafters.map((drafter, idx) => (
                                         <div key={drafter}>
                                             <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-slate-500 font-mono text-xs">{idx + 1}</span>
-                                                <h3 className="font-bold text-slate-100 text-sm">{drafter}</h3>
+                                                <span className="text-white font-mono text-xs drop-shadow-md font-bold">{idx + 1}</span>
+                                                <h3 className="font-black text-white text-sm drop-shadow-md">{drafter}</h3>
                                             </div>
                                             <div className="grid grid-cols-2 gap-2 pl-4">
                                                 {picks.filter(p => p.drafter === drafter).map((pick, pIdx) => (
-                                                    <div key={pIdx} className="bg-white/10 border border-white/10 rounded px-2 py-1.5 flex items-center text-[11px] sm:text-xs shadow-sm min-w-0">
+                                                    <div key={pIdx} className="bg-black/30 border border-white/20 rounded px-2 py-1.5 flex items-center text-[11px] sm:text-xs shadow-lg min-w-0">
                                                         <FlagIcon teamName={pick.team} />
-                                                        <span className="break-words whitespace-normal leading-tight text-white">{pick.team}</span>
+                                                        <span className="break-words whitespace-normal leading-tight text-white font-bold drop-shadow-md">{pick.team}</span>
                                                     </div>
                                                 ))}
                                             </div>
@@ -410,11 +389,10 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* Groups Column */}
-                            <div className="lg:col-span-2 bg-black/75 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden flex flex-col h-[70vh] lg:h-[80vh] shadow-2xl">
-                                <div className="p-3.5 border-b border-white/20 bg-black/80 flex justify-between items-center gap-2">
-                                    <h2 className="text-[11px] sm:text-xs font-mono font-bold text-slate-300 uppercase tracking-widest truncate">Tournament Field</h2>
-                                    <input type="text" placeholder="Search..." value={draftSearch} onChange={(e) => setDraftSearch(e.target.value)} className="bg-black/80 border border-white/20 text-white rounded px-2.5 py-1 text-[11px] sm:text-xs focus:outline-none focus:border-emerald-400 w-24 sm:w-40 transition" />
+                            <div className="lg:col-span-2 bg-black/20 backdrop-blur-2xl rounded-xl border border-white/30 overflow-hidden flex flex-col h-[70vh] lg:h-[80vh] shadow-2xl">
+                                <div className="p-3.5 border-b border-white/30 bg-black/40 flex justify-between items-center gap-2">
+                                    <h2 className="text-[11px] sm:text-xs font-mono font-bold text-white uppercase tracking-widest truncate drop-shadow-md">Tournament Field</h2>
+                                    <input type="text" placeholder="Search..." value={draftSearch} onChange={(e) => setDraftSearch(e.target.value)} className="bg-black/40 border border-white/30 text-white rounded px-2.5 py-1 text-[11px] sm:text-xs focus:outline-none focus:border-emerald-400 w-24 sm:w-40 transition shadow-inner font-bold" />
                                 </div>
                                 <div className="overflow-y-auto p-3 sm:p-4 space-y-5">
                                     {Object.keys(groupedTeams).sort().map(group => {
@@ -422,15 +400,15 @@ export default function AutomatedDashboard() {
                                         if (groupTeams.length === 0) return null;
                                         return (
                                             <div key={group}>
-                                                <h3 className="text-[10px] font-mono font-bold text-slate-400 mb-2 uppercase tracking-widest">{group}</h3>
+                                                <h3 className="text-[10px] font-mono font-bold text-white mb-2 uppercase tracking-widest drop-shadow-md">{group}</h3>
                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
                                                     {groupTeams.sort().map(team => {
                                                         const drafter = getDrafterForTeam(team);
                                                         return (
-                                                            <div key={team} className={`border rounded p-2 sm:p-3 flex flex-col justify-center items-center text-center transition-all min-w-0 ${drafter ? 'bg-black/50 border-white/10 opacity-70' : 'bg-white/10 border-white/20 shadow-sm hover:border-white/40 hover:bg-white/20'}`}>
+                                                            <div key={team} className={`border rounded p-2 sm:p-3 flex flex-col justify-center items-center text-center transition-all min-w-0 shadow-lg ${drafter ? 'bg-black/60 border-white/20 opacity-80' : 'bg-black/20 border-white/40 hover:border-white/60 hover:bg-white/20'}`}>
                                                                 <div className="mb-1 sm:mb-1.5"><FlagIcon teamName={team} /></div>
-                                                                <span className={`text-[11px] sm:text-xs break-words whitespace-normal leading-tight ${drafter ? 'line-through text-slate-400' : 'font-bold text-white'}`}>{team}</span>
-                                                                <span className="text-[9px] sm:text-[10px] text-[#fbbf24] font-mono mt-1 h-3">{drafter || ''}</span>
+                                                                <span className={`text-[11px] sm:text-xs break-words whitespace-normal leading-tight drop-shadow-md ${drafter ? 'line-through text-slate-300 font-bold' : 'font-black text-white'}`}>{team}</span>
+                                                                <span className="text-[9px] sm:text-[10px] text-[#fbbf24] font-mono mt-1 h-3 drop-shadow-md font-bold">{drafter || ''}</span>
                                                             </div>
                                                         );
                                                     })}
@@ -441,22 +419,21 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* Pick Log Column */}
-                            <div className="bg-black/75 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden flex flex-col h-[50vh] lg:h-[80vh] shadow-2xl">
-                                <div className="p-3.5 border-b border-white/20 bg-black/80">
-                                    <h2 className="text-xs font-mono font-bold text-slate-300 uppercase tracking-widest">Pick Log</h2>
+                            <div className="bg-black/20 backdrop-blur-2xl rounded-xl border border-white/30 overflow-hidden flex flex-col h-[50vh] lg:h-[80vh] shadow-2xl">
+                                <div className="p-3.5 border-b border-white/30 bg-black/40">
+                                    <h2 className="text-xs font-mono font-bold text-white uppercase tracking-widest drop-shadow-md">Pick Log</h2>
                                 </div>
                                 <div className="overflow-y-auto p-3.5 space-y-2">
                                     {[...picks].reverse().map((pick, idx) => (
-                                        <div key={idx} className="flex items-center justify-between bg-white/10 border border-white/10 p-2 sm:p-2.5 rounded min-w-0 hover:bg-white/20 transition">
+                                        <div key={idx} className="flex items-center justify-between bg-black/30 border border-white/20 p-2 sm:p-2.5 rounded min-w-0 hover:bg-white/20 transition shadow-md">
                                             <div className="flex items-center gap-2 min-w-0 pr-2">
-                                                <span className={`text-xs font-mono text-slate-400 shrink-0 w-5 ${oswald.className}`}>#{picks.length - idx}</span>
-                                                <div className="flex items-center text-[11px] sm:text-sm font-bold text-white min-w-0">
+                                                <span className={`text-xs font-mono text-white font-bold shrink-0 w-5 drop-shadow-md ${oswald.className}`}>#{picks.length - idx}</span>
+                                                <div className="flex items-center text-[11px] sm:text-sm font-bold text-white min-w-0 drop-shadow-md">
                                                     <FlagIcon teamName={pick.team} />
                                                     <span className="break-words whitespace-normal leading-tight">{pick.team}</span>
                                                 </div>
                                             </div>
-                                            <span className="text-[9px] sm:text-[10px] text-slate-300 shrink-0">{pick.drafter}</span>
+                                            <span className="text-[9px] sm:text-[10px] text-[#fbbf24] font-bold shrink-0 drop-shadow-md">{pick.drafter}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -464,20 +441,19 @@ export default function AutomatedDashboard() {
                         </div>
                     )}
 
-                    {/* TAB: MATCHES LIST */}
                     {activeTab === 'matches' && (
                         <div className="max-w-7xl mx-auto space-y-5">
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3 mb-5">
                                 <div>
-                                    <h2 className={`text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-md ${oswald.className}`}>ALL SCORES</h2>
+                                    <h2 className={`text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-2xl ${oswald.className}`}>ALL SCORES</h2>
                                 </div>
                                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                                    <label htmlFor="groupFilter" className="text-[10px] sm:text-xs font-mono text-slate-300 uppercase tracking-widest shrink-0">Filter:</label>
+                                    <label htmlFor="groupFilter" className="text-[10px] sm:text-xs font-mono text-white font-bold uppercase tracking-widest shrink-0 drop-shadow-md">Filter:</label>
                                     <select
                                         id="groupFilter"
                                         value={selectedGroupFilter}
                                         onChange={(e) => setSelectedGroupFilter(e.target.value)}
-                                        className="bg-black/80 backdrop-blur-md border border-white/20 text-white rounded px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-400 transition shadow-lg w-full sm:w-auto"
+                                        className="bg-black/40 backdrop-blur-2xl border border-white/30 text-white font-bold rounded px-3 py-1.5 text-xs focus:outline-none focus:border-emerald-400 transition shadow-xl w-full sm:w-auto"
                                     >
                                         <option value="ALL">All Groups</option>
                                         {groupNames.map(grp => (
@@ -488,7 +464,7 @@ export default function AutomatedDashboard() {
                             </div>
 
                             {filteredGroupNames.length === 0 ? (
-                                <div className="text-center py-8 text-slate-300 bg-black/75 backdrop-blur-xl border border-dashed border-white/30 rounded-xl text-xs">
+                                <div className="text-center py-8 text-white font-bold bg-black/20 backdrop-blur-2xl border border-dashed border-white/40 rounded-xl text-xs shadow-xl drop-shadow-md">
                                     <p>No matches found for the selected filter.</p>
                                 </div>
                             ) : (
@@ -497,51 +473,49 @@ export default function AutomatedDashboard() {
                                     const groupTable = getRealGroupStandings(groupMatches);
 
                                     return (
-                                        <div key={group} className="bg-black/75 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
-                                            <div className="bg-black/80 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-white/20 flex justify-between items-center">
-                                                <h3 className={`font-black text-[#fbbf24] text-xs sm:text-sm uppercase tracking-widest ${oswald.className}`}>{group}</h3>
-                                                <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono uppercase tracking-widest">Top 2 advance</span>
+                                        <div key={group} className="bg-black/20 backdrop-blur-2xl border border-white/30 rounded-xl overflow-hidden shadow-2xl">
+                                            <div className="bg-black/40 px-3 sm:px-4 py-2.5 sm:py-3 border-b border-white/30 flex justify-between items-center">
+                                                <h3 className={`font-black text-[#fbbf24] text-xs sm:text-sm uppercase tracking-widest drop-shadow-md ${oswald.className}`}>{group}</h3>
+                                                <span className="text-[9px] sm:text-[10px] text-white font-bold font-mono uppercase tracking-widest drop-shadow-md">Top 2 advance</span>
                                             </div>
 
                                             <div className="flex flex-col lg:flex-row">
-                                                {/* Left: FIFA Standings Table */}
-                                                <div className="w-full lg:w-[35%] xl:w-[30%] border-b lg:border-b-0 lg:border-r border-white/20 overflow-x-auto flex bg-black/40">
+                                                <div className="w-full lg:w-[35%] xl:w-[30%] border-b lg:border-b-0 lg:border-r border-white/30 overflow-x-auto flex bg-black/30">
                                                     <table className="w-full text-left text-[11px] sm:text-[12px] min-w-[320px]">
                                                         <thead>
-                                                        <tr className="border-b border-white/10 text-slate-300 text-[9px] sm:text-[10px] uppercase font-mono bg-white/5">
-                                                            <th className="py-2.5 pl-3 sm:pl-4">Team</th>
-                                                            <th className="py-2.5 text-center w-6">MP</th>
-                                                            <th className="py-2.5 text-center w-6">W</th>
-                                                            <th className="py-2.5 text-center w-6">D</th>
-                                                            <th className="py-2.5 text-center w-6">L</th>
-                                                            <th className="py-2.5 text-center w-6">GF</th>
-                                                            <th className="py-2.5 text-center w-6">GA</th>
-                                                            <th className="py-2.5 text-center w-8 pr-3 sm:pr-4">PTS</th>
+                                                        <tr className="border-b border-white/20 text-white text-[9px] sm:text-[10px] uppercase font-mono bg-white/10 font-bold">
+                                                            <th className="py-2.5 pl-3 sm:pl-4 drop-shadow-md">Team</th>
+                                                            <th className="py-2.5 text-center w-6 drop-shadow-md">MP</th>
+                                                            <th className="py-2.5 text-center w-6 drop-shadow-md">W</th>
+                                                            <th className="py-2.5 text-center w-6 drop-shadow-md">D</th>
+                                                            <th className="py-2.5 text-center w-6 drop-shadow-md">L</th>
+                                                            <th className="py-2.5 text-center w-6 drop-shadow-md">GF</th>
+                                                            <th className="py-2.5 text-center w-6 drop-shadow-md">GA</th>
+                                                            <th className="py-2.5 text-center w-8 pr-3 sm:pr-4 drop-shadow-md">PTS</th>
                                                         </tr>
                                                         </thead>
-                                                        <tbody className="divide-y divide-white/10">
+                                                        <tbody className="divide-y divide-white/20">
                                                         {groupTable.map((teamRow) => (
-                                                            <tr key={teamRow.name} className="hover:bg-white/10 transition">
-                                                                <td className="py-3 sm:py-5 lg:py-6 pl-3 sm:pl-4 font-bold text-white">
+                                                            <tr key={teamRow.name} className="hover:bg-white/20 transition">
+                                                                <td className="py-3 sm:py-5 lg:py-6 pl-3 sm:pl-4 font-black text-white drop-shadow-md">
                                                                     <div className="flex items-center whitespace-nowrap min-w-0">
                                                                         <FlagIcon teamName={teamRow.name} />
                                                                         <span className="break-words whitespace-normal leading-tight">{teamRow.name}</span>
                                                                     </div>
                                                                 </td>
-                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-slate-200 font-mono">{teamRow.mp}</td>
-                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-slate-200 font-mono">{teamRow.w}</td>
-                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-slate-200 font-mono">{teamRow.d}</td>
-                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-slate-200 font-mono">{teamRow.l}</td>
-                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-slate-200 font-mono">{teamRow.gf}</td>
-                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-slate-200 font-mono">{teamRow.ga}</td>
-                                                                <td className={`py-3 sm:py-5 lg:py-6 text-center font-black text-[#fbbf24] pr-3 sm:pr-4 text-[13px] sm:text-[15px] ${oswald.className}`}>{teamRow.pts}</td>
+                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.mp}</td>
+                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.w}</td>
+                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.d}</td>
+                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.l}</td>
+                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.gf}</td>
+                                                                <td className="py-3 sm:py-5 lg:py-6 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.ga}</td>
+                                                                <td className={`py-3 sm:py-5 lg:py-6 text-center font-black text-[#fbbf24] pr-3 sm:pr-4 text-[15px] sm:text-[17px] drop-shadow-lg ${oswald.className}`}>{teamRow.pts}</td>
                                                             </tr>
                                                         ))}
                                                         </tbody>
                                                     </table>
                                                 </div>
 
-                                                {/* Right: Matches List */}
                                                 <div className="w-full lg:w-[65%] xl:w-[70%] p-2 sm:p-4 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-4 content-start bg-transparent">
                                                     {groupMatches.map(m => {
                                                         const homeDrafter = getDrafterForTeam(m.homeTeam);
@@ -550,42 +524,39 @@ export default function AutomatedDashboard() {
                                                         const isHomeWin = m.winner === m.homeTeam;
                                                         const isAwayWin = m.winner === m.awayTeam;
 
-                                                        const homeNameColor = isHomeWin ? 'font-black text-emerald-400' : isAwayWin ? 'font-medium text-rose-400' : 'font-bold text-white';
-                                                        const awayNameColor = isAwayWin ? 'font-black text-emerald-400' : isHomeWin ? 'font-medium text-rose-400' : 'font-bold text-white';
+                                                        const homeNameColor = isHomeWin ? 'font-black text-emerald-400' : isAwayWin ? 'font-bold text-rose-300' : 'font-bold text-white';
+                                                        const awayNameColor = isAwayWin ? 'font-black text-emerald-400' : isHomeWin ? 'font-bold text-rose-300' : 'font-bold text-white';
 
-                                                        const homeScoreColor = isHomeWin ? 'text-emerald-400' : isAwayWin ? 'text-rose-400' : 'text-white';
-                                                        const awayScoreColor = isAwayWin ? 'text-emerald-400' : isHomeWin ? 'text-rose-400' : 'text-white';
+                                                        const homeScoreColor = isHomeWin ? 'text-emerald-400' : isAwayWin ? 'text-rose-300' : 'text-[#fbbf24]';
+                                                        const awayScoreColor = isAwayWin ? 'text-emerald-400' : isHomeWin ? 'text-rose-300' : 'text-[#fbbf24]';
 
                                                         return (
-                                                            <div key={m.id} className="flex items-center justify-between p-2 sm:p-3 bg-white/10 border border-white/10 rounded-lg hover:bg-white/20 transition shadow-sm h-full">
-                                                                {/* Home Side */}
+                                                            <div key={m.id} className="flex items-center justify-between p-2 sm:p-3 bg-black/30 backdrop-blur-xl border border-white/20 rounded-lg hover:bg-black/40 transition shadow-xl h-full">
                                                                 <div className="flex-1 flex flex-col items-end text-right min-w-0">
                                                                     <div className="flex items-center gap-1.5 sm:gap-2 w-full justify-end min-w-0">
-                                                                        <span className={`text-[11px] sm:text-[13px] break-words whitespace-normal leading-tight ${homeNameColor}`}>{m.homeTeam}</span>
+                                                                        <span className={`text-[12px] sm:text-[14px] break-words whitespace-normal leading-tight drop-shadow-lg ${homeNameColor}`}>{m.homeTeam}</span>
                                                                         <FlagIcon teamName={m.homeTeam} />
                                                                     </div>
-                                                                    {homeDrafter && <span className="text-[8px] sm:text-[9px] text-slate-300 font-mono mt-1 shrink-0 truncate max-w-full">{homeDrafter}</span>}
+                                                                    {homeDrafter && <span className="text-[9px] sm:text-[10px] text-[#fbbf24] font-bold font-mono mt-1 shrink-0 truncate max-w-full drop-shadow-md">{homeDrafter}</span>}
                                                                 </div>
 
-                                                                {/* Score Block */}
                                                                 <div className="mx-2 sm:mx-4 flex flex-col items-center shrink-0 min-w-[55px] sm:min-w-[65px]">
-                                                                    <div className="flex items-center justify-center gap-1 sm:gap-1.5 bg-black/80 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded border border-white/10 w-full shadow-inner mb-0.5 sm:mb-1">
-                                                                        <span className={`font-black text-xs sm:text-[17px] w-3 sm:w-5 text-center leading-none ${homeScoreColor} ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
-                                                                        <span className="text-slate-400 text-[10px] sm:text-[12px] leading-none">:</span>
-                                                                        <span className={`font-black text-xs sm:text-[17px] w-3 sm:w-5 text-center leading-none ${awayScoreColor} ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
+                                                                    <div className="flex items-center justify-center gap-1 sm:gap-1.5 bg-black/50 px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-lg border border-white/20 w-full shadow-2xl mb-0.5 sm:mb-1">
+                                                                        <span className={`font-black text-[15px] sm:text-[19px] w-3 sm:w-5 text-center leading-none drop-shadow-md ${homeScoreColor} ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
+                                                                        <span className="text-white font-bold text-[10px] sm:text-[12px] leading-none drop-shadow-md">:</span>
+                                                                        <span className={`font-black text-[15px] sm:text-[19px] w-3 sm:w-5 text-center leading-none drop-shadow-md ${awayScoreColor} ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
                                                                     </div>
-                                                                    {m.status === 'IN_PLAY' && <span className="text-[9px] sm:text-[11px] font-black tracking-widest text-red-500 animate-pulse">{m.minute ? `${m.minute}'` : 'LIVE'}</span>}
-                                                                    {m.status === 'PAUSED' && <span className="text-[9px] sm:text-[11px] font-black tracking-widest text-amber-500">HT</span>}
-                                                                    {m.status === 'FINISHED' && <span className="text-[9px] sm:text-[11px] font-black tracking-widest text-emerald-500">FT</span>}
+                                                                    {m.status === 'IN_PLAY' && <span className="text-[9px] sm:text-[11px] font-black tracking-widest text-red-500 animate-pulse drop-shadow-md">{m.minute ? `${m.minute}'` : 'LIVE'}</span>}
+                                                                    {m.status === 'PAUSED' && <span className="text-[9px] sm:text-[11px] font-black tracking-widest text-[#fbbf24] drop-shadow-md">HT</span>}
+                                                                    {m.status === 'FINISHED' && <span className="text-[9px] sm:text-[11px] font-black tracking-widest text-emerald-400 drop-shadow-md">FT</span>}
                                                                 </div>
 
-                                                                {/* Away Side */}
                                                                 <div className="flex-1 flex flex-col items-start text-left min-w-0">
                                                                     <div className="flex items-center gap-1.5 sm:gap-2 w-full justify-start min-w-0">
                                                                         <FlagIcon teamName={m.awayTeam} />
-                                                                        <span className={`text-[11px] sm:text-[13px] break-words whitespace-normal leading-tight ${awayNameColor}`}>{m.awayTeam}</span>
+                                                                        <span className={`text-[12px] sm:text-[14px] break-words whitespace-normal leading-tight drop-shadow-lg ${awayNameColor}`}>{m.awayTeam}</span>
                                                                     </div>
-                                                                    {awayDrafter && <span className="text-[8px] sm:text-[9px] text-slate-300 font-mono mt-1 shrink-0 truncate max-w-full">{awayDrafter}</span>}
+                                                                    {awayDrafter && <span className="text-[9px] sm:text-[10px] text-[#fbbf24] font-bold font-mono mt-1 shrink-0 truncate max-w-full drop-shadow-md">{awayDrafter}</span>}
                                                                 </div>
                                                             </div>
                                                         )
@@ -599,103 +570,98 @@ export default function AutomatedDashboard() {
                         </div>
                     )}
 
-                    {/* TAB: SCHEDULE */}
                     {activeTab === 'schedule' && (
                         <div className="max-w-7xl mx-auto space-y-5">
-                            <h2 className={`text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-lg ${oswald.className}`}>MATCH SCHEDULE</h2>
+                            <h2 className={`text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-2xl ${oswald.className}`}>MATCH SCHEDULE</h2>
                             <ScheduleTab />
                         </div>
                     )}
 
-                    {/* TAB: LEADERBOARD */}
                     {activeTab === 'standings' && (
                         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-                            <h2 className={`text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-md ${oswald.className}`}>LEADERBOARD</h2>
+                            <h2 className={`text-xl sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-2xl ${oswald.className}`}>LEADERBOARD</h2>
 
-                            {/* SCORING LEGEND */}
-                            <div className="bg-black/75 backdrop-blur-xl border border-white/20 rounded-xl p-3 sm:p-5 shadow-2xl hidden md:block">
-                                <h3 className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-widest mb-3">Point System</h3>
+                            <div className="bg-black/20 backdrop-blur-2xl border border-white/30 rounded-xl p-3 sm:p-5 shadow-2xl hidden md:block">
+                                <h3 className="text-[10px] font-mono font-bold text-white uppercase tracking-widest mb-3 drop-shadow-md">Point System</h3>
                                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-y-2 gap-x-4 text-[11px] sm:text-[12px]">
                                     <div className="space-y-1.5">
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+4</span> <span className="text-white">Win Match</span></div>
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+8</span> <span className="text-white">Advance</span></div>
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+20</span> <span className="text-white">Win SF</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+4</span> <span className="text-white font-bold drop-shadow-md">Win Match</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+8</span> <span className="text-white font-bold drop-shadow-md">Advance</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+20</span> <span className="text-white font-bold drop-shadow-md">Win SF</span></div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+2</span> <span className="text-white">Group Draw</span></div>
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+10</span> <span className="text-white">Win R32</span></div>
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+10</span> <span className="text-white">Win 3rd</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+2</span> <span className="text-white font-bold drop-shadow-md">Group Draw</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+10</span> <span className="text-white font-bold drop-shadow-md">Win R32</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+10</span> <span className="text-white font-bold drop-shadow-md">Win 3rd</span></div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+1</span> <span className="text-white">Goal Scored</span></div>
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+12</span> <span className="text-white">Win R16</span></div>
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+30</span> <span className="text-white">Win Final</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+1</span> <span className="text-white font-bold drop-shadow-md">Goal Scored</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+12</span> <span className="text-white font-bold drop-shadow-md">Win R16</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+30</span> <span className="text-white font-bold drop-shadow-md">Win Final</span></div>
                                     </div>
                                     <div className="space-y-1.5">
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+2</span> <span className="text-white">Clean Sheet</span></div>
-                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm ${oswald.className}`}>+15</span> <span className="text-white">Win QF</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+2</span> <span className="text-white font-bold drop-shadow-md">Clean Sheet</span></div>
+                                        <div className="flex items-center gap-2"><span className={`text-[#fbbf24] font-black w-6 text-right text-sm drop-shadow-md ${oswald.className}`}>+15</span> <span className="text-white font-bold drop-shadow-md">Win QF</span></div>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* TOP 3 PODIUM */}
                             <div className="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6">
                                 {overallLeaders.slice(0, 3).map((leader, i) => (
-                                    <div key={leader.name} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-2 sm:p-6 text-center transition-all duration-300 ${
-                                        i === 0 ? 'bg-amber-500/40 border border-amber-400/50 shadow-[0_0_30px_rgba(251,191,36,0.5)]' :
-                                            i === 1 ? 'bg-slate-300/30 border border-slate-300/30 shadow-[0_0_30px_rgba(203,213,225,0.3)]' :
-                                                'bg-orange-700/40 border border-orange-700/40 shadow-[0_0_30px_rgba(194,65,12,0.4)]'
+                                    <div key={leader.name} className={`backdrop-blur-2xl rounded-xl flex flex-col items-center justify-center p-2 sm:p-6 text-center transition-all duration-300 ${
+                                        i === 0 ? 'bg-amber-500/30 border border-amber-400/50 shadow-[0_0_40px_rgba(251,191,36,0.6)]' :
+                                            i === 1 ? 'bg-slate-300/20 border border-slate-300/40 shadow-[0_0_40px_rgba(203,213,225,0.4)]' :
+                                                'bg-orange-700/30 border border-orange-700/50 shadow-[0_0_40px_rgba(194,65,12,0.5)]'
                                     }`}>
-                                        <span className="text-2xl sm:text-4xl md:text-5xl mb-1 sm:mb-3 drop-shadow-lg">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-                                        <h3 className="text-[12px] sm:text-[18px] md:text-[22px] font-black text-white mb-0.5 sm:mb-2 tracking-wide truncate w-full px-1">{leader.name}</h3>
-                                        <div className={`text-[24px] sm:text-[36px] md:text-[42px] font-black text-[#fbbf24] leading-none mb-1 sm:mb-1.5 drop-shadow-md ${oswald.className}`}>{leader.totalPoints}</div>
-                                        <span className="text-[8px] sm:text-[10px] text-slate-100 font-mono mb-2 sm:mb-4 uppercase tracking-widest hidden sm:block">Points</span>
-                                        <div className="flex flex-wrap justify-center gap-1 sm:gap-1.5 px-1">
+                                        <span className="text-3xl sm:text-5xl md:text-6xl mb-1 sm:mb-3 drop-shadow-2xl">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                                        <h3 className="text-[14px] sm:text-[20px] md:text-[26px] font-black text-white mb-0.5 sm:mb-2 tracking-wide truncate w-full px-1 drop-shadow-xl">{leader.name}</h3>
+                                        <div className={`text-[28px] sm:text-[40px] md:text-[50px] font-black text-[#fbbf24] leading-none mb-1 sm:mb-1.5 drop-shadow-2xl ${oswald.className}`}>{leader.totalPoints}</div>
+                                        <span className="text-[9px] sm:text-[11px] text-white font-bold font-mono mb-2 sm:mb-4 uppercase tracking-widest hidden sm:block drop-shadow-md">Points</span>
+                                        <div className="flex flex-wrap justify-center gap-1 sm:gap-2 px-1 scale-110">
                                             {leader.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
                                         </div>
                                     </div>
                                 ))}
                             </div>
 
-                            {/* FULL STANDINGS TABLE */}
-                            <div className="bg-black/75 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto">
+                            <div className="bg-black/20 backdrop-blur-2xl border border-white/30 rounded-xl overflow-hidden shadow-2xl overflow-x-auto">
                                 <table className="w-full text-left text-[12px] sm:text-[14px] border-collapse min-w-[600px] sm:min-w-[700px]">
                                     <thead>
-                                    <tr className="border-b border-white/20 text-slate-300 text-[9px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest">
-                                        <th className="py-3 sm:py-4 pl-4 sm:pl-6 w-10 sm:w-12">#</th>
-                                        <th className="py-3 sm:py-4 w-32 sm:w-48">Drafter</th>
-                                        <th className="py-3 sm:py-4 w-16 sm:w-24">PTS</th>
-                                        <th className="py-3 sm:py-4">Teams</th>
-                                        <th className="py-3 sm:py-4 text-center w-12 sm:w-16">W</th>
-                                        <th className="py-3 sm:py-4 text-center w-12 sm:w-16">D</th>
-                                        <th className="py-3 sm:py-4 text-center w-12 sm:w-16">L</th>
-                                        <th className="py-3 sm:py-4 text-center w-12 sm:w-16">GF</th>
-                                        <th className="py-3 sm:py-4 text-center pr-4 sm:pr-6 w-12 sm:w-16">CS</th>
+                                    <tr className="border-b border-white/30 text-white text-[10px] sm:text-[11px] uppercase font-mono bg-black/40 tracking-widest font-bold">
+                                        <th className="py-3 sm:py-4 pl-4 sm:pl-6 w-10 sm:w-12 drop-shadow-md">#</th>
+                                        <th className="py-3 sm:py-4 w-32 sm:w-48 drop-shadow-md">Drafter</th>
+                                        <th className="py-3 sm:py-4 w-16 sm:w-24 drop-shadow-md">PTS</th>
+                                        <th className="py-3 sm:py-4 drop-shadow-md">Teams</th>
+                                        <th className="py-3 sm:py-4 text-center w-12 sm:w-16 drop-shadow-md">W</th>
+                                        <th className="py-3 sm:py-4 text-center w-12 sm:w-16 drop-shadow-md">D</th>
+                                        <th className="py-3 sm:py-4 text-center w-12 sm:w-16 drop-shadow-md">L</th>
+                                        <th className="py-3 sm:py-4 text-center w-12 sm:w-16 drop-shadow-md">GF</th>
+                                        <th className="py-3 sm:py-4 text-center pr-4 sm:pr-6 w-12 sm:w-16 drop-shadow-md">CS</th>
                                     </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-white/10">
+                                    <tbody className="divide-y divide-white/20">
                                     {overallLeaders.map((row, index) => (
-                                        <tr key={row.name} className="hover:bg-white/10 transition">
-                                            <td className={`py-3 sm:py-4 pl-4 sm:pl-6 font-bold text-slate-300 text-[13px] sm:text-[15px] ${oswald.className}`}>{index + 1}</td>
+                                        <tr key={row.name} className="hover:bg-white/20 transition">
+                                            <td className={`py-3 sm:py-4 pl-4 sm:pl-6 font-black text-white text-[14px] sm:text-[16px] drop-shadow-md ${oswald.className}`}>{index + 1}</td>
                                             <td className="py-3 sm:py-4">
                                                 <button
                                                     onClick={() => setSelectedManager(row)}
-                                                    className="font-bold text-[12px] sm:text-[14px] text-white hover:text-[#fbbf24] transition text-left truncate max-w-[120px] sm:max-w-full"
+                                                    className="font-black text-[13px] sm:text-[15px] text-white hover:text-[#fbbf24] transition text-left truncate max-w-[120px] sm:max-w-full drop-shadow-lg"
                                                 >
                                                     {row.name}
                                                 </button>
                                             </td>
-                                            <td className={`py-3 sm:py-4 font-black text-[#fbbf24] text-[15px] sm:text-[18px] drop-shadow-sm ${oswald.className}`}>{row.totalPoints}</td>
+                                            <td className={`py-3 sm:py-4 font-black text-[#fbbf24] text-[16px] sm:text-[20px] drop-shadow-xl ${oswald.className}`}>{row.totalPoints}</td>
                                             <td className="py-3 sm:py-4">
                                                 <div className="flex gap-1 sm:gap-1.5 flex-wrap">
                                                     {row.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
                                                 </div>
                                             </td>
-                                            <td className={`py-3 sm:py-4 text-center font-bold text-emerald-400 text-[13px] sm:text-[15px] ${oswald.className}`}>{row.wins}</td>
-                                            <td className={`py-3 sm:py-4 text-center font-bold text-slate-200 text-[13px] sm:text-[15px] ${oswald.className}`}>{row.draws}</td>
-                                            <td className={`py-3 sm:py-4 text-center font-bold text-rose-400 text-[13px] sm:text-[15px] ${oswald.className}`}>{row.losses}</td>
-                                            <td className={`py-3 sm:py-4 text-center font-bold text-white text-[13px] sm:text-[15px] ${oswald.className}`}>{row.totalGoals}</td>
-                                            <td className={`py-3 sm:py-4 text-center font-bold text-blue-400 pr-4 sm:pr-6 text-[13px] sm:text-[15px] ${oswald.className}`}>{row.totalCleanSheets}</td>
+                                            <td className={`py-3 sm:py-4 text-center font-black text-emerald-400 text-[14px] sm:text-[16px] drop-shadow-md ${oswald.className}`}>{row.wins}</td>
+                                            <td className={`py-3 sm:py-4 text-center font-black text-white text-[14px] sm:text-[16px] drop-shadow-md ${oswald.className}`}>{row.draws}</td>
+                                            <td className={`py-3 sm:py-4 text-center font-black text-rose-300 text-[14px] sm:text-[16px] drop-shadow-md ${oswald.className}`}>{row.losses}</td>
+                                            <td className={`py-3 sm:py-4 text-center font-black text-white text-[14px] sm:text-[16px] drop-shadow-md ${oswald.className}`}>{row.totalGoals}</td>
+                                            <td className={`py-3 sm:py-4 text-center font-black text-blue-300 pr-4 sm:pr-6 text-[14px] sm:text-[16px] drop-shadow-md ${oswald.className}`}>{row.totalCleanSheets}</td>
                                         </tr>
                                     ))}
                                     </tbody>
@@ -704,20 +670,17 @@ export default function AutomatedDashboard() {
                         </div>
                     )}
 
-                    {/* TAB: AWARDS */}
                     {activeTab === 'awards' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 max-w-7xl mx-auto">
-
-                            {/* Golden Boot Card */}
-                            <div className="bg-gradient-to-br from-amber-500/60 to-orange-600/60 p-[1.5px] rounded-xl shadow-2xl h-full">
-                                <div className="bg-black/75 backdrop-blur-xl p-4 sm:p-7 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-4">
-                                        <div className="bg-black/80 p-2 sm:p-3 rounded-lg border border-amber-500/40 shadow-inner">
-                                            <span className="text-2xl sm:text-4xl block leading-none">⚽</span>
+                            <div className="bg-gradient-to-br from-amber-500/40 to-orange-600/40 p-[2px] rounded-xl shadow-2xl h-full drop-shadow-2xl">
+                                <div className="bg-black/20 backdrop-blur-2xl p-4 sm:p-7 rounded-xl h-full flex flex-col">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/30 pb-3 sm:pb-4">
+                                        <div className="bg-black/30 p-2 sm:p-3 rounded-lg border border-amber-400/50 shadow-2xl">
+                                            <span className="text-3xl sm:text-5xl block leading-none drop-shadow-xl">⚽</span>
                                         </div>
                                         <div>
-                                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md ${oswald.className}`}>Golden Boot</h2>
-                                            <p className="text-amber-400 text-[9px] sm:text-xs font-mono font-bold tracking-widest uppercase mt-0.5 sm:mt-1">15% Pot • Most Goals</p>
+                                            <h2 className={`text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-xl ${oswald.className}`}>Golden Boot</h2>
+                                            <p className="text-[#fbbf24] text-[10px] sm:text-sm font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1 drop-shadow-md">15% Pot • Most Goals</p>
                                         </div>
                                     </div>
 
@@ -730,19 +693,19 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-4 rounded-lg border transition-all ${idx === 0 ? 'bg-amber-500/30 border-amber-400/60 shadow-md scale-[1.02]' : 'bg-white/10 border-white/20 hover:border-white/40'}`}>
+                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-4 rounded-lg border transition-all ${idx === 0 ? 'bg-amber-500/30 border-amber-300/60 shadow-xl scale-[1.02]' : 'bg-black/30 border-white/30 hover:border-white/50 hover:bg-black/40 shadow-lg'}`}>
                                                     <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                                                        <span className={`font-black text-lg sm:text-2xl w-5 sm:w-6 shrink-0 text-center ${idx === 0 ? 'text-amber-400' : 'text-slate-300'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <span className={`font-black text-xl sm:text-3xl w-5 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
                                                         <div className="flex flex-col min-w-0 pr-2">
-                                                            <span className={`font-bold text-[13px] sm:text-[16px] leading-tight break-words whitespace-normal ${idx === 0 ? 'text-white' : 'text-slate-200'}`}>{row.name}</span>
-                                                            <span className="text-[9px] sm:text-[11px] text-slate-300 mt-0.5 sm:mt-1 max-w-[120px] sm:max-w-[240px] truncate" title={breakdownText}>
+                                                            <span className={`font-black text-[14px] sm:text-[18px] leading-tight break-words whitespace-normal drop-shadow-lg text-white`}>{row.name}</span>
+                                                            <span className="text-[10px] sm:text-[12px] text-white font-bold mt-0.5 sm:mt-1 max-w-[120px] sm:max-w-[240px] truncate drop-shadow-md" title={breakdownText}>
                                                                 {breakdownText || "No goals yet"}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col items-end shrink-0">
-                                                        <span className={`font-black text-2xl sm:text-4xl leading-none ${idx === 0 ? 'text-amber-400 drop-shadow-md' : 'text-white'} ${oswald.className}`}>{row.totalGoals}</span>
-                                                        <span className="text-[8px] sm:text-[10px] text-slate-300 font-mono uppercase tracking-widest mt-0.5 sm:mt-1">Goals</span>
+                                                        <span className={`font-black text-3xl sm:text-5xl leading-none drop-shadow-2xl ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'} ${oswald.className}`}>{row.totalGoals}</span>
+                                                        <span className="text-[9px] sm:text-[11px] text-white font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1 drop-shadow-md">Goals</span>
                                                     </div>
                                                 </div>
                                             )
@@ -751,16 +714,15 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* Golden Glove Card */}
-                            <div className="bg-gradient-to-br from-blue-400/60 to-blue-700/60 p-[1.5px] rounded-xl shadow-2xl h-full">
-                                <div className="bg-black/75 backdrop-blur-xl p-4 sm:p-7 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-4">
-                                        <div className="bg-black/80 p-2 sm:p-3 rounded-lg border border-blue-500/40 shadow-inner">
-                                            <span className="text-2xl sm:text-4xl block leading-none">🧤</span>
+                            <div className="bg-gradient-to-br from-blue-400/50 to-blue-700/50 p-[2px] rounded-xl shadow-2xl h-full drop-shadow-2xl">
+                                <div className="bg-black/20 backdrop-blur-2xl p-4 sm:p-7 rounded-xl h-full flex flex-col">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/30 pb-3 sm:pb-4">
+                                        <div className="bg-black/30 p-2 sm:p-3 rounded-lg border border-blue-400/50 shadow-2xl">
+                                            <span className="text-3xl sm:text-5xl block leading-none drop-shadow-xl">🧤</span>
                                         </div>
                                         <div>
-                                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest drop-shadow-md ${oswald.className}`}>Golden Glove</h2>
-                                            <p className="text-blue-400 text-[9px] sm:text-xs font-mono font-bold tracking-widest uppercase mt-0.5 sm:mt-1">10% Pot • Clean Sheets</p>
+                                            <h2 className={`text-2xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest drop-shadow-xl ${oswald.className}`}>Golden Glove</h2>
+                                            <p className="text-blue-300 text-[10px] sm:text-sm font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1 drop-shadow-md">10% Pot • Clean Sheets</p>
                                         </div>
                                     </div>
 
@@ -773,19 +735,19 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-4 rounded-lg border transition-all ${idx === 0 ? 'bg-blue-500/30 border-blue-400/60 shadow-md scale-[1.02]' : 'bg-white/10 border-white/20 hover:border-white/40'}`}>
+                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-4 rounded-lg border transition-all ${idx === 0 ? 'bg-blue-500/40 border-blue-300/60 shadow-xl scale-[1.02]' : 'bg-black/30 border-white/30 hover:border-white/50 hover:bg-black/40 shadow-lg'}`}>
                                                     <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                                                        <span className={`font-black text-lg sm:text-2xl w-5 sm:w-6 shrink-0 text-center ${idx === 0 ? 'text-blue-400' : 'text-slate-300'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <span className={`font-black text-xl sm:text-3xl w-5 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-blue-300' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
                                                         <div className="flex flex-col min-w-0 pr-2">
-                                                            <span className={`font-bold text-[13px] sm:text-[16px] leading-tight break-words whitespace-normal ${idx === 0 ? 'text-white' : 'text-slate-200'}`}>{row.name}</span>
-                                                            <span className="text-[9px] sm:text-[11px] text-slate-300 mt-0.5 sm:mt-1 max-w-[120px] sm:max-w-[240px] truncate" title={breakdownText}>
+                                                            <span className={`font-black text-[14px] sm:text-[18px] leading-tight break-words whitespace-normal drop-shadow-lg text-white`}>{row.name}</span>
+                                                            <span className="text-[10px] sm:text-[12px] text-white font-bold mt-0.5 sm:mt-1 max-w-[120px] sm:max-w-[240px] truncate drop-shadow-md" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col items-end shrink-0">
-                                                        <span className={`font-black text-2xl sm:text-4xl leading-none ${idx === 0 ? 'text-blue-400 drop-shadow-md' : 'text-white'} ${oswald.className}`}>{row.totalCleanSheets}</span>
-                                                        <span className="text-[8px] sm:text-[10px] text-slate-300 font-mono uppercase tracking-widest mt-0.5 sm:mt-1">Sheets</span>
+                                                        <span className={`font-black text-3xl sm:text-5xl leading-none drop-shadow-2xl ${idx === 0 ? 'text-blue-300' : 'text-white'} ${oswald.className}`}>{row.totalCleanSheets}</span>
+                                                        <span className="text-[9px] sm:text-[11px] text-white font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1 drop-shadow-md">Sheets</span>
                                                     </div>
                                                 </div>
                                             )
