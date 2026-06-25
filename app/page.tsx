@@ -16,13 +16,19 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
     // Extract the first name, convert to lowercase, and strip special characters
     // "Brian Quintero" -> "brian" -> "/managers/brian.png"
     const firstWord = name.trim().split(/\s+/)[0];
-    const fileName = firstWord.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let fileName = firstWord.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+    // Automated override: maps 'angelo' directly to your new file 'anuzzil.png'
+    if (fileName === 'angelo') {
+        fileName = 'anuzzil';
+    }
+
     const src = `/managers/${fileName}.png`;
 
     const sizeClasses = {
         sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
-        md: "w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
-        lg: "w-14 h-14 sm:w-16 sm:h-16 rounded-full border-2 border-sky-400 object-cover bg-white/10 shrink-0"
+        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
+        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover bg-white/10 shrink-0"
     }[size];
 
     return (
@@ -615,12 +621,12 @@ export default function AutomatedDashboard() {
                                                                         <span className="truncate block whitespace-nowrap">{teamRow.name}</span>
                                                                     </div>
                                                                 </td>
-                                                                <td className="py-2 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.mp}</td>
-                                                                <td className="py-2 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.w}</td>
-                                                                <td className="py-2 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.d}</td>
-                                                                <td className="py-2 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.l}</td>
-                                                                <td className="py-2 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.gf}</td>
-                                                                <td className="py-2 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.ga}</td>
+                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.mp}</td>
+                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.w}</td>
+                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.d}</td>
+                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.l}</td>
+                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.gf}</td>
+                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.ga}</td>
                                                                 <td className={`py-2 sm:py-2.5 text-center font-black text-[#fbbf24] pr-2 sm:pr-3 text-xs sm:text-sm drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{teamRow.pts}</td>
                                                             </tr>
                                                         ))}
@@ -731,7 +737,7 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* 2x6 Position Grid Section */}
+                            {/* 2x6 Position Grid Section - Doubled Image Size */}
                             <div className="bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl">
                                 <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3">
                                     <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest drop-shadow-md">Current Standings Grid</h3>
@@ -921,7 +927,7 @@ export default function AutomatedDashboard() {
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0 pr-2">
                                                             <span className="font-black text-xs sm:text-base leading-tight break-words text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]">{row.name}</span>
-                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold mt-0.5 max-w-[120px] sm:max-w-[250px] truncate drop-shadow-md" title={breakdownText}>
+                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold mt-0.5 max-w-[140px] sm:max-w-[250px] truncate drop-shadow-md" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
                                                         </div>
@@ -996,19 +1002,19 @@ export default function AutomatedDashboard() {
                                                 <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+4</span>
                                                 <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Win Match</span>
                                             </div>
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-3">
+                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-2.5 sm:p-3">
                                                 <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+2</span>
                                                 <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Group Draw</span>
                                             </div>
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-3">
+                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-2.5 sm:p-3">
                                                 <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+1</span>
                                                 <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Goal Scored</span>
                                             </div>
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-3">
+                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-2.5 sm:p-3">
                                                 <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+2</span>
                                                 <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Clean Sheet</span>
                                             </div>
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-3 sm:col-span-2">
+                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-2.5 sm:p-3 sm:col-span-2">
                                                 <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+8</span>
                                                 <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Advance out of Group</span>
                                             </div>
