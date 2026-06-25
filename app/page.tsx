@@ -25,11 +25,12 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
 
     const src = `/managers/${fileName}.png`;
 
+    // Added object-top alongside object-cover to force the focus on the head and chest
     const sizeClasses = {
-        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
-        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
-        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover bg-white/10 shrink-0",
-        xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover bg-white/10 shrink-0"
+        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover object-top bg-white/10 shrink-0",
+        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover object-top bg-white/10 shrink-0",
+        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover object-top bg-white/10 shrink-0",
+        xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover object-top bg-white/10 shrink-0"
     }[size];
 
     return (
@@ -563,7 +564,7 @@ export default function AutomatedDashboard() {
 
                             <div className="bg-black/70 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden flex flex-col h-auto max-h-[80vh] shadow-2xl">
                                 <div className="p-2.5 sm:p-3 border-b border-white/20 bg-black/80">
-                                    <h2 className="text-[9px] sm:text-xs font-mono font-black text-slate-200 uppercase tracking-widest drop-shadow-md">Pick Log</h2>
+                                    <h2 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-200 uppercase tracking-widest drop-shadow-md">Pick Log</h2>
                                 </div>
                                 <div className="overflow-y-auto p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
                                     {[...picks].reverse().map((pick, idx) => (
@@ -819,8 +820,7 @@ export default function AutomatedDashboard() {
                                             i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
                                                 i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
                                                     'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
-                                        }`}
-                                    >
+                                        }`}>
                                         <div className="relative mb-2.5">
                                             <ManagerAvatar name={leader.name} size="md" />
                                             <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">
@@ -890,8 +890,8 @@ export default function AutomatedDashboard() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-7xl mx-auto">
                             <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-5 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
-                                        <div className="bg-black/80 p-2 sm:p-2.5 rounded-xl border border-amber-400/50 shadow-inner">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
+                                        <div className="bg-black/80 p-2 rounded-lg border border-amber-400/50 shadow-inner">
                                             <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">⚽</span>
                                         </div>
                                         <div>
@@ -909,11 +909,7 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div
-                                                    key={row.name}
-                                                    onClick={() => setSelectedManager(row)}
-                                                    className={`flex justify-between items-center p-2 sm:p-3 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}
-                                                >
+                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                                                         <span className={`font-black text-lg sm:text-xl w-4 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
