@@ -9,7 +9,7 @@ import FlagIcon from './components/FlagIcon';
 
 const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
-// Helper to filter out duplicate matches by ID or composition
+// Helper to filter out duplicate matches by ID or composition before scoring
 const getUniqueMatches = (matchesList: any[]) => {
     const seen = new Set();
     return matchesList.filter(m => {
@@ -34,7 +34,7 @@ export default function AutomatedDashboard() {
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
     const [selectedManager, setSelectedManager] = useState<any | null>(null);
 
-    // Read draft picks, drafters AND matches directly from Firebase in one stream
+    // Reverted to your original, working Firebase listener for picks/drafters
     useEffect(() => {
         const stateRef = ref(db, 'state');
         const unsubscribe = onValue(stateRef, (snapshot) => {
@@ -42,26 +42,24 @@ export default function AutomatedDashboard() {
             if (data) {
                 if (data.picks) setPicks(Object.values(data.picks).filter((p: any) => p && p.drafter && p.team));
                 if (data.drafters) setDrafters(Object.values(data.drafters));
-                if (data.matches) {
-                    const rawMatches = Array.isArray(data.matches) ? data.matches : Object.values(data.matches);
-                    setMatches(rawMatches);
-                }
             }
         });
         return () => unsubscribe();
     }, []);
 
-    // Silent background sync loop to prompt database updates without screen flickering
+    // Restored the original, working API score sync logic
     useEffect(() => {
-        const triggerSync = async () => {
+        const fetchLiveScores = async () => {
             try {
-                await fetch('/api/sync-matches');
+                const res = await fetch('/api/sync-matches');
+                const data = await res.json();
+                if (data.success && data.matches) setMatches(data.matches);
             } catch (err) {
                 console.error("Live sync error:", err);
             }
         };
-        triggerSync();
-        const interval = setInterval(triggerSync, 60000);
+        fetchLiveScores();
+        const interval = setInterval(fetchLiveScores, 60000);
         return () => clearInterval(interval);
     }, []);
 
@@ -83,7 +81,7 @@ export default function AutomatedDashboard() {
         return pick ? pick.drafter : null;
     };
 
-    // Use our deduplicated match filter here to avoid points double-counting
+    // Filter out duplicates safely right before scores are calculated
     const uniqueMatches = getUniqueMatches(matches);
 
     const standings = drafters.map(name => {
@@ -668,7 +666,7 @@ export default function AutomatedDashboard() {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 max-w-7xl mx-auto">
                             <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
                                         <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-amber-400/50 shadow-inner">
                                             <span className="text-2xl sm:text-5xl block leading-none drop-shadow-md">⚽</span>
                                         </div>
