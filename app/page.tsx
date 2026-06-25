@@ -9,6 +9,33 @@ import FlagIcon from './components/FlagIcon';
 
 const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
+// Dynamic Manager Avatar lookup with safe Initials fallback
+const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md' | 'lg' }) => {
+    if (!name) return null;
+
+    // Standardize filename: "Brian Quintero" -> "brianquintero.png"
+    const fileName = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const src = `/managers/${fileName}.png`;
+
+    const sizeClasses = {
+        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
+        md: "w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
+        lg: "w-16 h-16 sm:w-20 sm:h-20 rounded-full border-2 border-sky-400 object-cover bg-white/10 shrink-0"
+    }[size];
+
+    return (
+        <img
+            src={src}
+            alt={name}
+            onError={(e) => {
+                // Safe UI Fallback: generates initials avatar if file isn't uploaded yet
+                (e.currentTarget as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0ea5e9&textColor=ffffff`;
+            }}
+            className={sizeClasses}
+        />
+    );
+};
+
 // Helper to filter out duplicate matches before scoring runs
 const getUniqueMatches = (matchesList: any[]) => {
     const seen = new Set();
@@ -34,7 +61,7 @@ export default function AutomatedDashboard() {
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
     const [selectedManager, setSelectedManager] = useState<any | null>(null);
 
-    // Toggle state for live match standings projections
+    // Toggle state for live standings projections
     const [showProjected, setShowProjected] = useState<boolean>(false);
 
     useEffect(() => {
@@ -105,16 +132,16 @@ export default function AutomatedDashboard() {
                 const isFinished = m.status === 'FINISHED' || m.status === 'AWARDED';
                 const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED';
 
-                // Skip future matches
+                // Skip scheduled matches
                 if (!isFinished && !isLive) return;
 
-                // If the game is live but we are not viewing projections, exclude it from calculations
+                // Exclude live updates if projections are toggled off
                 if (isLive && !showProjected) return;
 
                 let matchPts = 0;
                 let logDetails: string[] = [];
 
-                // Interpolate a projected winner if the game is currently live
+                // Formulate projected winner using current goals scored for live games
                 let projectedWinner = m.winner;
                 if (isLive && !projectedWinner && m.homeGoals !== null && m.awayGoals !== null) {
                     if (m.homeGoals > m.awayGoals) projectedWinner = m.homeTeam;
@@ -176,7 +203,7 @@ export default function AutomatedDashboard() {
                     result: isWin ? 'W' : isDraw ? 'D' : isLoss ? 'L' : '-',
                     points: matchPts,
                     details: logDetails,
-                    isLive: isLive // Tag the specific log item if the score is currently live
+                    isLive: isLive
                 });
             });
         });
@@ -238,6 +265,39 @@ export default function AutomatedDashboard() {
         }
     });
 
+    // Generate dynamic broadcast headlines based on live calculations
+    const getTickerHeadlines = () => {
+        const headlines: string[] = [];
+
+        if (overallLeaders.length >= 2) {
+            headlines.push(`🏆 CURRENT STANDINGS: ${overallLeaders[0].name} leads the league with ${overallLeaders[0].totalPoints} PTS!`);
+            headlines.push(`🥈 CHASE IN PROGRESS: ${overallLeaders[1].name} trails the top spot by ${overallLeaders[0].totalPoints - overallLeaders[1].totalPoints} points.`);
+        }
+
+        const liveGames = uniqueMatches.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
+        if (liveGames.length > 0) {
+            liveGames.forEach(m => {
+                headlines.push(`📺 LIVE NOW: ${m.homeTeam} ${m.homeGoals ?? 0} - ${m.awayGoals ?? 0} ${m.awayTeam} (${m.minute ? `${m.minute}'` : 'HT'})`);
+            });
+        }
+
+        if (bootLeaders.length > 0 && bootLeaders[0].totalGoals > 0) {
+            headlines.push(`⚽ GOLDEN BOOT: ${bootLeaders[0].name} dominates the goal race with ${bootLeaders[0].totalGoals} total goals.`);
+        }
+
+        if (gloveLeaders.length > 0 && gloveLeaders[0].totalCleanSheets > 0) {
+            headlines.push(`🧤 GOLDEN GLOVE: ${gloveLeaders[0].name} holds the defensive line with ${gloveLeaders[0].totalCleanSheets} clean sheets.`);
+        }
+
+        if (headlines.length === 0) {
+            headlines.push("📅 Welcome to the League World Cup Dashboard. Complete matchday trackers are live.");
+        }
+
+        return headlines;
+    };
+
+    const tickerHeadlines = getTickerHeadlines();
+
     return (
         <div className="relative min-h-screen font-sans text-slate-100 overflow-x-hidden">
 
@@ -250,41 +310,21 @@ export default function AutomatedDashboard() {
                     0% { opacity: 0; transform: translateY(20px); }
                     100% { opacity: 1; transform: translateY(0); }
                 }
-                @keyframes holographicShine {
-                    0% { transform: translateX(-150%) skewX(-25deg); }
-                    100% { transform: translateX(150%) skewX(-25deg); }
+                @keyframes marquee {
+                    0% { transform: translateX(0); }
+                    100% { transform: translateX(-33.33%); }
                 }
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
 
-                /* FIFA Ultimate Team Card Hover Effect */
-                .card-fut-premium {
-                    position: relative;
-                    overflow: hidden;
-                    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+                /* Horizontal ticker marquee */
+                .animate-marquee {
+                    display: flex;
+                    width: max-content;
+                    animation: marquee 50s linear infinite;
                 }
-                .card-fut-premium::after {
-                    content: '';
-                    position: absolute;
-                    top: 0;
-                    left: -50%;
-                    width: 200%;
-                    height: 100%;
-                    background: linear-gradient(
-                            to right,
-                            rgba(255, 255, 255, 0) 0%,
-                            rgba(255, 255, 255, 0.25) 50%,
-                            rgba(255, 255, 255, 0) 100%
-                    );
-                    transform: translateX(-100%) skewX(-25deg);
-                    pointer-events: none;
-                }
-                .card-fut-premium:hover::after {
-                    animation: holographicShine 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-                }
-                .card-fut-premium:hover {
-                    transform: translateY(-4px) scale(1.02);
-                    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.6);
+                .animate-marquee:hover {
+                    animation-play-state: paused;
                 }
             `}</style>
 
@@ -310,11 +350,14 @@ export default function AutomatedDashboard() {
                     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto backdrop-blur-md" onClick={() => setSelectedManager(null)}>
                         <div className="bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
                             <div className="p-3 sm:p-4 border-b border-white/10 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-between items-start sm:items-center bg-black/60 rounded-t-xl shrink-0">
-                                <div>
-                                    <h2 className={`text-base sm:text-xl font-black text-sky-400 uppercase tracking-wider drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{selectedManager.name}'S DASHBOARD</h2>
-                                    <p className="text-slate-300 font-mono text-[9px] sm:text-xs mt-0.5 tracking-widest uppercase font-bold drop-shadow-md">
-                                        Total Points: <span className="text-[#fbbf24] font-black ml-1 [-webkit-text-stroke:0.5px_black]">{selectedManager.totalPoints} PTS</span>
-                                    </p>
+                                <div className="flex items-center gap-2.5">
+                                    <ManagerAvatar name={selectedManager.name} size="md" />
+                                    <div>
+                                        <h2 className={`text-base sm:text-xl font-black text-sky-400 uppercase tracking-wider drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{selectedManager.name}'S DASHBOARD</h2>
+                                        <p className="text-slate-300 font-mono text-[9px] sm:text-xs mt-0.5 tracking-widest uppercase font-bold drop-shadow-md">
+                                            Total Points: <span className="text-[#fbbf24] font-black ml-1 [-webkit-text-stroke:0.5px_black]">{selectedManager.totalPoints} PTS</span>
+                                        </p>
+                                    </div>
                                 </div>
                                 <button onClick={() => setSelectedManager(null)} className="w-full sm:w-auto text-center text-white hover:text-sky-400 bg-white/10 hover:bg-white/20 border border-white/20 py-1.5 px-3 rounded-md transition text-[9px] sm:text-[10px] font-mono uppercase tracking-widest shadow-md font-bold">Close</button>
                             </div>
@@ -390,7 +433,7 @@ export default function AutomatedDashboard() {
                         <div className="text-center md:text-left">
                             <h1 className="text-xl sm:text-3xl font-black tracking-tight uppercase flex items-center gap-1.5 sm:gap-2 justify-center md:justify-start">
                                 <span className="text-xl sm:text-3xl drop-shadow-lg">🏆</span>
-                                <span className={`text-slate-50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>League World Cup</span>
+                                <span className={`text-slate-50 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>League World Cup</span>
                             </h1>
                         </div>
                         <div className="flex overflow-x-auto no-scrollbar bg-black/70 backdrop-blur-xl p-1 sm:p-1.5 rounded-lg border border-white/20 w-full md:w-auto shadow-2xl">
@@ -407,6 +450,23 @@ export default function AutomatedDashboard() {
                     </div>
                 </header>
 
+                {/* ESPN-Style Live News Ticker Tape */}
+                {tickerHeadlines.length > 0 && (
+                    <div className="bg-red-600/80 backdrop-blur-md border-y border-red-500 py-2 overflow-hidden w-full max-w-7xl mx-auto rounded-lg mb-4 sm:mb-5 shadow-lg relative flex items-center content-animate">
+                        <div className="absolute left-0 z-10 bg-red-700 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white shadow-md select-none">
+                            Live news
+                        </div>
+                        <div className="flex whitespace-nowrap pl-24 animate-marquee font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white gap-16">
+                            {/* Render duplicated array contents side-by-side to construct an endless loop */}
+                            {[...tickerHeadlines, ...tickerHeadlines, ...tickerHeadlines].map((headline, idx) => (
+                                <span key={idx} className="flex items-center gap-2">
+                                    {headline}
+                                </span>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div key={`content-${activeTab}`} className="content-animate">
 
                     {activeTab === 'draft' && (
@@ -418,8 +478,9 @@ export default function AutomatedDashboard() {
                                 <div className="overflow-y-auto p-2.5 sm:p-3 space-y-3">
                                     {drafters.map((drafter, idx) => (
                                         <div key={drafter}>
-                                            <div className="flex items-center gap-1.5 sm:gap-2 mb-1 sm:mb-1.5">
+                                            <div className="flex items-center gap-2 mb-1.5">
                                                 <span className="text-slate-400 font-mono text-[9px] sm:text-[10px] font-black drop-shadow-md">{idx + 1}</span>
+                                                <ManagerAvatar name={drafter} size="sm" />
                                                 <h3 className="font-black text-sky-400 text-xs sm:text-sm drop-shadow-md [text-shadow:0_1px_2px_black]">{drafter}</h3>
                                             </div>
                                             <div className="grid grid-cols-2 gap-1 sm:gap-1.5 pl-2">
@@ -479,7 +540,10 @@ export default function AutomatedDashboard() {
                                                     <span className="truncate block whitespace-nowrap">{pick.team}</span>
                                                 </div>
                                             </div>
-                                            <span className="text-[7px] sm:text-[8px] text-sky-400 font-black shrink-0 drop-shadow-md">{pick.drafter}</span>
+                                            <div className="flex items-center gap-1.5 shrink-0">
+                                                <span className="text-[7px] sm:text-[8px] text-sky-400 font-black drop-shadow-md">{pick.drafter}</span>
+                                                <ManagerAvatar name={pick.drafter} size="sm" />
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -630,12 +694,12 @@ export default function AutomatedDashboard() {
                                     LEADERBOARD
                                 </h2>
 
-                                {/* Projected Standings Toggle Switch */}
+                                {/* Projected Standings Toggle button */}
                                 <button
                                     onClick={() => setShowProjected(!showProjected)}
                                     className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md ${
                                         showProjected
-                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse'
+                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
                                             : 'bg-black/60 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
                                     }`}
                                 >
@@ -671,12 +735,17 @@ export default function AutomatedDashboard() {
 
                             <div className="grid grid-cols-3 gap-2 sm:gap-5">
                                 {overallLeaders.slice(0, 3).map((leader, i) => (
-                                    <div key={leader.name} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 card-fut-premium ${
+                                    <div key={leader.name} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-6 text-center transition-all duration-300 ${
                                         i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
                                             i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
                                                 'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
                                     }`}>
-                                        <span className="text-2xl sm:text-5xl mb-1 sm:mb-2 drop-shadow-xl">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                                        <div className="relative mb-2.5">
+                                            <ManagerAvatar name={leader.name} size="md" />
+                                            <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">
+                                                {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
+                                            </span>
+                                        </div>
                                         <h3 className="text-[11px] sm:text-xl md:text-2xl font-black text-white mb-0.5 sm:mb-1.5 tracking-wide truncate w-full px-1 sm:px-2 drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black]">{leader.name}</h3>
                                         <div className={`text-2xl sm:text-5xl md:text-6xl font-black text-white leading-none mb-1 sm:mb-2.5 drop-shadow-2xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:1.5px_black] ${oswald.className}`}>{leader.totalPoints}</div>
                                         <span className="text-[7px] sm:text-[11px] text-white font-bold font-mono mb-1.5 sm:mb-3 uppercase tracking-widest hidden sm:block drop-shadow-md [text-shadow:0_1px_2px_black]">Points</span>
@@ -690,7 +759,7 @@ export default function AutomatedDashboard() {
                             <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto">
                                 <table className="w-full text-left text-[10px] sm:text-sm border-collapse min-w-[500px] sm:min-w-[800px]">
                                     <thead>
-                                    <tr className="border-b border-white/20 text-slate-300 text-[8px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest font-black">
+                                    <tr className="border-b border-white/20 text-slate-300 text-[9px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest font-black">
                                         <th className="py-2 sm:py-4 pl-3 sm:pl-5 w-8 sm:w-12 drop-shadow-md">#</th>
                                         <th className="py-2 sm:py-4 w-28 sm:w-48 drop-shadow-md">Drafter</th>
                                         <th className="py-2 sm:py-4 w-12 sm:w-20 drop-shadow-md">PTS</th>
@@ -707,12 +776,15 @@ export default function AutomatedDashboard() {
                                         <tr key={row.name} className="hover:bg-black/50 transition">
                                             <td className={`py-1.5 sm:py-3.5 pl-3 sm:pl-5 font-black text-white text-[11px] sm:text-base drop-shadow-md [text-shadow:0_1px_2px_black] ${oswald.className}`}>{index + 1}</td>
                                             <td className="py-1.5 sm:py-3.5">
-                                                <button
-                                                    onClick={() => setSelectedManager(row)}
-                                                    className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-full drop-shadow-md [text-shadow:0_1px_2px_black]"
-                                                >
-                                                    {row.name}
-                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <ManagerAvatar name={row.name} size="sm" />
+                                                    <button
+                                                        onClick={() => setSelectedManager(row)}
+                                                        className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-full drop-shadow-md [text-shadow:0_1px_2px_black]"
+                                                    >
+                                                        {row.name}
+                                                    </button>
+                                                </div>
                                             </td>
                                             <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints}</td>
                                             <td className="py-1.5 sm:py-3.5">
@@ -734,20 +806,20 @@ export default function AutomatedDashboard() {
                     )}
 
                     {activeTab === 'awards' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-7xl mx-auto">
-                            <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 max-w-7xl mx-auto">
+                            <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-6 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
                                         <div className="bg-black/80 p-2.5 rounded-xl border border-amber-400/50 shadow-inner">
-                                            <span className="text-3xl sm:text-4xl block leading-none drop-shadow-md">⚽</span>
+                                            <span className="text-2xl sm:text-5xl block leading-none drop-shadow-md">⚽</span>
                                         </div>
                                         <div>
-                                            <h2 className={`text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Golden Boot</h2>
-                                            <p className="text-[#fbbf24] text-[9px] sm:text-span font-mono font-black tracking-widest uppercase mt-1 drop-shadow-md [text-shadow:0_1px_2px_black]">15% Pot • Most Goals</p>
+                                            <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>Golden Boot</h2>
+                                            <p className="text-[#fbbf24] text-[8px] sm:text-sm font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_2px_black] sm:[text-shadow:0_2px_4px_black]">15% Pot • Most Goals</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 sm:space-y-3 flex-1">
+                                    <div className="space-y-2 sm:space-y-4 flex-1">
                                         {bootLeaders.slice(0, 5).map((row, idx) => {
                                             const breakdownText = Object.entries(row.goalsByTeam)
                                                 .filter(([_, goals]) => (goals as number) > 0)
@@ -756,19 +828,20 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div key={row.name} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.02]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
+                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-5 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.02]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                                        <span className={`font-black text-xl sm:text-2xl w-6 sm:w-8 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
-                                                        <div className="flex flex-col min-w-0 pr-2">
-                                                            <span className={`font-black text-sm sm:text-base md:text-lg leading-tight break-words whitespace-normal text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
-                                                            <span className="text-[9px] sm:text-[10px] text-slate-300 font-bold mt-0.5 max-w-[140px] sm:max-w-[220px] truncate drop-shadow-md" title={breakdownText}>
+                                                        <span className={`font-black text-lg sm:text-3xl w-5 sm:w-10 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <ManagerAvatar name={row.name} size="sm" />
+                                                        <div className="flex flex-col min-w-0 pr-2 sm:pr-3">
+                                                            <span className={`font-black text-xs sm:text-2xl leading-tight break-words whitespace-normal text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
+                                                            <span className="text-[8px] sm:text-sm text-slate-300 font-bold mt-0.5 sm:mt-1 max-w-[120px] sm:max-w-[280px] truncate drop-shadow-md" title={breakdownText}>
                                                                 {breakdownText || "No goals yet"}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col items-end shrink-0">
-                                                        <span className={`font-black text-3xl sm:text-4xl md:text-5xl leading-none drop-shadow-xl [-webkit-text-stroke:1px_black] ${idx === 0 ? 'text-[#fbbf24]' : 'text-slate-100'} ${oswald.className}`}>{row.totalGoals}</span>
-                                                        <span className="text-[8px] sm:text-[9px] text-slate-400 font-mono font-bold uppercase tracking-widest mt-1 drop-shadow-md">Goals</span>
+                                                        <span className={`font-black text-2xl sm:text-6xl leading-none drop-shadow-xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:2px_black] ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'} ${oswald.className}`}>{row.totalGoals}</span>
+                                                        <span className="text-[7px] sm:text-xs text-slate-300 font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_3px_black]">Goals</span>
                                                     </div>
                                                 </div>
                                             )
@@ -777,15 +850,15 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-blue-400/30 to-blue-700/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
-                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-6 rounded-xl h-full flex flex-col">
+                            <div className="bg-gradient-to-br from-blue-400/30 to-blue-700/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
                                         <div className="bg-black/80 p-2.5 rounded-xl border border-blue-400/50 shadow-inner">
-                                            <span className="text-3xl sm:text-4xl block leading-none drop-shadow-md">🧤</span>
+                                            <span className="text-2xl sm:text-5xl block leading-none drop-shadow-md">🧤</span>
                                         </div>
                                         <div>
-                                            <h2 className={`text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Golden Glove</h2>
-                                            <p className="text-blue-300 text-[9px] sm:text-[10px] font-mono font-black tracking-widest uppercase mt-1.5 drop-shadow-md [text-shadow:0_1px_2px_black]">10% Pot • Clean Sheets</p>
+                                            <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Golden Glove</h2>
+                                            <p className="text-blue-300 text-[8px] sm:text-sm font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_2px_black] sm:[text-shadow:0_2px_4px_black]">10% Pot • Clean Sheets</p>
                                         </div>
                                     </div>
 
@@ -801,6 +874,7 @@ export default function AutomatedDashboard() {
                                                 <div key={row.name} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-blue-400/50 shadow-xl scale-[1.02]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                                                         <span className={`font-black text-xl sm:text-2xl w-6 sm:w-8 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-blue-400' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0 pr-2">
                                                             <span className={`font-black text-base sm:text-lg md:text-xl leading-tight break-words whitespace-normal text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
                                                             <span className="text-[10px] sm:text-xs text-slate-300 font-bold mt-0.5 max-w-[140px] sm:max-w-[250px] truncate drop-shadow-md" title={breakdownText}>
@@ -828,7 +902,7 @@ export default function AutomatedDashboard() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
-                                <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
+                                <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                     <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
                                         <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
                                             <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-emerald-400/50 shadow-inner">
@@ -861,7 +935,7 @@ export default function AutomatedDashboard() {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
+                                <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                     <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
                                         <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
                                             <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-amber-400/50 shadow-inner">
