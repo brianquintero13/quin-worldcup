@@ -25,12 +25,12 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
 
     const src = `/managers/${fileName}.png`;
 
-    // Added object-top alongside object-cover to force the focus on the head and chest
+    // Utilizing the new custom class .avatar-img-custom to handle the 25% crop offset
     const sizeClasses = {
-        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover object-top bg-white/10 shrink-0",
-        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover object-top bg-white/10 shrink-0",
-        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover object-top bg-white/10 shrink-0",
-        xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover object-top bg-white/10 shrink-0"
+        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 avatar-img-custom bg-white/10 shrink-0",
+        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 avatar-img-custom bg-white/10 shrink-0",
+        lg: "w-24 h-24 sm:w-36 sm:h-36 rounded-full border-2 border-sky-400 avatar-img-custom bg-white/10 shrink-0",
+        xl: "w-32 h-32 sm:w-44 sm:h-44 rounded-2xl border-2 border-sky-400 avatar-img-custom bg-white/10 shrink-0"
     }[size];
 
     return (
@@ -335,6 +335,12 @@ export default function AutomatedDashboard() {
                 }
                 .animate-marquee:hover {
                     animation-play-state: paused;
+                }
+
+                /* Custom image crop alignment - Happy Medium between center (50%) and top (0%) */
+                .avatar-img-custom {
+                    object-fit: cover;
+                    object-position: center 25%;
                 }
             `}</style>
 
@@ -909,7 +915,11 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-3 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
+                                                <div
+                                                    key={row.name}
+                                                    onClick={() => setSelectedManager(row)}
+                                                    className={`flex justify-between items-center p-2 sm:p-3 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}
+                                                >
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                                                         <span className={`font-black text-lg sm:text-xl w-4 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
@@ -987,7 +997,7 @@ export default function AutomatedDashboard() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                                <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                                <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
                                     <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-5 rounded-xl h-full flex flex-col">
                                         <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
                                             <div className="bg-black/80 p-2 rounded-lg border border-emerald-400/50 shadow-inner">
@@ -1012,9 +1022,9 @@ export default function AutomatedDashboard() {
                                                 <span className="text-slate-200 font-black text-xs sm:text-base">Golden Boot</span>
                                                 <span className={`text-amber-400 font-black text-lg sm:text-2xl ${oswald.className}`}>15%</span>
                                             </div>
-                                            <div className="flex justify-between items-center bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md">
-                                                <span className="text-slate-200 font-black text-xs sm:text-base">Golden Glove</span>
-                                                <span className={`text-blue-400 font-black text-lg sm:text-2xl ${oswald.className}`}>10%</span>
+                                            <div className="flex justify-between items-center bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md">
+                                                <span className="text-slate-200 font-black text-sm sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black]">Golden Glove</span>
+                                                <span className={`text-blue-400 font-black text-xl sm:text-3xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>10%</span>
                                             </div>
                                         </div>
                                     </div>
