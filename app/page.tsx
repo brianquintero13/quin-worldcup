@@ -10,7 +10,7 @@ import FlagIcon from './components/FlagIcon';
 const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
 // Dynamic Manager Avatar lookup with safe Initials fallback using first names only
-const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md' | 'lg' }) => {
+const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md' | 'lg' | 'xl' }) => {
     if (!name) return null;
 
     // Extract the first name, convert to lowercase, and strip special characters
@@ -28,7 +28,8 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
     const sizeClasses = {
         sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
         md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover bg-white/10 shrink-0",
-        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover bg-white/10 shrink-0"
+        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover bg-white/10 shrink-0",
+        xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover bg-white/10 shrink-0"
     }[size];
 
     return (
@@ -357,17 +358,43 @@ export default function AutomatedDashboard() {
                 {selectedManager && (
                     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto backdrop-blur-md" onClick={() => setSelectedManager(null)}>
                         <div className="bg-black/90 backdrop-blur-xl border border-white/20 rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl" onClick={e => e.stopPropagation()}>
-                            <div className="p-3 sm:p-4 border-b border-white/10 flex flex-col sm:flex-row gap-2 sm:gap-3 justify-between items-start sm:items-center bg-black/60 rounded-t-xl shrink-0">
-                                <div className="flex items-center gap-2.5">
-                                    <ManagerAvatar name={selectedManager.name} size="md" />
-                                    <div>
-                                        <h2 className={`text-base sm:text-xl font-black text-sky-400 uppercase tracking-wider drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{selectedManager.name}'S DASHBOARD</h2>
-                                        <p className="text-slate-300 font-mono text-[9px] sm:text-xs mt-0.5 tracking-widest uppercase font-bold drop-shadow-md">
-                                            Total Points: <span className="text-[#fbbf24] font-black ml-1 [-webkit-text-stroke:0.5px_black]">{selectedManager.totalPoints} PTS</span>
-                                        </p>
+                            {/* Premium profile card header displaying full-size avatar and complete stats reference */}
+                            <div className="p-4 sm:p-5 border-b border-white/10 flex flex-col md:flex-row gap-4 justify-between items-start md:items-center bg-black/60 rounded-t-xl shrink-0">
+                                <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 w-full">
+                                    {/* Large Profile Photo */}
+                                    <div className="relative shrink-0">
+                                        <ManagerAvatar name={selectedManager.name} size="xl" />
+                                    </div>
+
+                                    <div className="flex-1 text-center sm:text-left">
+                                        <h2 className={`text-xl sm:text-2xl font-black text-sky-400 uppercase tracking-wider drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>
+                                            {selectedManager.name}'S DASHBOARD
+                                        </h2>
+
+                                        {/* Dashboard Stats Badges Grid */}
+                                        <div className="flex flex-wrap gap-2 mt-2 justify-center sm:justify-start">
+                                            <span className="bg-black/60 border border-white/10 px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center gap-1.5 shadow-sm">
+                                                <strong className="text-[#fbbf24] text-xs">Total:</strong> {selectedManager.totalPoints} PTS
+                                            </span>
+                                            <span className="bg-black/60 border border-white/10 px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center gap-1.5 shadow-sm">
+                                                <strong className="text-emerald-400 text-xs">Wins:</strong> {selectedManager.wins}
+                                            </span>
+                                            <span className="bg-black/60 border border-white/10 px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center gap-1.5 shadow-sm">
+                                                <strong className="text-slate-300 text-xs">Draws:</strong> {selectedManager.draws}
+                                            </span>
+                                            <span className="bg-black/60 border border-white/10 px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center gap-1.5 shadow-sm">
+                                                <strong className="text-rose-400 text-xs">Losses:</strong> {selectedManager.losses}
+                                            </span>
+                                            <span className="bg-black/60 border border-white/10 px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center gap-1.5 shadow-sm">
+                                                <strong className="text-amber-400 text-xs">GF:</strong> {selectedManager.totalGoals} Goals
+                                            </span>
+                                            <span className="bg-black/60 border border-white/10 px-2.5 py-1 rounded-md text-[10px] font-bold text-white flex items-center gap-1.5 shadow-sm">
+                                                <strong className="text-blue-400 text-xs">CS:</strong> {selectedManager.totalCleanSheets} Sheets
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
-                                <button onClick={() => setSelectedManager(null)} className="w-full sm:w-auto text-center text-white hover:text-sky-400 bg-white/10 hover:bg-white/20 border border-white/20 py-1.5 px-3 rounded-md transition text-[9px] sm:text-[10px] font-mono uppercase tracking-widest shadow-md font-bold">Close</button>
+                                <button onClick={() => setSelectedManager(null)} className="w-full md:w-auto text-center text-white hover:text-sky-400 bg-white/10 hover:bg-white/20 border border-white/20 py-1.5 px-4 rounded-lg transition text-[10px] font-mono uppercase tracking-widest shadow-md font-bold shrink-0">Close</button>
                             </div>
 
                             <div className="p-2 sm:p-4 overflow-y-auto space-y-3">
@@ -785,11 +812,15 @@ export default function AutomatedDashboard() {
 
                             <div className="grid grid-cols-3 gap-2 sm:gap-5">
                                 {overallLeaders.slice(0, 3).map((leader, i) => (
-                                    <div key={leader.name} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 ${
-                                        i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
-                                            i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
-                                                'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
-                                    }`}>
+                                    <div
+                                        key={leader.name}
+                                        onClick={() => setSelectedManager(leader)}
+                                        className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 cursor-pointer hover:bg-black/40 ${
+                                            i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
+                                                i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
+                                                    'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
+                                        }`}
+                                    >
                                         <div className="relative mb-2.5">
                                             <ManagerAvatar name={leader.name} size="md" />
                                             <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">
@@ -856,11 +887,11 @@ export default function AutomatedDashboard() {
                     )}
 
                     {activeTab === 'awards' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-7xl mx-auto">
                             <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-5 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
-                                        <div className="bg-black/80 p-2 rounded-lg border border-amber-400/50 shadow-inner">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
+                                        <div className="bg-black/80 p-2 sm:p-2.5 rounded-xl border border-amber-400/50 shadow-inner">
                                             <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">⚽</span>
                                         </div>
                                         <div>
@@ -878,9 +909,13 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div key={row.name} className={`flex justify-between items-center p-2 sm:p-3 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
+                                                <div
+                                                    key={row.name}
+                                                    onClick={() => setSelectedManager(row)}
+                                                    className={`flex justify-between items-center p-2 sm:p-3 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}
+                                                >
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                                        <span className={`font-black text-lg sm:text-2xl w-4 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <span className={`font-black text-lg sm:text-xl w-4 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0 pr-2">
                                                             <span className="font-black text-xs sm:text-base leading-tight break-words text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]">{row.name}</span>
@@ -921,12 +956,16 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div key={row.name} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-blue-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
+                                                <div
+                                                    key={row.name}
+                                                    onClick={() => setSelectedManager(row)}
+                                                    className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-blue-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}
+                                                >
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                                                         <span className={`font-black text-base sm:text-xl w-4 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-blue-400' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0 pr-2">
-                                                            <span className="font-black text-xs sm:text-base leading-tight break-words text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]">{row.name}</span>
+                                                            <span className={`font-black text-base sm:text-lg md:text-xl leading-tight break-words text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
                                                             <span className="text-[10px] sm:text-xs text-slate-300 font-bold mt-0.5 max-w-[140px] sm:max-w-[250px] truncate drop-shadow-md" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
@@ -948,7 +987,7 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'rules' && (
                         <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>LEAGUE RULES & PAYOUTS</h2>
+                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>LEAGUE RULES & PAYOUTS</h2>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 
