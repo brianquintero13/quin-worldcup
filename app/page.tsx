@@ -2,38 +2,25 @@
 import { useEffect, useState } from 'react';
 import { db } from '../lib/firebase';
 import { ref, onValue } from 'firebase/database';
-import * as Flags from 'country-flag-icons/react/3x2';
 import { Oswald } from 'next/font/google';
 
 import ScheduleTab from './components/ScheduleTab';
+import FlagIcon from './components/FlagIcon';
 
 const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
-const FlagIcon = ({ teamName }: { teamName: string }) => {
-    if (!teamName || teamName === 'TBD') return <span className="w-[18px] h-[12px] sm:w-[22px] sm:h-[15px] inline-block mr-1 bg-white/10 rounded-sm shadow-sm shrink-0" />;
-
-    if (teamName === 'Scotland') return <span className="inline-block mr-1 text-[14px] sm:text-[16px] leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>;
-    if (teamName === 'England') return <span className="inline-block mr-1 text-[14px] sm:text-[16px] leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>;
-    if (teamName === 'Wales') return <span className="inline-block mr-1 text-[14px] sm:text-[16px] leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁷󠁬󠁳󠁿</span>;
-
-    const map: { [key: string]: string } = {
-        'USA': 'US', 'Argentina': 'AR', 'France': 'FR', 'Brazil': 'BR', 'Germany': 'DE',
-        'Spain': 'ES', 'Mexico': 'MX', 'Japan': 'JP', 'Portugal': 'PT', 'Belgium': 'BE',
-        'Netherlands': 'NL', 'Italy': 'IT', 'Canada': 'CA', 'Uruguay': 'UY', 'Croatia': 'HR',
-        'Morocco': 'MA', 'Switzerland': 'CH', 'Colombia': 'CO', 'Senegal': 'SN', 'Denmark': 'DK',
-        'South Korea': 'KR', 'Australia': 'AU', 'Poland': 'PL', 'Sweden': 'SE', 'Serbia': 'RS',
-        'Ecuador': 'EC', 'Peru': 'PE', 'Iran': 'IR', 'Saudi Arabia': 'SA', 'Qatar': 'QA',
-        'Tunisia': 'TN', 'Cameroon': 'CM', 'Ghana': 'GH', 'South Africa': 'ZA', 'Algeria': 'DZ',
-        'Egypt': 'EG', 'Ivory Coast': 'CI', 'Nigeria': 'NG', 'Mali': 'ML', 'DR Congo': 'CD',
-        'Turkey': 'TR', 'Norway': 'NO', 'Czechia': 'CZ', 'Austria': 'AT', 'Cape Verde': 'CV',
-        'Haiti': 'HT', 'Uzbekistan': 'UZ', 'Iraq': 'IQ', 'Jordan': 'JO', 'Bosnia & Herz.': 'BA',
-        'Paraguay': 'PY', 'Panama': 'PA', 'Curaçao': 'CW', 'New Zealand': 'NZ'
-    };
-
-    const code = map[teamName];
-    if (!code) return <span className="w-[18px] h-[12px] sm:w-[22px] sm:h-[15px] inline-block mr-1 bg-white/10 rounded-sm shadow-sm shrink-0" />;
-    const FlagComponent = (Flags as any)[code];
-    return FlagComponent ? <FlagComponent className="w-[18px] h-[12px] sm:w-[22px] sm:h-[15px] inline mr-1 rounded-sm shadow-md object-cover shrink-0 drop-shadow-md" /> : <span className="w-[18px] h-[12px] sm:w-[22px] sm:h-[15px] inline-block mr-1 bg-white/10 rounded-sm shadow-sm shrink-0" />;
+// Helper to filter out duplicate matches by ID or composition
+const getUniqueMatches = (matchesList: any[]) => {
+    const seen = new Set();
+    return matchesList.filter(m => {
+        if (!m) return false;
+        const key = m.id || `${m.utcDate}_${m.homeTeam}_${m.awayTeam}`;
+        if (seen.has(key)) {
+            return false;
+        }
+        seen.add(key);
+        return true;
+    });
 };
 
 export default function AutomatedDashboard() {
@@ -47,6 +34,7 @@ export default function AutomatedDashboard() {
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
     const [selectedManager, setSelectedManager] = useState<any | null>(null);
 
+    // Read draft picks, drafters AND matches directly from Firebase in one stream
     useEffect(() => {
         const stateRef = ref(db, 'state');
         const unsubscribe = onValue(stateRef, (snapshot) => {
@@ -54,23 +42,26 @@ export default function AutomatedDashboard() {
             if (data) {
                 if (data.picks) setPicks(Object.values(data.picks).filter((p: any) => p && p.drafter && p.team));
                 if (data.drafters) setDrafters(Object.values(data.drafters));
+                if (data.matches) {
+                    const rawMatches = Array.isArray(data.matches) ? data.matches : Object.values(data.matches);
+                    setMatches(rawMatches);
+                }
             }
         });
         return () => unsubscribe();
     }, []);
 
+    // Silent background sync loop to prompt database updates without screen flickering
     useEffect(() => {
-        const fetchLiveScores = async () => {
+        const triggerSync = async () => {
             try {
-                const res = await fetch('/api/sync-matches');
-                const data = await res.json();
-                if (data.success && data.matches) setMatches(data.matches);
+                await fetch('/api/sync-matches');
             } catch (err) {
                 console.error("Live sync error:", err);
             }
         };
-        fetchLiveScores();
-        const interval = setInterval(fetchLiveScores, 60000);
+        triggerSync();
+        const interval = setInterval(triggerSync, 60000);
         return () => clearInterval(interval);
     }, []);
 
@@ -92,6 +83,9 @@ export default function AutomatedDashboard() {
         return pick ? pick.drafter : null;
     };
 
+    // Use our deduplicated match filter here to avoid points double-counting
+    const uniqueMatches = getUniqueMatches(matches);
+
     const standings = drafters.map(name => {
         let totalPoints = 0, totalGoals = 0, totalCleanSheets = 0, wins = 0, draws = 0, losses = 0;
         const myTeams = picks.filter(p => p.drafter === name).map(p => p.team);
@@ -105,7 +99,7 @@ export default function AutomatedDashboard() {
             csByTeam[teamId] = 0;
             let advancedFromGroup = false;
 
-            matches.forEach(m => {
+            uniqueMatches.forEach(m => {
                 const isHome = m.homeTeam && teamsMatch(m.homeTeam, teamId);
                 const isAway = m.awayTeam && teamsMatch(m.awayTeam, teamId);
                 if (!isHome && !isAway) return;
@@ -208,11 +202,11 @@ export default function AutomatedDashboard() {
         return Object.values(table).sort((a, b) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
     };
 
-    const groupNames = Array.from(new Set(matches.map(m => m.group).filter(Boolean))).sort() as string[];
+    const groupNames = Array.from(new Set(uniqueMatches.map(m => m.group).filter(Boolean))).sort() as string[];
     const filteredGroupNames = selectedGroupFilter === 'ALL' ? groupNames : groupNames.filter(g => g === selectedGroupFilter);
 
     const teamToGroup = new Map<string, string>();
-    matches.forEach(m => {
+    uniqueMatches.forEach(m => {
         if (m.stage === 'Group' && m.group) {
             teamToGroup.set(m.homeTeam, m.group);
             teamToGroup.set(m.awayTeam, m.group);
@@ -469,7 +463,7 @@ export default function AutomatedDashboard() {
                                 </div>
                             ) : (
                                 filteredGroupNames.map(group => {
-                                    const groupMatches = matches.filter(m => m.group === group);
+                                    const groupMatches = uniqueMatches.filter(m => m.group === group);
                                     const groupTable = getRealGroupStandings(groupMatches);
 
                                     return (
@@ -716,7 +710,7 @@ export default function AutomatedDashboard() {
 
                             <div className="bg-gradient-to-br from-blue-400/30 to-blue-700/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
                                         <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-blue-400/50 shadow-inner">
                                             <span className="text-2xl sm:text-5xl block leading-none drop-shadow-md">🧤</span>
                                         </div>
@@ -747,7 +741,7 @@ export default function AutomatedDashboard() {
                                                     </div>
                                                     <div className="flex flex-col items-end shrink-0">
                                                         <span className={`font-black text-2xl sm:text-6xl leading-none drop-shadow-xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:2px_black] ${idx === 0 ? 'text-blue-400' : 'text-white'} ${oswald.className}`}>{row.totalCleanSheets}</span>
-                                                        <span className="text-[7px] sm:text-xs text-slate-300 font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_3px_black]">Sheets</span>
+                                                        <span className="text-[7px] sm:text-[9px] text-slate-300 font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_3px_black]">Sheets</span>
                                                     </div>
                                                 </div>
                                             )
@@ -902,6 +896,17 @@ export default function AutomatedDashboard() {
 
                 </div>
             </div>
+
+            {/* Hidden Preloader for Background Images to Prevent Flickering on Tab Switch */}
+            <div className="hidden">
+                <img src="/draft.png" alt="" />
+                <img src="/scores.png" alt="" />
+                <img src="/schedule.png" alt="" />
+                <img src="/rules.png" alt="" />
+                <img src="/leaderboard.png" alt="" />
+                <img src="/awards.png" alt="" />
+            </div>
+
         </div>
     );
 }

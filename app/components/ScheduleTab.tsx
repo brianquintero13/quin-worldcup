@@ -1,39 +1,17 @@
 "use client";
 import { useState, useEffect } from 'react';
-import * as Flags from 'country-flag-icons/react/3x2';
 import { Oswald } from 'next/font/google';
+import FlagIcon from './FlagIcon';
 
 const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
-const FlagIcon = ({ teamName }: { teamName: string }) => {
-    if (!teamName || teamName === 'TBD') return <span className="w-6 h-4 sm:w-8 sm:h-6 inline-block bg-white/10 rounded-sm shadow-sm shrink-0" />;
-
-    if (teamName === 'Scotland') return <span className="inline-block text-xl sm:text-2xl leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁳󠁣󠁴󠁿</span>;
-    if (teamName === 'England') return <span className="inline-block text-xl sm:text-2xl leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁥󠁮󠁧󠁿</span>;
-    if (teamName === 'Wales') return <span className="inline-block text-xl sm:text-2xl leading-none shrink-0 drop-shadow-md">🏴󠁧󠁢󠁷󠁬󠁳󠁿</span>;
-
-    const map: { [key: string]: string } = {
-        'USA': 'US', 'Argentina': 'AR', 'France': 'FR', 'Brazil': 'BR', 'Germany': 'DE',
-        'Spain': 'ES', 'Mexico': 'MX', 'Japan': 'JP', 'Portugal': 'PT', 'Belgium': 'BE',
-        'Netherlands': 'NL', 'Italy': 'IT', 'Canada': 'CA', 'Uruguay': 'UY', 'Croatia': 'HR',
-        'Morocco': 'MA', 'Switzerland': 'CH', 'Colombia': 'CO', 'Senegal': 'SN', 'Denmark': 'DK',
-        'South Korea': 'KR', 'Australia': 'AU', 'Poland': 'PL', 'Sweden': 'SE', 'Serbia': 'RS',
-        'Ecuador': 'EC', 'Peru': 'PE', 'Iran': 'IR', 'Saudi Arabia': 'SA', 'Qatar': 'QA',
-        'Tunisia': 'TN', 'Cameroon': 'CM', 'Ghana': 'GH', 'South Africa': 'ZA', 'Algeria': 'DZ',
-        'Egypt': 'EG', 'Ivory Coast': 'CI', 'Nigeria': 'NG', 'Mali': 'ML', 'DR Congo': 'CD',
-        'Turkey': 'TR', 'Norway': 'NO', 'Czechia': 'CZ', 'Austria': 'AT', 'Cape Verde': 'CV',
-        'Haiti': 'HT', 'Uzbekistan': 'UZ', 'Iraq': 'IQ', 'Jordan': 'JO', 'Bosnia & Herz.': 'BA',
-        'Paraguay': 'PY', 'Panama': 'PA', 'Curaçao': 'CW', 'New Zealand': 'NZ'
-    };
-
-    const code = map[teamName];
-    if (!code) return <span className="w-6 h-4 sm:w-8 sm:h-6 inline-block bg-white/10 rounded-sm shadow-sm shrink-0" />;
-    const FlagComponent = (Flags as any)[code];
-    return FlagComponent ? <FlagComponent className="w-6 h-4 sm:w-8 sm:h-6 rounded-sm shadow-lg object-cover shrink-0 drop-shadow-md" /> : <span className="w-6 h-4 sm:w-8 sm:h-6 inline-block bg-white/10 rounded-sm shadow-sm shrink-0" />;
-};
-
 export default function ScheduleTab() {
-    const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const local = new Date();
+        const offset = local.getTimezoneOffset();
+        const localDate = new Date(local.getTime() - (offset * 60 * 1000));
+        return localDate.toISOString().split('T')[0];
+    });
     const [games, setGames] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
 
@@ -126,7 +104,7 @@ export default function ScheduleTab() {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {games.map((game, index) => (
-                        <div key={index} className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-3 sm:p-5 flex flex-col items-center shadow-2xl hover:bg-black/80 hover:border-white/40 transition duration-300">
+                        <div key={game.id || index} className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-3 sm:p-5 flex flex-col items-center shadow-2xl hover:bg-black/80 hover:border-white/40 transition duration-300">
 
                             <div className="text-[10px] sm:text-sm text-emerald-400 mb-3 sm:mb-4 font-mono uppercase tracking-widest drop-shadow-md font-black bg-black/80 px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white/10 shadow-inner [-webkit-text-stroke:0.5px_black]">
                                 {game.status === 'FINISHED' ? 'Final' : new Date(game.utcDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -134,7 +112,9 @@ export default function ScheduleTab() {
 
                             <div className="flex justify-between items-center w-full px-1 sm:px-2">
                                 <div className="flex flex-col items-center flex-1 text-center min-w-0">
-                                    <div className="mb-1.5 sm:mb-2 drop-shadow-xl sm:scale-110 shrink-0"><FlagIcon teamName={game.homeTeam} /></div>
+                                    <div className="mb-1.5 sm:mb-2 drop-shadow-xl sm:scale-110 shrink-0">
+                                        <FlagIcon teamName={game.homeTeam} variant="large" />
+                                    </div>
                                     <span className="font-black text-[11px] sm:text-lg text-white truncate w-full drop-shadow-xl [text-shadow:0_1px_2px_black] sm:[text-shadow:0_1px_3px_black] block">{game.homeTeam}</span>
                                 </div>
 
@@ -145,7 +125,9 @@ export default function ScheduleTab() {
                                 </div>
 
                                 <div className="flex flex-col items-center flex-1 text-center min-w-0">
-                                    <div className="mb-1.5 sm:mb-2 drop-shadow-xl sm:scale-110 shrink-0"><FlagIcon teamName={game.awayTeam} /></div>
+                                    <div className="mb-1.5 sm:mb-2 drop-shadow-xl sm:scale-110 shrink-0">
+                                        <FlagIcon teamName={game.awayTeam} variant="large" />
+                                    </div>
                                     <span className="font-black text-[11px] sm:text-lg text-white truncate w-full drop-shadow-xl [text-shadow:0_1px_2px_black] sm:[text-shadow:0_1px_3px_black] block">{game.awayTeam}</span>
                                 </div>
                             </div>
