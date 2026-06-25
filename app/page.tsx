@@ -9,7 +9,7 @@ import FlagIcon from './components/FlagIcon';
 
 const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
-// Helper to filter out duplicate matches by ID or composition before scoring
+// Helper to filter out duplicate matches before scoring runs
 const getUniqueMatches = (matchesList: any[]) => {
     const seen = new Set();
     return matchesList.filter(m => {
@@ -34,7 +34,9 @@ export default function AutomatedDashboard() {
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
     const [selectedManager, setSelectedManager] = useState<any | null>(null);
 
-    // Reverted to your original, working Firebase listener for picks/drafters
+    // Toggle state for live match standings projections
+    const [showProjected, setShowProjected] = useState<boolean>(false);
+
     useEffect(() => {
         const stateRef = ref(db, 'state');
         const unsubscribe = onValue(stateRef, (snapshot) => {
@@ -47,7 +49,6 @@ export default function AutomatedDashboard() {
         return () => unsubscribe();
     }, []);
 
-    // Restored the original, working API score sync logic
     useEffect(() => {
         const fetchLiveScores = async () => {
             try {
@@ -81,7 +82,6 @@ export default function AutomatedDashboard() {
         return pick ? pick.drafter : null;
     };
 
-    // Filter out duplicates safely right before scores are calculated
     const uniqueMatches = getUniqueMatches(matches);
 
     const standings = drafters.map(name => {
@@ -102,12 +102,29 @@ export default function AutomatedDashboard() {
                 const isAway = m.awayTeam && teamsMatch(m.awayTeam, teamId);
                 if (!isHome && !isAway) return;
 
+                const isFinished = m.status === 'FINISHED' || m.status === 'AWARDED';
+                const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED';
+
+                // Skip future matches
+                if (!isFinished && !isLive) return;
+
+                // If the game is live but we are not viewing projections, exclude it from calculations
+                if (isLive && !showProjected) return;
+
                 let matchPts = 0;
                 let logDetails: string[] = [];
 
-                const isWin = (isHome && m.winner === m.homeTeam) || (isAway && m.winner === m.awayTeam);
-                const isDraw = m.winner === 'DRAW';
-                const isLoss = m.winner && !isWin && !isDraw;
+                // Interpolate a projected winner if the game is currently live
+                let projectedWinner = m.winner;
+                if (isLive && !projectedWinner && m.homeGoals !== null && m.awayGoals !== null) {
+                    if (m.homeGoals > m.awayGoals) projectedWinner = m.homeTeam;
+                    else if (m.awayGoals > m.homeGoals) projectedWinner = m.awayTeam;
+                    else projectedWinner = 'DRAW';
+                }
+
+                const isWin = (isHome && projectedWinner === m.homeTeam) || (isAway && projectedWinner === m.awayTeam);
+                const isDraw = projectedWinner === 'DRAW';
+                const isLoss = projectedWinner && !isWin && !isDraw;
 
                 if (isWin) wins++; else if (isDraw) draws++; else if (isLoss) losses++;
 
@@ -158,7 +175,8 @@ export default function AutomatedDashboard() {
                     score: isHome ? `${m.homeGoals ?? '-'} : ${m.awayGoals ?? '-'}` : `${m.awayGoals ?? '-'} : ${m.homeGoals ?? '-'}`,
                     result: isWin ? 'W' : isDraw ? 'D' : isLoss ? 'L' : '-',
                     points: matchPts,
-                    details: logDetails
+                    details: logDetails,
+                    isLive: isLive // Tag the specific log item if the score is currently live
                 });
             });
         });
@@ -232,8 +250,42 @@ export default function AutomatedDashboard() {
                     0% { opacity: 0; transform: translateY(20px); }
                     100% { opacity: 1; transform: translateY(0); }
                 }
+                @keyframes holographicShine {
+                    0% { transform: translateX(-150%) skewX(-25deg); }
+                    100% { transform: translateX(150%) skewX(-25deg); }
+                }
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
+
+                /* FIFA Ultimate Team Card Hover Effect */
+                .card-fut-premium {
+                    position: relative;
+                    overflow: hidden;
+                    transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+                .card-fut-premium::after {
+                    content: '';
+                    position: absolute;
+                    top: 0;
+                    left: -50%;
+                    width: 200%;
+                    height: 100%;
+                    background: linear-gradient(
+                            to right,
+                            rgba(255, 255, 255, 0) 0%,
+                            rgba(255, 255, 255, 0.25) 50%,
+                            rgba(255, 255, 255, 0) 100%
+                    );
+                    transform: translateX(-100%) skewX(-25deg);
+                    pointer-events: none;
+                }
+                .card-fut-premium:hover::after {
+                    animation: holographicShine 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+                }
+                .card-fut-premium:hover {
+                    transform: translateY(-4px) scale(1.02);
+                    box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.6);
+                }
             `}</style>
 
             <div
@@ -276,7 +328,7 @@ export default function AutomatedDashboard() {
                                         <div key={team} className="bg-black/70 backdrop-blur-md border border-white/20 rounded-lg overflow-hidden shadow-xl">
                                             <div className="bg-black/90 px-2.5 sm:px-3 py-2 border-b border-white/10 flex justify-between items-center">
                                                 <h3 className="font-black text-[10px] sm:text-sm flex items-center text-slate-100 uppercase tracking-widest drop-shadow-[0_2px_2px_rgba(0,0,0,1)]"><FlagIcon teamName={team} /> {team}</h3>
-                                                <span className={`text-[#fbbf24] font-black text-sm sm:text-lg drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{teamTotal} PTS</span>
+                                                <span className={`text-[#fbbf24] font-black text-base sm:text-lg drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{teamTotal} PTS</span>
                                             </div>
 
                                             <div className="overflow-x-auto">
@@ -298,7 +350,9 @@ export default function AutomatedDashboard() {
                                                     ) : (
                                                         logs.map((log: any, i: number) => (
                                                             <tr key={i} className="hover:bg-black/40 transition">
-                                                                <td className="py-1.5 sm:py-2 pl-2 sm:pl-3 font-mono text-slate-100 text-[9px] sm:text-xs uppercase drop-shadow-md font-bold">{log.stage}</td>
+                                                                <td className="py-1.5 sm:py-2 pl-2 sm:pl-3 font-mono text-slate-100 text-[9px] sm:text-xs uppercase drop-shadow-md font-bold">
+                                                                    {log.stage} {log.isLive && <span className="text-[8px] font-black text-emerald-400 animate-pulse ml-1">(LIVE)</span>}
+                                                                </td>
                                                                 <td className="py-1.5 sm:py-2 font-black text-slate-100 flex items-center drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">
                                                                     <FlagIcon teamName={log.opponent} /> {log.opponent}
                                                                 </td>
@@ -571,7 +625,24 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'standings' && (
                         <div className="max-w-6xl mx-auto space-y-4 sm:space-y-6">
-                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>LEADERBOARD</h2>
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:1px_black] ${oswald.className}`}>
+                                    LEADERBOARD
+                                </h2>
+
+                                {/* Projected Standings Toggle Switch */}
+                                <button
+                                    onClick={() => setShowProjected(!showProjected)}
+                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md ${
+                                        showProjected
+                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)] animate-pulse'
+                                            : 'bg-black/60 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
+                                    }`}
+                                >
+                                    <span className={`w-2 h-2 rounded-full ${showProjected ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
+                                    {showProjected ? 'Live Projections On' : 'Show Live Projections'}
+                                </button>
+                            </div>
 
                             <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-3 sm:p-4 shadow-2xl hidden md:block">
                                 <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest mb-1.5 sm:mb-2 drop-shadow-md">Point System</h3>
@@ -600,7 +671,7 @@ export default function AutomatedDashboard() {
 
                             <div className="grid grid-cols-3 gap-2 sm:gap-5">
                                 {overallLeaders.slice(0, 3).map((leader, i) => (
-                                    <div key={leader.name} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-6 text-center transition-all duration-300 ${
+                                    <div key={leader.name} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 card-fut-premium ${
                                         i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
                                             i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
                                                 'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
@@ -663,20 +734,20 @@ export default function AutomatedDashboard() {
                     )}
 
                     {activeTab === 'awards' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8 max-w-7xl mx-auto">
-                            <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
-                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
-                                        <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-amber-400/50 shadow-inner">
-                                            <span className="text-2xl sm:text-5xl block leading-none drop-shadow-md">⚽</span>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-7xl mx-auto">
+                            <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
+                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-6 rounded-xl h-full flex flex-col">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
+                                        <div className="bg-black/80 p-2.5 rounded-xl border border-amber-400/50 shadow-inner">
+                                            <span className="text-3xl sm:text-4xl block leading-none drop-shadow-md">⚽</span>
                                         </div>
                                         <div>
-                                            <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>Golden Boot</h2>
-                                            <p className="text-[#fbbf24] text-[8px] sm:text-sm font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_2px_black] sm:[text-shadow:0_2px_4px_black]">15% Pot • Most Goals</p>
+                                            <h2 className={`text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Golden Boot</h2>
+                                            <p className="text-[#fbbf24] text-[9px] sm:text-span font-mono font-black tracking-widest uppercase mt-1 drop-shadow-md [text-shadow:0_1px_2px_black]">15% Pot • Most Goals</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 sm:space-y-4 flex-1">
+                                    <div className="space-y-2 sm:space-y-3 flex-1">
                                         {bootLeaders.slice(0, 5).map((row, idx) => {
                                             const breakdownText = Object.entries(row.goalsByTeam)
                                                 .filter(([_, goals]) => (goals as number) > 0)
@@ -685,19 +756,19 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-5 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.02]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
-                                                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                                                        <span className={`font-black text-lg sm:text-3xl w-5 sm:w-10 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
-                                                        <div className="flex flex-col min-w-0 pr-2 sm:pr-3">
-                                                            <span className={`font-black text-xs sm:text-2xl leading-tight break-words whitespace-normal text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
-                                                            <span className="text-[8px] sm:text-sm text-slate-300 font-bold mt-0.5 sm:mt-1 max-w-[120px] sm:max-w-[280px] truncate drop-shadow-md" title={breakdownText}>
+                                                <div key={row.name} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.02]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
+                                                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                                        <span className={`font-black text-xl sm:text-2xl w-6 sm:w-8 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <div className="flex flex-col min-w-0 pr-2">
+                                                            <span className={`font-black text-sm sm:text-base md:text-lg leading-tight break-words whitespace-normal text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
+                                                            <span className="text-[9px] sm:text-[10px] text-slate-300 font-bold mt-0.5 max-w-[140px] sm:max-w-[220px] truncate drop-shadow-md" title={breakdownText}>
                                                                 {breakdownText || "No goals yet"}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col items-end shrink-0">
-                                                        <span className={`font-black text-2xl sm:text-6xl leading-none drop-shadow-xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:2px_black] ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'} ${oswald.className}`}>{row.totalGoals}</span>
-                                                        <span className="text-[7px] sm:text-xs text-slate-300 font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_3px_black]">Goals</span>
+                                                        <span className={`font-black text-3xl sm:text-4xl md:text-5xl leading-none drop-shadow-xl [-webkit-text-stroke:1px_black] ${idx === 0 ? 'text-[#fbbf24]' : 'text-slate-100'} ${oswald.className}`}>{row.totalGoals}</span>
+                                                        <span className="text-[8px] sm:text-[9px] text-slate-400 font-mono font-bold uppercase tracking-widest mt-1 drop-shadow-md">Goals</span>
                                                     </div>
                                                 </div>
                                             )
@@ -706,19 +777,19 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-blue-400/30 to-blue-700/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
-                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
-                                        <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-blue-400/50 shadow-inner">
-                                            <span className="text-2xl sm:text-5xl block leading-none drop-shadow-md">🧤</span>
+                            <div className="bg-gradient-to-br from-blue-400/30 to-blue-700/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
+                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-6 rounded-xl h-full flex flex-col">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
+                                        <div className="bg-black/80 p-2.5 rounded-xl border border-blue-400/50 shadow-inner">
+                                            <span className="text-3xl sm:text-4xl block leading-none drop-shadow-md">🧤</span>
                                         </div>
                                         <div>
-                                            <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>Golden Glove</h2>
-                                            <p className="text-blue-300 text-[8px] sm:text-sm font-mono font-black tracking-widest uppercase mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_2px_black] sm:[text-shadow:0_2px_4px_black]">10% Pot • Clean Sheets</p>
+                                            <h2 className={`text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Golden Glove</h2>
+                                            <p className="text-blue-300 text-[9px] sm:text-[10px] font-mono font-black tracking-widest uppercase mt-1.5 drop-shadow-md [text-shadow:0_1px_2px_black]">10% Pot • Clean Sheets</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 sm:space-y-4 flex-1">
+                                    <div className="space-y-2.5 sm:space-y-3 flex-1">
                                         {gloveLeaders.slice(0, 5).map((row, idx) => {
                                             const breakdownText = Object.entries(row.csByTeam)
                                                 .filter(([_, cs]) => (cs as number) > 0)
@@ -727,19 +798,19 @@ export default function AutomatedDashboard() {
                                                 .join(', ');
 
                                             return (
-                                                <div key={row.name} className={`flex justify-between items-center p-2.5 sm:p-5 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-blue-400/50 shadow-xl scale-[1.02]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
-                                                    <div className="flex items-center gap-2 sm:gap-4 min-w-0">
-                                                        <span className={`font-black text-lg sm:text-3xl w-5 sm:w-10 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-blue-400' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
-                                                        <div className="flex flex-col min-w-0 pr-2 sm:pr-3">
-                                                            <span className={`font-black text-xs sm:text-2xl leading-tight break-words whitespace-normal text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
-                                                            <span className="text-[8px] sm:text-sm text-slate-300 font-bold mt-0.5 sm:mt-1 max-w-[120px] sm:max-w-[280px] truncate drop-shadow-md" title={breakdownText}>
+                                                <div key={row.name} className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all ${idx === 0 ? 'bg-black/80 border-blue-400/50 shadow-xl scale-[1.02]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}>
+                                                    <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                                                        <span className={`font-black text-xl sm:text-2xl w-6 sm:w-8 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-blue-400' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <div className="flex flex-col min-w-0 pr-2">
+                                                            <span className={`font-black text-base sm:text-lg md:text-xl leading-tight break-words whitespace-normal text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
+                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold mt-0.5 max-w-[140px] sm:max-w-[250px] truncate drop-shadow-md" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
                                                         </div>
                                                     </div>
                                                     <div className="flex flex-col items-end shrink-0">
-                                                        <span className={`font-black text-2xl sm:text-6xl leading-none drop-shadow-xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:2px_black] ${idx === 0 ? 'text-blue-400' : 'text-white'} ${oswald.className}`}>{row.totalCleanSheets}</span>
-                                                        <span className="text-[7px] sm:text-[9px] text-slate-300 font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_3px_black]">Sheets</span>
+                                                        <span className={`font-black text-3xl sm:text-4xl md:text-5xl leading-none drop-shadow-xl [-webkit-text-stroke:1px_black] ${idx === 0 ? 'text-blue-400' : 'text-slate-100'} ${oswald.className}`}>{row.totalCleanSheets}</span>
+                                                        <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono font-bold uppercase tracking-widest mt-1 drop-shadow-md">Sheets</span>
                                                     </div>
                                                 </div>
                                             )
@@ -757,7 +828,7 @@ export default function AutomatedDashboard() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
-                                <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                                <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
                                     <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
                                         <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
                                             <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-emerald-400/50 shadow-inner">
@@ -790,7 +861,7 @@ export default function AutomatedDashboard() {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                                <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
                                     <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
                                         <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
                                             <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-amber-400/50 shadow-inner">
