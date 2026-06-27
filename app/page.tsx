@@ -280,8 +280,8 @@ export default function AutomatedDashboard() {
     const getTickerHeadlines = () => {
         const headlines: string[] = [];
         if (overallLeaders.length >= 2) {
-            headlines.push(`🏆 CURRENT STANDINGS: ${overallLeaders[0].name} leads the league with ${overallLeaders[0].totalPoints} PTS!`);
-            headlines.push(`🥈 CHASE IN PROGRESS: ${overallLeaders[1].name} trails the top spot by ${overallLeaders[0].totalPoints - overallLeaders[1].totalPoints} points.`);
+            headlines.push(`🏆 STANDINGS: ${overallLeaders[0].name} leads the league with ${overallLeaders[0].totalPoints} PTS!`);
+            headlines.push(`🥈 CHASE IN PROGRESS: ${overallLeaders[1].name} trails the lead by only ${overallLeaders[0].totalPoints - overallLeaders[1].totalPoints} points.`);
         }
         const liveGames = uniqueMatches.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
         if (liveGames.length > 0) {
@@ -289,19 +289,83 @@ export default function AutomatedDashboard() {
                 headlines.push(`📺 LIVE NOW: ${m.homeTeam} ${m.homeGoals ?? 0} - ${m.awayGoals ?? 0} ${m.awayTeam} (${m.minute ? `${m.minute}'` : 'HT'})`);
             });
         }
-        if (bootLeaders.length > 0 && bootLeaders[0].totalGoals > 0) {
-            headlines.push(`⚽ GOLDEN BOOT: ${bootLeaders[0].name} dominates the goal race with ${bootLeaders[0].totalGoals} total goals.`);
-        }
-        if (gloveLeaders.length > 0 && gloveLeaders[0].totalCleanSheets > 0) {
-            headlines.push(`🧤 GOLDEN GLOVE: ${gloveLeaders[0].name} holds the defensive line with ${gloveLeaders[0].totalCleanSheets} clean sheets.`);
-        }
-        if (headlines.length === 0) {
-            headlines.push("📅 Welcome to the League World Cup Dashboard. Complete matchday trackers are live.");
+
+        // Sarcastic, "no holds barred" dynamic roasts for the ticker tape
+        if (overallLeaders.length > 0) {
+            const lastPlace = overallLeaders[overallLeaders.length - 1];
+            const leader = overallLeaders[0];
+            headlines.push(`🚨 STAT EMERGENCY: Send thoughts and prayers to ${lastPlace.name} (only ${lastPlace.totalPoints} PTS). The tactical setup is in absolute ruins.`);
+            headlines.push(`📈 MARKET UPDATE: Stocks in ${leader.name}'s draft choices are soaring. The rest of the league is mathematically down bad.`);
+            if (bootLeaders.length > 0 && bootLeaders[0].totalGoals > 0) {
+                const bootLeader = bootLeaders[0];
+                const lowestBoot = bootLeaders[bootLeaders.length - 1];
+                headlines.push(`⚽ GOLDEN BOOT: ${bootLeader.name}'s strikers are firing absolute heat-seeking missiles (${bootLeader.totalGoals} goals).`);
+                if (lowestBoot.totalGoals === 0) {
+                    headlines.push(`💨 MISSED TARGET: ${lowestBoot.name} is currently shooting blanks. Zero goals. Someone check their boots.`);
+                }
+            }
+            if (gloveLeaders.length > 0 && gloveLeaders[0].totalCleanSheets > 0) {
+                headlines.push(`🧱 PARK THE BUS: ${gloveLeaders[0].name} has parked the bus so hard they are violating local zoning laws.`);
+            }
+            headlines.push(`🤔 RUMOR MILL: Reports suggest ${lastPlace.name} is consulting an actual astrologer to fix their remaining fixture outcomes.`);
         }
         return headlines;
     };
 
     const tickerHeadlines = getTickerHeadlines();
+
+    // Dynamically generates the no-holds-barred Matchday Savage Report
+    const getSavageReport = () => {
+        if (overallLeaders.length < 2) return null;
+        const king = overallLeaders[0];
+        const runnerUp = overallLeaders[1];
+        const clown = overallLeaders[overallLeaders.length - 1];
+        const pointGap = king.totalPoints - clown.totalPoints;
+        const chaseGap = king.totalPoints - runnerUp.totalPoints;
+
+        return (
+            <div className="bg-gradient-to-br from-red-500/20 via-black/50 to-orange-600/10 border border-red-500/30 rounded-xl p-4 shadow-2xl mt-2 sm:mt-4 content-animate">
+                <div className="flex items-center gap-2 border-b border-white/10 pb-2 mb-3">
+                    <span className="text-xl">🔥</span>
+                    <h3 className={`text-[10px] sm:text-xs font-mono font-black text-rose-400 uppercase tracking-widest drop-shadow-md`}>Matchday Savage Report</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    {/* LEADER PANEL */}
+                    <div className="bg-black/60 border border-emerald-500/20 p-3 rounded-lg flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <ManagerAvatar name={king.name} size="sm" />
+                                <span className="font-black text-emerald-400 uppercase tracking-wide">🏆 THE LEAGUE KING: {king.name}</span>
+                            </div>
+                            <p className="text-slate-300 font-semibold leading-relaxed">
+                                {king.name} is sitting comfortably at the top with <strong className="text-emerald-400 font-bold">{king.totalPoints} PTS</strong>.
+                                Their draft choices are running wild, leaving the rest of the managers in complete shambles.
+                                {chaseGap <= 12
+                                    ? ` However, ${runnerUp.name} is lurking only ${chaseGap} points behind. Don't pop the champagne just yet.`
+                                    : ` They have a comfortable ${chaseGap}-point cushion. Absolute tactical mastery.`}
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* LAST PLACE PANEL */}
+                    <div className="bg-black/60 border border-red-500/20 p-3 rounded-lg flex flex-col justify-between">
+                        <div>
+                            <div className="flex items-center gap-2 mb-2">
+                                <ManagerAvatar name={clown.name} size="sm" />
+                                <span className="font-black text-red-400 uppercase tracking-wide">🤡 THE TAIL-ENDER: {clown.name}</span>
+                            </div>
+                            <p className="text-slate-300 font-semibold leading-relaxed">
+                                Down in the trenches, we find {clown.name} with a tragic <strong className="text-red-400 font-bold">{clown.totalPoints} PTS</strong>.
+                                They are currently trailing the lead by a massive <strong className="text-red-400 font-bold">{pointGap} PTS</strong>.
+                                Their teams are moving slower than a line of parked cars on a highway.
+                                Time to fire the coaching staff, rebuild the roster, or start praying for a miracle.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     const renderBracketMatch = (m: any) => {
         const homeDrafter = getDrafterForTeam(m.homeTeam);
@@ -632,126 +696,217 @@ export default function AutomatedDashboard() {
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 sm:gap-3 mb-2 sm:mb-3">
                                 <div className="flex flex-col gap-2.5 w-full sm:w-auto">
                                     <h2 className={`text-lg sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>ALL SCORES</h2>
+
+                                    {/* Matches view formatting selector */}
+                                    <div className="flex bg-black/60 border border-white/10 p-0.5 rounded-lg shadow-md w-max">
+                                        <button
+                                            onClick={() => setMatchesSubTab('groups')}
+                                            className={`px-3.5 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                                                matchesSubTab === 'groups'
+                                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                        >
+                                            Group Stage
+                                        </button>
+                                        <button
+                                            onClick={() => setMatchesSubTab('bracket')}
+                                            className={`px-3.5 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                                                matchesSubTab === 'bracket'
+                                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                        >
+                                            Knockout Bracket
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-1.5 w-full sm:w-auto">
-                                    <label htmlFor="groupFilter" className="text-[8px] sm:text-[10px] font-mono text-white font-black uppercase tracking-widest shrink-0 drop-shadow-md">Filter:</label>
-                                    <select
-                                        id="groupFilter"
-                                        value={selectedGroupFilter}
-                                        onChange={(e) => setSelectedGroupFilter(e.target.value)}
-                                        className="bg-black/80 backdrop-blur-xl border border-white/30 text-white font-bold rounded-md px-2 sm:px-3 py-1 text-[9px] sm:text-xs focus:outline-none focus:border-emerald-400 transition shadow-lg w-full sm:w-auto"
-                                    >
-                                        <option value="ALL">All Groups</option>
-                                        {groupNames.map(grp => (
-                                            <option key={grp} value={grp}>{grp}</option>
-                                        ))}
-                                    </select>
-                                </div>
+
+                                {matchesSubTab === 'groups' && (
+                                    <div className="flex items-center gap-1.5 w-full sm:w-auto self-end">
+                                        <label htmlFor="groupFilter" className="text-[8px] sm:text-[10px] font-mono text-white font-black uppercase tracking-widest shrink-0 drop-shadow-md">Filter:</label>
+                                        <select
+                                            id="groupFilter"
+                                            value={selectedGroupFilter}
+                                            onChange={(e) => setSelectedGroupFilter(e.target.value)}
+                                            className="bg-black/80 backdrop-blur-xl border border-white/30 text-white font-bold rounded-md px-2 sm:px-3 py-1 text-[9px] sm:text-xs focus:outline-none focus:border-emerald-400 transition shadow-lg w-full sm:w-auto"
+                                        >
+                                            <option value="ALL">All Groups</option>
+                                            {groupNames.map(grp => (
+                                                <option key={grp} value={grp}>{grp}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                             </div>
 
-                            {filteredGroupNames.length === 0 ? (
-                                <div className="text-center py-4 sm:py-6 text-white font-bold bg-black/70 backdrop-blur-xl border border-dashed border-white/30 rounded-xl text-[9px] sm:text-xs shadow-2xl drop-shadow-md">
-                                    <p>No matches found for the selected filter.</p>
-                                </div>
-                            ) : (
-                                filteredGroupNames.map(group => {
-                                    const groupMatches = uniqueMatches.filter(m => m.group === group);
-                                    const groupTable = getRealGroupStandings(groupMatches);
-
-                                    return (
-                                        <div key={group} className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
-                                            <div className="bg-black/80 px-2.5 sm:px-4 py-1.5 sm:py-2 border-b border-white/20 flex justify-between items-center">
-                                                <h3 className={`font-black text-[#fbbf24] text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{group}</h3>
-                                                <span className="text-[7px] sm:text-[8px] text-slate-300 font-bold font-mono uppercase tracking-widest drop-shadow-md">Top 2 advance</span>
-                                            </div>
-
-                                            <div className="flex flex-col lg:flex-row">
-                                                <div className="w-full lg:w-[35%] xl:w-[30%] border-b lg:border-b-0 lg:border-r border-white/20 overflow-x-auto flex bg-black/60">
-                                                    <table className="w-full text-left text-[9px] sm:text-xs min-w-[280px]">
-                                                        <thead>
-                                                        <tr className="border-b border-white/10 text-slate-300 text-[7px] sm:text-[9px] uppercase font-mono bg-black/80 font-black">
-                                                            <th className="py-1.5 sm:py-2 px-2 sm:px-3 drop-shadow-md">Team</th>
-                                                            <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">MP</th>
-                                                            <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">W</th>
-                                                            <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">D</th>
-                                                            <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">L</th>
-                                                            <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">GF</th>
-                                                            <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">GA</th>
-                                                            <th className="py-1.5 sm:py-2 text-center w-6 sm:w-7 pr-2 sm:pr-3 drop-shadow-md">PTS</th>
-                                                        </tr>
-                                                        </thead>
-                                                        <tbody className="divide-y divide-white/10">
-                                                        {groupTable.map((teamRow) => (
-                                                            <tr key={teamRow.name} className="hover:bg-black/50 transition">
-                                                                <td className="py-2 sm:py-2.5 px-2 sm:px-3 font-black text-slate-100 drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">
-                                                                    <div className="flex items-center whitespace-nowrap min-w-0">
-                                                                        <FlagIcon teamName={teamRow.name}/>
-                                                                        <span className="truncate block whitespace-nowrap">{teamRow.name}</span>
-                                                                    </div>
-                                                                </td>
-                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.mp}</td>
-                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.w}</td>
-                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.d}</td>
-                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.l}</td>
-                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.gf}</td>
-                                                                <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.ga}</td>
-                                                                <td className={`py-2 sm:py-2.5 text-center font-black text-[#fbbf24] pr-2 sm:pr-3 text-xs sm:text-sm drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{teamRow.pts}</td>
-                                                            </tr>
-                                                        ))}
-                                                        </tbody>
-                                                    </table>
-                                                </div>
-
-                                                <div className="w-full lg:w-[65%] xl:w-[70%] p-2 sm:p-3 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-2.5 content-start bg-transparent">
-                                                    {groupMatches.map(m => {
-                                                        const homeDrafter = getDrafterForTeam(m.homeTeam);
-                                                        const awayDrafter = getDrafterForTeam(m.awayTeam);
-
-                                                        const isHomeWin = m.winner === m.homeTeam;
-                                                        const isAwayWin = m.winner === m.awayTeam;
-
-                                                        const homeNameColor = isHomeWin ? 'font-black text-emerald-400' : isAwayWin ? 'font-bold text-rose-400' : 'font-black text-slate-100';
-                                                        const awayNameColor = isAwayWin ? 'font-black text-emerald-400' : isHomeWin ? 'font-bold text-rose-400' : 'font-black text-slate-100';
-
-                                                        const homeScoreColor = isHomeWin ? 'text-emerald-400' : isAwayWin ? 'text-rose-400' : 'text-[#fbbf24]';
-                                                        const awayScoreColor = isAwayWin ? 'text-emerald-400' : isHomeWin ? 'text-rose-400' : 'text-[#fbbf24]';
-
-                                                        return (
-                                                            <div key={m.id} className="flex items-center justify-between p-2 sm:p-2.5 bg-black/60 border border-white/20 rounded-lg hover:bg-black/80 hover:border-white/30 transition shadow-xl h-full">
-                                                                <div className="flex-1 flex flex-col items-end text-right min-w-0">
-                                                                    <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-end min-w-0">
-                                                                        <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${homeNameColor}`}>{m.homeTeam}</span>
-                                                                        <div className="shrink-0"><FlagIcon teamName={m.homeTeam} /></div>
-                                                                    </div>
-                                                                    {homeDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{homeDrafter}</span>}
-                                                                </div>
-
-                                                                <div className="mx-1.5 sm:mx-2 flex flex-col items-center shrink-0 min-w-[50px] sm:min-w-[65px]">
-                                                                    <div className="flex items-center justify-center gap-1 sm:gap-1.5 bg-black/80 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/20 w-full shadow-inner mb-0.5 sm:mb-1">
-                                                                        <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-none drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${homeScoreColor} ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
-                                                                        <span className="text-slate-400 font-black text-[8px] sm:text-[9px] leading-none drop-shadow-md">:</span>
-                                                                        <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-none drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${awayScoreColor} ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
-                                                                    </div>
-                                                                    {m.status === 'IN_PLAY' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-red-500 animate-pulse drop-shadow-md">{m.minute ? `${m.minute}'` : 'LIVE'}</span>}
-                                                                    {m.status === 'PAUSED' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-[#fbbf24] drop-shadow-md">HT</span>}
-                                                                    {m.status === 'FINISHED' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-emerald-400 drop-shadow-md">FT</span>}
-                                                                </div>
-
-                                                                <div className="flex-1 flex flex-col items-start text-left min-w-0">
-                                                                    <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-start min-w-0">
-                                                                        <div className="shrink-0"><FlagIcon teamName={m.awayTeam} /></div>
-                                                                        <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
-                                                                    </div>
-                                                                    {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{awayDrafter}</span>}
-                                                                </div>
-                                                            </div>
-                                                        )
-                                                    })}
-                                                </div>
-                                            </div>
+                            {/* Render Group list display */}
+                            {matchesSubTab === 'groups' && (
+                                <div className="space-y-4">
+                                    {filteredGroupNames.length === 0 ? (
+                                        <div className="text-center py-4 sm:py-6 text-white font-bold bg-black/70 backdrop-blur-xl border border-dashed border-white/30 rounded-xl text-[9px] sm:text-xs shadow-2xl drop-shadow-md">
+                                            <p>No matches found for the selected filter.</p>
                                         </div>
-                                    )
-                                })
+                                    ) : (
+                                        filteredGroupNames.map(group => {
+                                            const groupMatches = uniqueMatches.filter(m => m.group === group);
+                                            const groupTable = getRealGroupStandings(groupMatches);
+
+                                            return (
+                                                <div key={group} className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
+                                                    <div className="bg-black/80 px-2.5 sm:px-4 py-1.5 sm:py-2 border-b border-white/20 flex justify-between items-center">
+                                                        <h3 className={`font-black text-[#fbbf24] text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{group}</h3>
+                                                        <span className="text-[7px] sm:text-[8px] text-slate-300 font-bold font-mono uppercase tracking-widest drop-shadow-md">Top 2 advance</span>
+                                                    </div>
+
+                                                    <div className="flex flex-col lg:flex-row">
+                                                        <div className="w-full lg:w-[35%] xl:w-[30%] border-b lg:border-b-0 lg:border-r border-white/20 overflow-x-auto flex bg-black/60">
+                                                            <table className="w-full text-left text-[9px] sm:text-xs min-w-[280px]">
+                                                                <thead>
+                                                                <tr className="border-b border-white/10 text-slate-300 text-[7px] sm:text-[9px] uppercase font-mono bg-black/80 font-black">
+                                                                    <th className="py-1.5 sm:py-2 px-2 sm:px-3 drop-shadow-md">Team</th>
+                                                                    <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">MP</th>
+                                                                    <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">W</th>
+                                                                    <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">D</th>
+                                                                    <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">L</th>
+                                                                    <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">GF</th>
+                                                                    <th className="py-1.5 sm:py-2 text-center w-4 sm:w-5 drop-shadow-md">GA</th>
+                                                                    <th className="py-1.5 sm:py-2 text-center w-6 sm:w-7 pr-2 sm:pr-3 drop-shadow-md">PTS</th>
+                                                                </tr>
+                                                                </thead>
+                                                                <tbody className="divide-y divide-white/10">
+                                                                {groupTable.map((teamRow) => (
+                                                                    <tr key={teamRow.name} className="hover:bg-black/50 transition">
+                                                                        <td className="py-2 sm:py-2.5 px-2 sm:px-3 font-black text-slate-100 drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">
+                                                                            <div className="flex items-center whitespace-nowrap min-w-0">
+                                                                                <FlagIcon teamName={teamRow.name}/>
+                                                                                <span className="truncate block whitespace-nowrap">{teamRow.name}</span>
+                                                                            </div>
+                                                                        </td>
+                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.mp}</td>
+                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.w}</td>
+                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.d}</td>
+                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.l}</td>
+                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.gf}</td>
+                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.ga}</td>
+                                                                        <td className={`py-2 sm:py-2.5 text-center font-black text-[#fbbf24] pr-2 sm:pr-3 text-xs sm:text-sm drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{teamRow.pts}</td>
+                                                                    </tr>
+                                                                ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+
+                                                        <div className="w-full lg:w-[65%] xl:w-[70%] p-2 sm:p-3 grid grid-cols-1 md:grid-cols-2 gap-2 sm:gap-2.5 content-start bg-transparent">
+                                                            {groupMatches.map(m => {
+                                                                const homeDrafter = getDrafterForTeam(m.homeTeam);
+                                                                const awayDrafter = getDrafterForTeam(m.awayTeam);
+
+                                                                const isHomeWin = m.winner === m.homeTeam;
+                                                                const isAwayWin = m.winner === m.awayTeam;
+
+                                                                const homeNameColor = isHomeWin ? 'font-black text-emerald-400' : isAwayWin ? 'font-bold text-rose-400' : 'font-black text-slate-100';
+                                                                const awayNameColor = isAwayWin ? 'font-black text-emerald-400' : isHomeWin ? 'font-bold text-rose-400' : 'font-black text-slate-100';
+
+                                                                const homeScoreColor = isHomeWin ? 'text-emerald-400' : isAwayWin ? 'text-rose-400' : 'text-[#fbbf24]';
+                                                                const awayScoreColor = isAwayWin ? 'text-emerald-400' : isHomeWin ? 'text-rose-400' : 'text-[#fbbf24]';
+
+                                                                return (
+                                                                    <div key={m.id} className="flex items-center justify-between p-2 sm:p-2.5 bg-black/60 border border-white/20 rounded-lg hover:bg-black/80 hover:border-white/30 transition shadow-xl h-full">
+                                                                        <div className="flex-1 flex flex-col items-end text-right min-w-0">
+                                                                            <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-end min-w-0">
+                                                                                <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${homeNameColor}`}>{m.homeTeam}</span>
+                                                                                <div className="shrink-0"><FlagIcon teamName={m.homeTeam} /></div>
+                                                                            </div>
+                                                                            {homeDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{homeDrafter}</span>}
+                                                                        </div>
+
+                                                                        <div className="mx-1.5 sm:mx-2 flex flex-col items-center shrink-0 min-w-[50px] sm:min-w-[65px]">
+                                                                            <div className="flex items-center justify-center gap-1 sm:gap-1.5 bg-black/80 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/20 w-full shadow-inner mb-0.5 sm:mb-1">
+                                                                                <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-none drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${homeScoreColor} ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
+                                                                                <span className="text-slate-400 font-black text-[8px] sm:text-[9px] leading-none drop-shadow-md">:</span>
+                                                                                <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-none drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${awayScoreColor} ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
+                                                                            </div>
+                                                                            {m.status === 'IN_PLAY' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-red-500 animate-pulse drop-shadow-md">{m.minute ? `${m.minute}'` : 'LIVE'}</span>}
+                                                                            {m.status === 'PAUSED' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-[#fbbf24] drop-shadow-md">HT</span>}
+                                                                            {m.status === 'FINISHED' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-emerald-400 drop-shadow-md">FT</span>}
+                                                                        </div>
+
+                                                                        <div className="flex-1 flex flex-col items-start text-left min-w-0">
+                                                                            <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-start min-w-0">
+                                                                                <div className="shrink-0"><FlagIcon teamName={m.awayTeam} /></div>
+                                                                                <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
+                                                                            </div>
+                                                                            {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{awayDrafter}</span>}
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Render interactive horizontal scrolling Tournament Bracket Board */}
+                            {matchesSubTab === 'bracket' && (
+                                <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 sm:p-5 shadow-2xl overflow-x-auto no-scrollbar content-animate">
+                                    <div className="flex gap-6 sm:gap-8 min-w-[1250px] items-start pb-2">
+
+                                        {/* Column 1: Round of 32 */}
+                                        <div className="flex flex-col gap-3">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center">Round of 32</h4>
+                                            {uniqueMatches.filter(m => m.stage === 'R32').length === 0 ? (
+                                                <p className="text-[10px] text-slate-400 italic text-center w-[230px]">No Round of 32 matches populated.</p>
+                                            ) : (
+                                                uniqueMatches.filter(m => m.stage === 'R32').map(m => renderBracketMatch(m))
+                                            )}
+                                        </div>
+
+                                        {/* Column 2: Round of 16 */}
+                                        <div className="flex flex-col gap-3">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center">Round of 16</h4>
+                                            {uniqueMatches.filter(m => m.stage === 'R16').length === 0 ? (
+                                                <p className="text-[10px] text-slate-400 italic text-center w-[230px]">Matches pending group play.</p>
+                                            ) : (
+                                                uniqueMatches.filter(m => m.stage === 'R16').map(m => renderBracketMatch(m))
+                                            )}
+                                        </div>
+
+                                        {/* Column 3: Quarterfinals */}
+                                        <div className="flex flex-col gap-3">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center">Quarterfinals</h4>
+                                            {uniqueMatches.filter(m => m.stage === 'QF').length === 0 ? (
+                                                <p className="text-[10px] text-slate-400 italic text-center w-[230px]">QF matches pending.</p>
+                                            ) : (
+                                                uniqueMatches.filter(m => m.stage === 'QF').map(m => renderBracketMatch(m))
+                                            )}
+                                        </div>
+
+                                        {/* Column 4: Semifinals */}
+                                        <div className="flex flex-col gap-3">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center">Semifinals</h4>
+                                            {uniqueMatches.filter(m => m.stage === 'SF').length === 0 ? (
+                                                <p className="text-[10px] text-slate-400 italic text-center w-[230px]">SF matches pending.</p>
+                                            ) : (
+                                                uniqueMatches.filter(m => m.stage === 'SF').map(m => renderBracketMatch(m))
+                                            )}
+                                        </div>
+
+                                        {/* Column 5: Finals & 3rd Place */}
+                                        <div className="flex flex-col gap-3">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center">Finals</h4>
+                                            {uniqueMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').length === 0 ? (
+                                                <p className="text-[10px] text-slate-400 italic text-center w-[230px]">Final matches pending.</p>
+                                            ) : (
+                                                uniqueMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').map(m => renderBracketMatch(m))
+                                            )}
+                                        </div>
+
+                                    </div>
+                                </div>
                             )}
                         </div>
                     )}
@@ -771,6 +926,30 @@ export default function AutomatedDashboard() {
                                 </h2>
 
                                 <div className="flex flex-wrap items-center gap-2">
+                                    {/* Grid / Table Toggle Layout format selection */}
+                                    <div className="flex bg-black/60 border border-white/10 p-0.5 rounded-lg shadow-md">
+                                        <button
+                                            onClick={() => setStandingsView('grid')}
+                                            className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                                                standingsView === 'grid'
+                                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                        >
+                                            Grid
+                                        </button>
+                                        <button
+                                            onClick={() => setStandingsView('table')}
+                                            className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                                                standingsView === 'table'
+                                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                        >
+                                            Table
+                                        </button>
+                                    </div>
+
                                     {/* Projected Standings Toggle button */}
                                     <button
                                         onClick={() => setShowProjected(!showProjected)}
@@ -786,97 +965,157 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-3 sm:p-4 shadow-2xl hidden md:block">
-                                <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest mb-1.5 sm:mb-2 drop-shadow-md">Point System</h3>
-                                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-y-1 gap-x-3 text-[9px] sm:text-[10px]">
-                                    <div className="space-y-0.5 sm:space-y-1">
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+4</span> <span className="text-white font-bold drop-shadow-md">Win Match</span></div>
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+8</span> <span className="text-white font-bold drop-shadow-md">Advance</span></div>
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+20</span> <span className="text-white font-bold drop-shadow-md">Win SF</span></div>
-                                    </div>
-                                    <div className="space-y-0.5 sm:space-y-1">
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+2</span> <span className="text-white font-bold drop-shadow-md">Group Draw</span></div>
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+10</span> <span className="text-white font-bold drop-shadow-md">Win R32</span></div>
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+10</span> <span className="text-white font-bold drop-shadow-md">Win 3rd</span></div>
-                                    </div>
-                                    <div className="space-y-0.5 sm:space-y-1">
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+1</span> <span className="text-white font-bold drop-shadow-md">Goal Scored</span></div>
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+12</span> <span className="text-white font-bold drop-shadow-md">Win R16</span></div>
-                                        <div className="flex items-center gap-1 sm:gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+30</span> <span className="text-white font-bold drop-shadow-md">Win Final</span></div>
-                                    </div>
-                                    <div className="space-y-0.5 sm:space-y-1">
-                                        <div className="flex items-center gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+2</span> <span className="text-white font-bold drop-shadow-md">Clean Sheet</span></div>
-                                        <div className="flex items-center gap-1.5"><span className={`text-[#fbbf24] font-black w-4 sm:w-5 text-right drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+15</span> <span className="text-white font-bold drop-shadow-md">Win QF</span></div>
-                                    </div>
+                            {/* Redesigned structured point system badge strip */}
+                            <div className="bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-3 shadow-2xl hidden md:block">
+                                <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
+                                    <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest drop-shadow-md">Scoring System Reference</h3>
+                                    <span className="text-[8px] font-mono text-slate-400">Values stack per match result</span>
+                                </div>
+                                <div className="flex flex-wrap gap-2 text-[10px] font-semibold text-white">
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+4</strong> Win</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+2</strong> Draw</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+1</strong> Goal</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+2</strong> Clean Sheet</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+8</strong> Group Advance</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+10</strong> Win R32</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+12</strong> Win R16</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+15</strong> Win QF</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+20</strong> Win SF</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+10</strong> Win 3rd</span>
+                                    <span className="bg-black/60 border border-white/10 px-2 py-1 rounded-md flex items-center gap-1.5"><strong className="text-[#fbbf24]">+30</strong> Win Final</span>
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-2 sm:gap-5">
-                                {overallLeaders.slice(0, 3).map((leader, i) => (
-                                    <div key={leader.name} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 ${
-                                        i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
-                                            i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
-                                                'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
-                                    }`}>
-                                        <div className="relative mb-2.5">
-                                            <ManagerAvatar name={leader.name} size="md" />
-                                            <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">
-                                                {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-                                            </span>
+                            {/* Render visual layouts when standingsView is in Grid format */}
+                            {standingsView === 'grid' && (
+                                <div className="space-y-4 sm:space-y-6">
+                                    {/* 2x6 Position Grid Section - Doubled Image Size */}
+                                    <div className="bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl">
+                                        <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3">
+                                            <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest drop-shadow-md">Current Standings Grid</h3>
+                                            <span className="text-[8px] font-mono text-slate-400">Ordered 1st to 12th</span>
                                         </div>
-                                        <h3 className="text-[11px] sm:text-xl md:text-2xl font-black text-white mb-0.5 sm:mb-1.5 tracking-wide truncate w-full px-1 sm:px-2 drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black]">{leader.name}</h3>
-                                        <div className={`text-2xl sm:text-5xl md:text-6xl font-black text-white leading-none mb-1 sm:mb-2.5 drop-shadow-2xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:1.5px_black] ${oswald.className}`}>{leader.totalPoints}</div>
-                                        <span className="text-[7px] sm:text-[11px] text-white font-bold font-mono mb-1.5 sm:mb-3 uppercase tracking-widest hidden sm:block drop-shadow-md [text-shadow:0_1px_2px_black]">Points</span>
-                                        <div className="flex flex-wrap justify-center gap-0.5 sm:gap-1.5 px-1 sm:scale-110">
-                                            {leader.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
+                                        {/* Responsive grid layout: 3 columns on mobile (4 rows), 6 columns on tablet/desktop (2 rows) */}
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
+                                            {overallLeaders.map((leader, index) => {
+                                                const rankColor =
+                                                    index === 0 ? 'bg-amber-500 text-black' :
+                                                        index === 1 ? 'bg-slate-300 text-black' :
+                                                            index === 2 ? 'bg-orange-600 text-white' :
+                                                                'bg-black/80 text-slate-300 border border-white/20';
+
+                                                return (
+                                                    <div
+                                                        key={leader.name}
+                                                        onClick={() => setSelectedManager(leader)}
+                                                        className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex flex-col items-center justify-center relative cursor-pointer hover:bg-black/90 hover:border-sky-400/50 transition-all duration-300 group shadow-md"
+                                                    >
+                                                        {/* Overlaid Position Badge */}
+                                                        <div className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[8px] font-black font-mono shadow-md ${rankColor}`}>
+                                                            #{index + 1}
+                                                        </div>
+
+                                                        {/* Large Avatar */}
+                                                        <div className="mb-2">
+                                                            <ManagerAvatar name={leader.name} size="lg" />
+                                                        </div>
+
+                                                        {/* Name and points */}
+                                                        <div className="text-center w-full min-w-0">
+                                                            <span className="block font-black text-[10px] sm:text-xs text-white truncate drop-shadow-md group-hover:text-sky-400 transition-colors">
+                                                                {leader.name}
+                                                            </span>
+                                                            <span className={`block text-[11px] sm:text-xs font-black text-[#fbbf24] mt-0.5 ${oswald.className}`}>
+                                                                {leader.totalPoints} PTS
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
 
-                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto">
-                                <table className="w-full text-left text-xs sm:text-sm border-collapse min-w-[500px] sm:min-w-[800px]">
-                                    <thead>
-                                    <tr className="border-b border-white/20 text-slate-300 text-[9px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest font-black">
-                                        <th className="py-2 sm:py-4 pl-3 sm:pl-5 w-8 sm:w-12 drop-shadow-md">#</th>
-                                        <th className="py-2 sm:py-4 w-28 sm:w-48 drop-shadow-md">Drafter</th>
-                                        <th className="py-2 sm:py-4 w-12 sm:w-20 drop-shadow-md">PTS</th>
-                                        <th className="py-2 sm:py-4 drop-shadow-md">Teams</th>
-                                        <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">W</th>
-                                        <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">D</th>
-                                        <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">L</th>
-                                        <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">GF</th>
-                                        <th className="py-2 sm:py-4 text-center pr-4 w-8 sm:w-14 drop-shadow-md">CS</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/10">
-                                    {overallLeaders.map((row, index) => (
-                                        <tr key={row.name} className="hover:bg-black/50 transition">
-                                            <td className={`py-1.5 sm:py-3.5 pl-3 sm:pl-5 font-black text-white text-[11px] sm:text-base drop-shadow-md [text-shadow:0_2px_4px_black] ${oswald.className}`}>{index + 1}</td>
-                                            <td className="py-1.5 sm:py-3.5">
-                                                <button
-                                                    onClick={() => setSelectedManager(row)}
-                                                    className="font-black text-xs sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[100px] sm:max-w-[150px] drop-shadow-md [text-shadow:0_1px_2px_black]"
-                                                >
-                                                    {row.name}
-                                                </button>
-                                            </td>
-                                            <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints}</td>
-                                            <td className="py-1.5 sm:py-3.5">
-                                                <div className="flex gap-1 sm:gap-1.5 flex-wrap">
-                                                    {row.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
+                                    {/* Dynamically Generated Savage Report */}
+                                    {getSavageReport()}
+
+                                    {/* Top 3 Podium Displays */}
+                                    <div className="grid grid-cols-3 gap-2 sm:gap-5">
+                                        {overallLeaders.slice(0, 3).map((leader, i) => (
+                                            <div
+                                                key={leader.name}
+                                                onClick={() => setSelectedManager(leader)}
+                                                className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 cursor-pointer hover:bg-black/40 ${
+                                                    i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
+                                                        i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
+                                                            'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
+                                                }`}>
+                                                <div className="relative mb-2.5">
+                                                    <ManagerAvatar name={leader.name} size="md" />
+                                                    <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">
+                                                        {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
+                                                    </span>
                                                 </div>
-                                            </td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-emerald-400 text-[10px] sm:text-sm drop-shadow-md ${oswald.className}`}>{row.wins}</td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-slate-100 text-[10px] sm:text-sm drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${oswald.className}`}>{row.draws}</td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-rose-400 text-[10px] sm:text-sm drop-shadow-md ${oswald.className}`}>{row.losses}</td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-slate-100 text-[10px] sm:text-sm drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${oswald.className}`}>{row.totalGoals}</td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-blue-400 pr-4 sm:pr-5 text-[10px] sm:text-sm drop-shadow-md ${oswald.className}`}>{row.totalCleanSheets}</td>
+                                                <h3 className="text-[11px] sm:text-xl md:text-2xl font-black text-white mb-0.5 sm:mb-1.5 tracking-wide truncate w-full px-1 sm:px-2 drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black]">{leader.name}</h3>
+                                                <div className={`text-2xl sm:text-5xl md:text-6xl font-black text-white leading-none mb-1 sm:mb-2.5 drop-shadow-2xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:1.5px_black] ${oswald.className}`}>{leader.totalPoints}</div>
+                                                <span className="text-[7px] sm:text-[11px] text-white font-bold font-mono mb-1.5 sm:mb-3 uppercase tracking-widest hidden sm:block drop-shadow-md [text-shadow:0_1px_2px_black]">Points</span>
+                                                <div className="flex flex-wrap justify-center gap-0.5 sm:gap-1.5 px-1 sm:scale-110">
+                                                    {leader.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Render tabular statistical listings when standingsView is in Table format */}
+                            {standingsView === 'table' && (
+                                <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto content-animate">
+                                    <table className="w-full text-left text-[10px] sm:text-sm border-collapse min-w-[500px] sm:min-w-[800px]">
+                                        <thead>
+                                        <tr className="border-b border-white/20 text-slate-300 text-[8px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest font-black">
+                                            <th className="py-2 sm:py-4 pl-3 sm:pl-5 w-8 sm:w-12 drop-shadow-md">#</th>
+                                            <th className="py-2 sm:py-4 w-28 sm:w-48 drop-shadow-md">Drafter</th>
+                                            <th className="py-2 sm:py-4 w-12 sm:w-20 drop-shadow-md">PTS</th>
+                                            <th className="py-2 sm:py-4 drop-shadow-md">Teams</th>
+                                            <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">W</th>
+                                            <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">D</th>
+                                            <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">L</th>
+                                            <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">GF</th>
+                                            <th className="py-2 sm:py-4 text-center pr-3 sm:pr-5 w-8 sm:w-14 drop-shadow-md">CS</th>
                                         </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/10">
+                                        {overallLeaders.map((row, index) => (
+                                            <tr key={row.name} className="hover:bg-black/50 transition">
+                                                <td className={`py-1.5 sm:py-3.5 pl-3 sm:pl-5 font-black text-white text-[11px] sm:text-base drop-shadow-md [text-shadow:0_1px_2px_black] ${oswald.className}`}>{index + 1}</td>
+                                                <td className="py-1.5 sm:py-3.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <ManagerAvatar name={row.name} size="sm" />
+                                                        <button
+                                                            onClick={() => setSelectedManager(row)}
+                                                            className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-[150px] drop-shadow-md [text-shadow:0_1px_2px_black]"
+                                                        >
+                                                            {row.name}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints}</td>
+                                                <td className="py-1.5 sm:py-3.5">
+                                                    <div className="flex gap-0.5 sm:gap-1.5 flex-wrap">
+                                                        {row.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
+                                                    </div>
+                                                </td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-emerald-400 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.wins}</td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-slate-100 text-[10px] sm:text-base drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${oswald.className}`}>{row.draws}</td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-rose-400 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.losses}</td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-slate-100 text-[10px] sm:text-base drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${oswald.className}`}>{row.totalGoals}</td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-blue-400 pr-3 sm:pr-5 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.totalCleanSheets}</td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     )}
 
@@ -920,7 +1159,7 @@ export default function AutomatedDashboard() {
                                                     </div>
                                                     <div className="flex flex-col items-end shrink-0">
                                                         <span className={`font-black text-2xl sm:text-6xl leading-none drop-shadow-xl ${oswald.className}`}>{row.totalGoals}</span>
-                                                        <span className="text-[7px] sm:text-xs text-slate-300 font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1.5 drop-shadow-md [text-shadow:0_1px_3px_black]">Goals</span>
+                                                        <span className="text-[7px] sm:text-xs text-slate-300 font-mono font-bold uppercase tracking-widest mt-0.5 sm:mt-1.5 drop-shadow-md">Goals</span>
                                                     </div>
                                                 </div>
                                             )
@@ -929,8 +1168,8 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-blue-400/30 to-blue-700/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
-                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
+                            <div className="bg-gradient-to-br from-blue-500/20 via-black/40 to-slate-800/10 border border-blue-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                                <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-5 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
                                         <div className="bg-black/80 p-2 rounded-lg border border-blue-400/50 shadow-inner">
                                             <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">🧤</span>
@@ -941,7 +1180,7 @@ export default function AutomatedDashboard() {
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2.5 sm:space-y-3 flex-1">
+                                    <div className="space-y-1.5 flex-1">
                                         {gloveLeaders.slice(0, 5).map((row, idx) => {
                                             const breakdownText = Object.entries(row.csByTeam)
                                                 .filter(([_, cs]) => (cs as number) > 0)
@@ -953,7 +1192,7 @@ export default function AutomatedDashboard() {
                                                 <div
                                                     key={row.name}
                                                     onClick={() => setSelectedManager(row)}
-                                                    className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-blue-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}
+                                                    className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-blue-500/10 border-blue-400/30' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}
                                                 >
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                                                         <span className={`font-black text-base sm:text-xl w-4 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-blue-400' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
