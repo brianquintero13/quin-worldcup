@@ -25,12 +25,12 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
 
     const src = `/managers/${fileName}.png`;
 
-    // Utilizing the new custom class .avatar-img-custom to handle the 25% crop offset
+    // Custom class .avatar-img-custom handles the 25% crop offset
     const sizeClasses = {
-        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 avatar-img-custom bg-white/10 shrink-0",
-        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 avatar-img-custom bg-white/10 shrink-0",
-        lg: "w-24 h-24 sm:w-36 sm:h-36 rounded-full border-2 border-sky-400 avatar-img-custom bg-white/10 shrink-0",
-        xl: "w-32 h-32 sm:w-44 sm:h-44 rounded-2xl border-2 border-sky-400 avatar-img-custom bg-white/10 shrink-0"
+        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0",
+        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0",
+        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0",
+        xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0"
     }[size];
 
     return (
@@ -736,18 +736,44 @@ export default function AutomatedDashboard() {
                                     LEADERBOARD
                                 </h2>
 
-                                {/* Projected Standings Toggle button */}
-                                <button
-                                    onClick={() => setShowProjected(!showProjected)}
-                                    className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md ${
-                                        showProjected
-                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                                            : 'bg-black/60 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
-                                    }`}
-                                >
-                                    <span className={`w-2 h-2 rounded-full ${showProjected ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
-                                    {showProjected ? 'Live Projections On' : 'Show Live Projections'}
-                                </button>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    {/* Grid / Table Toggle Layout format selection */}
+                                    <div className="flex bg-black/60 border border-white/10 p-0.5 rounded-lg shadow-md">
+                                        <button
+                                            onClick={() => setStandingsView('grid')}
+                                            className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                                                standingsView === 'grid'
+                                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                        >
+                                            Grid
+                                        </button>
+                                        <button
+                                            onClick={() => setStandingsView('table')}
+                                            className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                                                standingsView === 'table'
+                                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
+                                                    : 'text-slate-400 hover:text-white'
+                                            }`}
+                                        >
+                                            Table
+                                        </button>
+                                    </div>
+
+                                    {/* Projected Standings Toggle button */}
+                                    <button
+                                        onClick={() => setShowProjected(!showProjected)}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md ${
+                                            showProjected
+                                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
+                                                : 'bg-black/60 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
+                                        }`}
+                                    >
+                                        <span className={`w-2 h-2 rounded-full ${showProjected ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
+                                        {showProjected ? 'Live Projections On' : 'Show Live Projections'}
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Redesigned structured point system badge strip */}
@@ -771,142 +797,151 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* 2x6 Position Grid Section - Doubled Image Size */}
-                            <div className="bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl">
-                                <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3">
-                                    <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest drop-shadow-md">Current Standings Grid</h3>
-                                    <span className="text-[8px] font-mono text-slate-400">Ordered 1st to 12th</span>
-                                </div>
-                                {/* Responsive grid layout: 3 columns on mobile (4 rows), 6 columns on tablet/desktop (2 rows) */}
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
-                                    {overallLeaders.map((leader, index) => {
-                                        const rankColor =
-                                            index === 0 ? 'bg-amber-500 text-black' :
-                                                index === 1 ? 'bg-slate-300 text-black' :
-                                                    index === 2 ? 'bg-orange-600 text-white' :
-                                                        'bg-black/80 text-slate-300 border border-white/20';
+                            {/* Render visual layouts when standingsView is in Grid format */}
+                            {standingsView === 'grid' && (
+                                <div className="space-y-4 sm:space-y-6">
+                                    {/* 2x6 Position Grid Section - Doubled Image Size */}
+                                    <div className="bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl">
+                                        <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3">
+                                            <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest drop-shadow-md">Current Standings Grid</h3>
+                                            <span className="text-[8px] font-mono text-slate-400">Ordered 1st to 12th</span>
+                                        </div>
+                                        {/* Responsive grid layout: 3 columns on mobile (4 rows), 6 columns on tablet/desktop (2 rows) */}
+                                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
+                                            {overallLeaders.map((leader, index) => {
+                                                const rankColor =
+                                                    index === 0 ? 'bg-amber-500 text-black' :
+                                                        index === 1 ? 'bg-slate-300 text-black' :
+                                                            index === 2 ? 'bg-orange-600 text-white' :
+                                                                'bg-black/80 text-slate-300 border border-white/20';
 
-                                        return (
+                                                return (
+                                                    <div
+                                                        key={leader.name}
+                                                        onClick={() => setSelectedManager(leader)}
+                                                        className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex flex-col items-center justify-center relative cursor-pointer hover:bg-black/90 hover:border-sky-400/50 transition-all duration-300 group shadow-md"
+                                                    >
+                                                        {/* Overlaid Position Badge */}
+                                                        <div className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[8px] font-black font-mono shadow-md ${rankColor}`}>
+                                                            #{index + 1}
+                                                        </div>
+
+                                                        {/* Large Avatar */}
+                                                        <div className="mb-2">
+                                                            <ManagerAvatar name={leader.name} size="lg" />
+                                                        </div>
+
+                                                        {/* Name and points */}
+                                                        <div className="text-center w-full min-w-0">
+                                                            <span className="block font-black text-[10px] sm:text-xs text-white truncate drop-shadow-md group-hover:text-sky-400 transition-colors">
+                                                                {leader.name}
+                                                            </span>
+                                                            <span className={`block text-[11px] sm:text-xs font-black text-[#fbbf24] mt-0.5 ${oswald.className}`}>
+                                                                {leader.totalPoints} PTS
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Top 3 Podium Displays */}
+                                    <div className="grid grid-cols-3 gap-2 sm:gap-5">
+                                        {overallLeaders.slice(0, 3).map((leader, i) => (
                                             <div
                                                 key={leader.name}
                                                 onClick={() => setSelectedManager(leader)}
-                                                className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex flex-col items-center justify-center relative cursor-pointer hover:bg-black/90 hover:border-sky-400/50 transition-all duration-300 group shadow-md"
-                                            >
-                                                {/* Overlaid Position Badge */}
-                                                <div className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[8px] font-black font-mono shadow-md ${rankColor}`}>
-                                                    #{index + 1}
-                                                </div>
-
-                                                {/* Large Avatar */}
-                                                <div className="mb-2">
-                                                    <ManagerAvatar name={leader.name} size="lg" />
-                                                </div>
-
-                                                {/* Name and points */}
-                                                <div className="text-center w-full min-w-0">
-                                                    <span className="block font-black text-[10px] sm:text-xs text-white truncate drop-shadow-md group-hover:text-sky-400 transition-colors">
-                                                        {leader.name}
+                                                className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 cursor-pointer hover:bg-black/40 ${
+                                                    i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
+                                                        i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
+                                                            'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
+                                                }`}>
+                                                <div className="relative mb-2.5">
+                                                    <ManagerAvatar name={leader.name} size="md" />
+                                                    <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">
+                                                        {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
                                                     </span>
-                                                    <span className={`block text-[11px] sm:text-xs font-black text-[#fbbf24] mt-0.5 ${oswald.className}`}>
-                                                        {leader.totalPoints} PTS
-                                                    </span>
+                                                </div>
+                                                <h3 className="text-[11px] sm:text-xl md:text-2xl font-black text-white mb-0.5 sm:mb-1.5 tracking-wide truncate w-full px-1 sm:px-2 drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black]">{leader.name}</h3>
+                                                <div className={`text-2xl sm:text-5xl md:text-6xl font-black text-white leading-none mb-1 sm:mb-2.5 drop-shadow-2xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:1.5px_black] ${oswald.className}`}>{leader.totalPoints}</div>
+                                                <span className="text-[7px] sm:text-[11px] text-white font-bold font-mono mb-1.5 sm:mb-3 uppercase tracking-widest hidden sm:block drop-shadow-md [text-shadow:0_1px_2px_black]">Points</span>
+                                                <div className="flex flex-wrap justify-center gap-0.5 sm:gap-1.5 px-1 sm:scale-110">
+                                                    {leader.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
                                                 </div>
                                             </div>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-2 sm:gap-5">
-                                {overallLeaders.slice(0, 3).map((leader, i) => (
-                                    <div
-                                        key={leader.name}
-                                        onClick={() => setSelectedManager(leader)}
-                                        className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 cursor-pointer hover:bg-black/40 ${
-                                            i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
-                                                i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
-                                                    'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
-                                        }`}>
-                                        <div className="relative mb-2.5">
-                                            <ManagerAvatar name={leader.name} size="md" />
-                                            <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">
-                                                {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-                                            </span>
-                                        </div>
-                                        <h3 className="text-[11px] sm:text-xl md:text-2xl font-black text-white mb-0.5 sm:mb-1.5 tracking-wide truncate w-full px-1 sm:px-2 drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black]">{leader.name}</h3>
-                                        <div className={`text-2xl sm:text-5xl md:text-6xl font-black text-white leading-none mb-1 sm:mb-2.5 drop-shadow-2xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:1.5px_black] ${oswald.className}`}>{leader.totalPoints}</div>
-                                        <span className="text-[7px] sm:text-[11px] text-white font-bold font-mono mb-1.5 sm:mb-3 uppercase tracking-widest hidden sm:block drop-shadow-md [text-shadow:0_1px_2px_black]">Points</span>
-                                        <div className="flex flex-wrap justify-center gap-0.5 sm:gap-1.5 px-1 sm:scale-110">
-                                            {leader.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
-                                        </div>
+                                        ))}
                                     </div>
-                                ))}
-                            </div>
+                                </div>
+                            )}
 
-                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto">
-                                <table className="w-full text-left text-[10px] sm:text-sm border-collapse min-w-[500px] sm:min-w-[800px]">
-                                    <thead>
-                                    <tr className="border-b border-white/20 text-slate-300 text-[9px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest font-black">
-                                        <th className="py-2 sm:py-4 pl-3 sm:pl-5 w-8 sm:w-12 drop-shadow-md">#</th>
-                                        <th className="py-2 sm:py-4 w-28 sm:w-48 drop-shadow-md">Drafter</th>
-                                        <th className="py-2 sm:py-4 w-12 sm:w-20 drop-shadow-md">PTS</th>
-                                        <th className="py-2 sm:py-4 drop-shadow-md">Teams</th>
-                                        <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">W</th>
-                                        <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">D</th>
-                                        <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">L</th>
-                                        <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">GF</th>
-                                        <th className="py-2 sm:py-4 text-center pr-3 sm:pr-5 w-8 sm:w-14 drop-shadow-md">CS</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/10">
-                                    {overallLeaders.map((row, index) => (
-                                        <tr key={row.name} className="hover:bg-black/50 transition">
-                                            <td className={`py-1.5 sm:py-3.5 pl-3 sm:pl-5 font-black text-white text-[11px] sm:text-base drop-shadow-md [text-shadow:0_1px_2px_black] ${oswald.className}`}>{index + 1}</td>
-                                            <td className="py-1.5 sm:py-3.5">
-                                                <div className="flex items-center gap-2">
-                                                    <ManagerAvatar name={row.name} size="sm" />
-                                                    <button
-                                                        onClick={() => setSelectedManager(row)}
-                                                        className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-[150px] drop-shadow-md [text-shadow:0_1px_2px_black]"
-                                                    >
-                                                        {row.name}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                            <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints}</td>
-                                            <td className="py-1.5 sm:py-3.5">
-                                                <div className="flex gap-0.5 sm:gap-1.5 flex-wrap">
-                                                    {row.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
-                                                </div>
-                                            </td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-emerald-400 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.wins}</td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-slate-100 text-[10px] sm:text-base drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${oswald.className}`}>{row.draws}</td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-rose-400 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.losses}</td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-slate-100 text-[10px] sm:text-base drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${oswald.className}`}>{row.totalGoals}</td>
-                                            <td className={`py-1.5 sm:py-3.5 text-center font-black text-blue-400 pr-3 sm:pr-5 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.totalCleanSheets}</td>
+                            {/* Render tabular statistical listings when standingsView is in Table format */}
+                            {standingsView === 'table' && (
+                                <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto content-animate">
+                                    <table className="w-full text-left text-[10px] sm:text-sm border-collapse min-w-[500px] sm:min-w-[800px]">
+                                        <thead>
+                                        <tr className="border-b border-white/20 text-slate-300 text-[8px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest font-black">
+                                            <th className="py-2 sm:py-4 pl-3 sm:pl-5 w-8 sm:w-12 drop-shadow-md">#</th>
+                                            <th className="py-2 sm:py-4 w-28 sm:w-48 drop-shadow-md">Drafter</th>
+                                            <th className="py-2 sm:py-4 w-12 sm:w-20 drop-shadow-md">PTS</th>
+                                            <th className="py-2 sm:py-4 drop-shadow-md">Teams</th>
+                                            <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">W</th>
+                                            <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">D</th>
+                                            <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">L</th>
+                                            <th className="py-2 sm:py-4 text-center w-8 sm:w-14 drop-shadow-md">GF</th>
+                                            <th className="py-2 sm:py-4 text-center pr-3 sm:pr-5 w-8 sm:w-14 drop-shadow-md">CS</th>
                                         </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/10">
+                                        {overallLeaders.map((row, index) => (
+                                            <tr key={row.name} className="hover:bg-black/50 transition">
+                                                <td className={`py-1.5 sm:py-3.5 pl-3 sm:pl-5 font-black text-white text-[11px] sm:text-base drop-shadow-md [text-shadow:0_1px_2px_black] ${oswald.className}`}>{index + 1}</td>
+                                                <td className="py-1.5 sm:py-3.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <ManagerAvatar name={row.name} size="sm" />
+                                                        <button
+                                                            onClick={() => setSelectedManager(row)}
+                                                            className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-[150px] drop-shadow-md [text-shadow:0_1px_2px_black]"
+                                                        >
+                                                            {row.name}
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                                <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints}</td>
+                                                <td className="py-1.5 sm:py-3.5">
+                                                    <div className="flex gap-0.5 sm:gap-1.5 flex-wrap">
+                                                        {row.teams.map(t => <div key={t} title={t}><FlagIcon teamName={t} /></div>)}
+                                                    </div>
+                                                </td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-emerald-400 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.wins}</td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-slate-100 text-[10px] sm:text-base drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${oswald.className}`}>{row.draws}</td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-rose-400 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.losses}</td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-slate-100 text-[10px] sm:text-base drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${oswald.className}`}>{row.totalGoals}</td>
+                                                <td className={`py-1.5 sm:py-3.5 text-center font-black text-blue-400 pr-3 sm:pr-5 text-[10px] sm:text-base drop-shadow-md ${oswald.className}`}>{row.totalCleanSheets}</td>
+                                            </tr>
+                                        ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     )}
 
                     {activeTab === 'awards' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 max-w-7xl mx-auto">
-                            <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
+                            <div className="bg-gradient-to-br from-amber-500/20 via-black/40 to-yellow-800/10 border border-amber-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-5 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
+                                    <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
                                         <div className="bg-black/80 p-2 rounded-lg border border-amber-400/50 shadow-inner">
                                             <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">⚽</span>
                                         </div>
                                         <div>
-                                            <h2 className={`text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Golden Boot</h2>
+                                            <h2 className={`text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest ${oswald.className}`}>Golden Boot</h2>
                                             <p className="text-[#fbbf24] text-[8px] sm:text-xs font-mono font-black tracking-widest uppercase mt-1 drop-shadow-md [text-shadow:0_1px_2px_black]">15% Pot • Most Goals</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 flex-1">
+                                    <div className="space-y-1.5 flex-1">
                                         {bootLeaders.slice(0, 5).map((row, idx) => {
                                             const breakdownText = Object.entries(row.goalsByTeam)
                                                 .filter(([_, goals]) => (goals as number) > 0)
@@ -918,21 +953,21 @@ export default function AutomatedDashboard() {
                                                 <div
                                                     key={row.name}
                                                     onClick={() => setSelectedManager(row)}
-                                                    className={`flex justify-between items-center p-2 sm:p-3 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-amber-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}
+                                                    className={`flex justify-between items-center py-1.5 px-3 rounded-lg border transition-all cursor-pointer ${idx === 0 ? 'bg-amber-500/10 border-amber-400/30' : 'bg-black/40 border-white/5 hover:border-white/15 hover:bg-black/60'}`}
                                                 >
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                                        <span className={`font-black text-lg sm:text-xl w-4 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-[#fbbf24]' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <span className="font-mono font-black text-xs text-slate-300 w-4 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
-                                                        <div className="flex flex-col min-w-0 pr-2">
-                                                            <span className="font-black text-xs sm:text-base leading-tight break-words text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]">{row.name}</span>
-                                                            <span className="text-[9px] sm:text-[10px] text-slate-300 font-bold mt-0.5 max-w-[120px] sm:max-w-[220px] truncate drop-shadow-md" title={breakdownText}>
+                                                        <div className="flex flex-col min-w-0">
+                                                            <span className="font-black text-xs text-sky-400 truncate w-24 sm:w-36">{row.name}</span>
+                                                            <span className="text-[9px] sm:text-[10px] text-slate-300 font-bold max-w-[120px] sm:max-w-[220px] truncate" title={breakdownText}>
                                                                 {breakdownText || "No goals yet"}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <div className="flex flex-col items-end shrink-0">
-                                                        <span className={`font-black text-xl sm:text-3xl md:text-4xl leading-none drop-shadow-xl ${oswald.className}`}>{row.totalGoals}</span>
-                                                        <span className="text-[7px] sm:text-[10px] text-slate-400 font-mono font-bold uppercase tracking-widest mt-0.5">Goals</span>
+                                                    <div className="flex items-baseline gap-1 shrink-0">
+                                                        <span className={`font-black text-lg sm:text-2xl text-white ${oswald.className}`}>{row.totalGoals}</span>
+                                                        <span className="text-[7px] text-slate-400 uppercase tracking-widest font-mono">G</span>
                                                     </div>
                                                 </div>
                                             )
@@ -941,19 +976,19 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            <div className="bg-gradient-to-br from-blue-400/30 to-blue-700/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                            <div className="bg-gradient-to-br from-blue-500/20 via-black/40 to-slate-800/10 border border-blue-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-5 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
                                         <div className="bg-black/80 p-2 rounded-lg border border-blue-400/50 shadow-inner">
                                             <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">🧤</span>
                                         </div>
                                         <div>
-                                            <h2 className={`text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Golden Glove</h2>
+                                            <h2 className={`text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest ${oswald.className}`}>Golden Glove</h2>
                                             <p className="text-blue-300 text-[8px] sm:text-xs font-mono font-black tracking-widest uppercase mt-1.5 drop-shadow-md">10% Pot • Clean Sheets</p>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2 flex-1">
+                                    <div className="space-y-1.5 flex-1">
                                         {gloveLeaders.slice(0, 5).map((row, idx) => {
                                             const breakdownText = Object.entries(row.csByTeam)
                                                 .filter(([_, cs]) => (cs as number) > 0)
@@ -965,21 +1000,21 @@ export default function AutomatedDashboard() {
                                                 <div
                                                     key={row.name}
                                                     onClick={() => setSelectedManager(row)}
-                                                    className={`flex justify-between items-center p-3 sm:p-4 rounded-xl border transition-all cursor-pointer ${idx === 0 ? 'bg-black/80 border-blue-400/50 shadow-xl scale-[1.01]' : 'bg-black/50 border-white/20 hover:border-white/40 hover:bg-black/70 shadow-lg'}`}
+                                                    className={`flex justify-between items-center py-1.5 px-3 rounded-lg border transition-all cursor-pointer ${idx === 0 ? 'bg-blue-500/10 border-blue-400/30' : 'bg-black/40 border-white/5 hover:border-white/15 hover:bg-black/60'}`}
                                                 >
                                                     <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                                                        <span className={`font-black text-base sm:text-xl w-4 sm:w-6 shrink-0 text-center drop-shadow-lg ${idx === 0 ? 'text-blue-400' : 'text-white'}`}>{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx+1}.`}</span>
+                                                        <span className="font-mono font-black text-xs text-slate-300 w-4 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
-                                                        <div className="flex flex-col min-w-0 pr-2">
+                                                        <div className="flex flex-col min-w-0">
                                                             <span className={`font-black text-base sm:text-lg md:text-xl leading-tight break-words text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
-                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold mt-0.5 max-w-[140px] sm:max-w-[250px] truncate drop-shadow-md" title={breakdownText}>
+                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold max-w-[120px] sm:max-w-[250px] truncate" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
                                                         </div>
                                                     </div>
-                                                    <div className="flex flex-col items-end shrink-0">
-                                                        <span className={`font-black text-xl sm:text-3xl md:text-4xl leading-none drop-shadow-xl ${oswald.className}`}>{row.totalCleanSheets}</span>
-                                                        <span className="text-[9px] sm:text-[10px] text-slate-400 font-mono font-bold uppercase tracking-widest mt-1">Sheets</span>
+                                                    <div className="flex items-baseline gap-1 shrink-0">
+                                                        <span className={`font-black text-lg sm:text-2xl text-white ${oswald.className}`}>{row.totalCleanSheets}</span>
+                                                        <span className="text-[7px] text-slate-400 uppercase tracking-widest font-mono">CS</span>
                                                     </div>
                                                 </div>
                                             )
