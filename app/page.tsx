@@ -16,14 +16,12 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
     let fileName = firstWord.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (fileName === 'angelo') fileName = 'anuzzil';
     const src = `/managers/${fileName}.png`;
-
     const sizeClasses = {
         sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0",
         md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0",
         lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0",
         xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0"
     }[size];
-
     return (
         <img src={src} alt={name} className={sizeClasses} onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0ea5e9&textColor=ffffff`;
@@ -66,8 +64,7 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     });
     if (groupName) {
         const groupMatches = matchesList.filter(m => m.group === groupName);
-        const allFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED');
-        if (allFinished) {
+        if (groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED')) {
             const table: Record<string, any> = {};
             groupMatches.forEach(m => {
                 if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
@@ -787,23 +784,26 @@ export default function AutomatedDashboard() {
                                                                 </tr>
                                                                 </thead>
                                                                 <tbody className="divide-y divide-white/10">
-                                                                {groupTable.map((teamRow) => (
-                                                                    <tr key={teamRow.name} className="hover:bg-black/50 transition">
-                                                                        <td className="py-2 sm:py-2.5 px-2 sm:px-3 font-black text-slate-100 drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">
-                                                                            <div className="flex items-center whitespace-nowrap min-w-0">
-                                                                                <FlagIcon teamName={teamRow.name}/>
-                                                                                <span className="truncate block whitespace-nowrap">{teamRow.name}</span>
-                                                                            </div>
-                                                                        </td>
-                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.mp}</td>
-                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.w}</td>
-                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.d}</td>
-                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.l}</td>
-                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.gf}</td>
-                                                                        <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.ga}</td>
-                                                                        <td className={`py-2 sm:py-2.5 text-center font-black text-[#fbbf24] pr-2 sm:pr-3 text-xs sm:text-sm drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{teamRow.pts}</td>
-                                                                    </tr>
-                                                                ))}
+                                                                {groupTable.map((teamRow) => {
+                                                                    const teamEliminated = isTeamEliminated(teamRow.name, uniqueMatches);
+                                                                    return (
+                                                                        <tr key={teamRow.name} className={`hover:bg-black/50 transition ${teamEliminated ? 'opacity-35 grayscale' : ''}`}>
+                                                                            <td className="py-2.5 px-3 font-black text-slate-100 drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">
+                                                                                <div className="flex items-center whitespace-nowrap min-w-0">
+                                                                                    <FlagIcon teamName={teamRow.name}/>
+                                                                                    <span className="truncate block whitespace-nowrap">{teamRow.name}</span>
+                                                                                </div>
+                                                                            </td>
+                                                                            <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.mp}</td>
+                                                                            <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.w}</td>
+                                                                            <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.d}</td>
+                                                                            <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.l}</td>
+                                                                            <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.gf}</td>
+                                                                            <td className="py-2 sm:py-2.5 text-center text-white font-bold font-mono drop-shadow-md">{teamRow.ga}</td>
+                                                                            <td className={`py-2 sm:py-2.5 text-center font-black text-[#fbbf24] pr-2 sm:pr-3 text-xs sm:text-sm drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{teamRow.pts}</td>
+                                                                        </tr>
+                                                                    )
+                                                                })}
                                                                 </tbody>
                                                             </table>
                                                         </div>
@@ -864,17 +864,17 @@ export default function AutomatedDashboard() {
                                 </div>
                             )}
 
-                            {/* Render interactive horizontal scrolling Tournament Bracket Board (Tree format) */}
+                            {/* Render interactive horizontal scrolling Tournament Bracket Board */}
                             {matchesSubTab === 'bracket' && (
                                 <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 sm:p-5 shadow-2xl overflow-x-auto no-scrollbar content-animate">
-                                    <div className="flex gap-6 sm:gap-8 min-w-[1250px] h-[720px] items-stretch pb-2">
+                                    <div className="flex gap-6 sm:gap-8 min-w-[1250px] items-start pb-2 h-[720px]">
 
                                         {/* Column 1: Round of 32 */}
-                                        <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-3 sm:pr-4">
-                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1 text-center shrink-0">Round of 32</h4>
+                                        <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Round of 32</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
                                                 {uniqueMatches.filter(m => m.stage === 'R32').length === 0 ? (
-                                                    <p className="text-[10px] text-slate-400 italic text-center">No Round of 32 matches populated.</p>
+                                                    <p className="text-[10px] text-slate-400 italic text-center w-[230px]">No Round of 32 matches populated.</p>
                                                 ) : (
                                                     uniqueMatches.filter(m => m.stage === 'R32').map(m => renderBracketMatch(m))
                                                 )}
@@ -882,11 +882,11 @@ export default function AutomatedDashboard() {
                                         </div>
 
                                         {/* Column 2: Round of 16 */}
-                                        <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-3 sm:pr-4">
-                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1 text-center shrink-0">Round of 16</h4>
+                                        <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Round of 16</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
                                                 {uniqueMatches.filter(m => m.stage === 'R16').length === 0 ? (
-                                                    <p className="text-[10px] text-slate-400 italic text-center">Matches pending group play.</p>
+                                                    <p className="text-[10px] text-slate-400 italic text-center w-[230px]">Matches pending group play.</p>
                                                 ) : (
                                                     uniqueMatches.filter(m => m.stage === 'R16').map(m => renderBracketMatch(m))
                                                 )}
@@ -894,11 +894,11 @@ export default function AutomatedDashboard() {
                                         </div>
 
                                         {/* Column 3: Quarterfinals */}
-                                        <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-3 sm:pr-4">
-                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1 text-center shrink-0">Quarterfinals</h4>
+                                        <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Quarterfinals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
                                                 {uniqueMatches.filter(m => m.stage === 'QF').length === 0 ? (
-                                                    <p className="text-[10px] text-slate-400 italic text-center">QF matches pending.</p>
+                                                    <p className="text-[10px] text-slate-400 italic text-center w-[230px]">QF matches pending.</p>
                                                 ) : (
                                                     uniqueMatches.filter(m => m.stage === 'QF').map(m => renderBracketMatch(m))
                                                 )}
@@ -906,11 +906,11 @@ export default function AutomatedDashboard() {
                                         </div>
 
                                         {/* Column 4: Semifinals */}
-                                        <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-3 sm:pr-4">
-                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1 text-center shrink-0">Semifinals</h4>
+                                        <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Semifinals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
                                                 {uniqueMatches.filter(m => m.stage === 'SF').length === 0 ? (
-                                                    <p className="text-[10px] text-slate-400 italic text-center">SF matches pending.</p>
+                                                    <p className="text-[10px] text-slate-400 italic text-center w-[230px]">SF matches pending.</p>
                                                 ) : (
                                                     uniqueMatches.filter(m => m.stage === 'SF').map(m => renderBracketMatch(m))
                                                 )}
@@ -919,10 +919,10 @@ export default function AutomatedDashboard() {
 
                                         {/* Column 5: Finals & 3rd Place */}
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0">
-                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1 text-center shrink-0">Finals</h4>
+                                            <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Finals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
                                                 {uniqueMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').length === 0 ? (
-                                                    <p className="text-[10px] text-slate-400 italic text-center">Final matches pending.</p>
+                                                    <p className="text-[10px] text-slate-400 italic text-center w-[230px]">Final matches pending.</p>
                                                 ) : (
                                                     uniqueMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').map(m => renderBracketMatch(m))
                                                 )}
@@ -1212,7 +1212,7 @@ export default function AutomatedDashboard() {
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
                                         <div className="bg-black/80 p-1.5 rounded-lg border border-blue-400/50 shadow-inner">
-                                            <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">🧤</span>
+                                            <span className="text-xl sm:text-2xl block leading-none drop-shadow-md">🧤</span>
                                         </div>
                                         <div>
                                             <h3 className={`text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest ${oswald.className}`}>Golden Glove</h3>
@@ -1238,7 +1238,7 @@ export default function AutomatedDashboard() {
                                                         <span className="font-mono font-black text-xs text-slate-300 w-4 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0">
-                                                            <span className="font-black text-xs sm:text-lg leading-tight break-words text-sky-400 drop-shadow-md">{row.name}</span>
+                                                            <span className={`font-black text-base sm:text-lg md:text-xl leading-tight break-words text-sky-400 drop-shadow-md`}>{row.name}</span>
                                                             <span className="text-[10px] sm:text-xs text-slate-300 font-bold max-w-[120px] sm:max-w-[250px] truncate" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
