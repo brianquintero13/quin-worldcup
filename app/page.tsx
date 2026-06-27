@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { db } from '../lib/firebase';
 import { ref, onValue } from 'firebase/database';
 import { Oswald } from 'next/font/google';
-
 import ScheduleTab from './components/ScheduleTab';
 import FlagIcon from './components/FlagIcon';
 
@@ -16,14 +15,12 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
     let fileName = firstWord.toLowerCase().replace(/[^a-z0-9]/g, '');
     if (fileName === 'angelo') fileName = 'anuzzil';
     const src = `/managers/${fileName}.png`;
-
     const sizeClasses = {
         sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0",
         md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0",
         lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0",
         xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0"
     }[size];
-
     return (
         <img src={src} alt={name} className={sizeClasses} onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0ea5e9&textColor=ffffff`;
@@ -66,8 +63,7 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     });
     if (groupName) {
         const groupMatches = matchesList.filter(m => m.group === groupName);
-        const allFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED');
-        if (allFinished) {
+        if (groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED')) {
             const table: Record<string, any> = {};
             groupMatches.forEach(m => {
                 if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
@@ -676,7 +672,7 @@ export default function AutomatedDashboard() {
                                         <div key={idx} className="flex items-center justify-between bg-black/60 border border-white/10 p-1.5 sm:p-2 rounded-md min-w-0 hover:bg-black/90 transition shadow-md">
                                             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 pr-1 sm:pr-2">
                                                 <span className={`text-[9px] sm:text-[10px] font-mono text-slate-300 font-black shrink-0 w-4 sm:w-5 drop-shadow-md ${oswald.className}`}>#{picks.length - idx}</span>
-                                                <div className="flex items-center text-[9px] sm:text-[10px] font-black text-slate-100 min-w-0 drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">
+                                                <div className={`flex items-center text-[9px] sm:text-[10px] font-black text-slate-100 min-w-0 drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${isTeamEliminated(pick.team, uniqueMatches) ? 'opacity-35 grayscale line-through text-slate-500' : ''}`}>
                                                     <FlagIcon teamName={pick.team}/>
                                                     <span className="truncate block whitespace-nowrap">{pick.team}</span>
                                                 </div>
@@ -803,6 +799,9 @@ export default function AutomatedDashboard() {
                                                                 const awayDrafter = getDrafterForTeam(m.awayTeam);
                                                                 const homeEliminated = isTeamEliminated(m.homeTeam, uniqueMatches);
                                                                 const awayEliminated = isTeamEliminated(m.awayTeam, uniqueMatches);
+
+                                                                const isHomeWin = m.winner === m.homeTeam;
+                                                                const isAwayWin = m.winner === m.awayTeam;
 
                                                                 const homeNameColor = isHomeWin ? 'font-black text-emerald-400' : isAwayWin ? 'font-bold text-rose-400' : 'font-black text-slate-100';
                                                                 const awayNameColor = isAwayWin ? 'font-black text-emerald-400' : isHomeWin ? 'font-bold text-rose-400' : 'font-black text-slate-100';
@@ -1058,7 +1057,7 @@ export default function AutomatedDashboard() {
                                 <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto content-animate">
                                     <table className="w-full text-left text-[10px] sm:text-sm border-collapse min-w-[500px] sm:min-w-[800px]">
                                         <thead>
-                                        <tr className="border-b border-white/20 text-slate-300 text-[8px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest font-black">
+                                        <tr className="border-b border-white/20 text-slate-300 text-[9px] sm:text-[10px] uppercase font-mono bg-black/80 tracking-widest font-black">
                                             <th className="py-2 sm:py-4 pl-3 sm:pl-5 w-8 sm:w-12 drop-shadow-md">#</th>
                                             <th className="py-2 sm:py-4 w-28 sm:w-48 drop-shadow-md">Drafter</th>
                                             <th className="py-2 sm:py-4 w-12 sm:w-20 drop-shadow-md">PTS</th>
@@ -1139,7 +1138,7 @@ export default function AutomatedDashboard() {
                             <div className="bg-gradient-to-br from-amber-500/20 via-black/40 to-yellow-800/10 border border-amber-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3">
-                                        <div className="bg-black/80 p-1.5 rounded-lg border border-amber-500/30 shadow-inner">
+                                        <div className="bg-black/80 p-1.5 rounded-lg border border-amber-400/50 shadow-inner">
                                             <span className="text-xl sm:text-2xl block leading-none drop-shadow-md">⚽</span>
                                         </div>
                                         <div>
@@ -1167,7 +1166,7 @@ export default function AutomatedDashboard() {
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0">
                                                             <span className="font-black text-xs text-sky-400 truncate w-24 sm:w-36">{row.name}</span>
-                                                            <span className="text-[8px] sm:text-[9px] text-slate-300 font-bold max-w-[120px] sm:max-w-[220px] truncate" title={breakdownText}>
+                                                            <span className="text-[8px] sm:text-[9px] text-slate-300 font-bold mt-0.5 max-w-[120px] sm:max-w-[220px] truncate" title={breakdownText}>
                                                                 {breakdownText || "No goals yet"}
                                                             </span>
                                                         </div>
@@ -1188,7 +1187,7 @@ export default function AutomatedDashboard() {
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
                                         <div className="bg-black/80 p-1.5 rounded-lg border border-blue-400/50 shadow-inner">
-                                            <span className="text-xl sm:text-2xl block leading-none drop-shadow-md">🧤</span>
+                                            <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">🧤</span>
                                         </div>
                                         <div>
                                             <h3 className={`text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest ${oswald.className}`}>Golden Glove</h3>
@@ -1215,7 +1214,7 @@ export default function AutomatedDashboard() {
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0">
                                                             <span className={`font-black text-base sm:text-lg md:text-xl leading-tight break-words text-sky-400 drop-shadow-md [text-shadow:0_1px_2px_black]`}>{row.name}</span>
-                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold max-w-[120px] sm:max-w-[250px] truncate" title={breakdownText}>
+                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold mt-0.5 max-w-[120px] sm:max-w-[250px] truncate" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
                                                         </div>
