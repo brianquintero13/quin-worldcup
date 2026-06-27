@@ -22,6 +22,7 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
         lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0",
         xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0"
     }[size];
+
     return (
         <img src={src} alt={name} className={sizeClasses} onError={(e) => {
             (e.currentTarget as HTMLImageElement).src = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=0ea5e9&textColor=ffffff`;
@@ -95,13 +96,23 @@ export default function AutomatedDashboard() {
     const [picks, setPicks] = useState<any[]>([]);
     const [drafters, setDrafters] = useState<string[]>([]);
     const [matches, setMatches] = useState<any[]>([]);
-    const [activeTab, setActiveTab] = useState<'draft' | 'matches' | 'schedule' | 'standings' | 'awards' | 'rules'>('standings');
+    const [activeTab, setActiveTab] = useState<'draft' | 'matches' | 'schedule' | 'standings' | 'awards' | 'rules' | 'banter'>('standings');
     const [draftSearch, setDraftSearch] = useState<string>('');
     const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>('ALL');
     const [selectedManager, setSelectedManager] = useState<any | null>(null);
     const [showProjected, setShowProjected] = useState<boolean>(false);
     const [standingsView, setStandingsView] = useState<'grid' | 'table'>('grid');
     const [matchesSubTab, setMatchesSubTab] = useState<'groups' | 'bracket'>('groups');
+
+    // Banter Arena states
+    const [selectedRoastManager, setSelectedRoastManager] = useState<string>('');
+    const [activeRoastText, setActiveRoastText] = useState<string>('');
+    const [fighterA, setFighterA] = useState<string>('');
+    const [fighterB, setFighterB] = useState<string>('');
+    const [fightLogs, setFightLogs] = useState<string[]>([]);
+    const [fightRunning, setFightRunning] = useState<boolean>(false);
+    const [hpA, setHpA] = useState<number>(100);
+    const [hpB, setHpB] = useState<number>(100);
 
     useEffect(() => {
         const stateRef = ref(db, 'state');
@@ -417,6 +428,106 @@ export default function AutomatedDashboard() {
         );
     };
 
+    // Uncensored, savage manager evaluations
+    const handleGenerateRoast = () => {
+        if (!selectedRoastManager) return;
+        const mgr = standings.find(s => s.name === selectedRoastManager);
+        if (!mgr) return;
+
+        const isLastPlace = overallLeaders[overallLeaders.length - 1].name === mgr.name;
+        const isFirstPlace = overallLeaders[0].name === mgr.name;
+        const cleanSheets = mgr.totalCleanSheets;
+        const goals = mgr.totalGoals;
+
+        let roast = ``;
+        if (isFirstPlace) {
+            roast = `Uncensored reality check: ${mgr.name} is sitting in 1st place with ${mgr.totalPoints} PTS. You drafted the heaviest tournament favorites because you have zero risk tolerance, you absolute coward. You are riding the coattails of giants like a parasite. Your 'tactical genius' is just copying a FIFA world rankings list and hoping for the best. Enjoy the group stage padding before a proper knockout upset exposes your complete lack of strategic depth.`;
+        } else if (isLastPlace) {
+            roast = `Savage Analysis: ${mgr.name}'s performance is a historic disaster. You have a pathetic ${mgr.totalPoints} PTS. Your drafted teams look like they are legally blind and recovering from a collective hangover. You've managed to build a squad of pure, unadulterated garbage. Honestly, close WebStorm, delete your repository, and log off the group chat. It's embarrassing.`;
+        } else if (cleanSheets >= 5) {
+            roast = `Listen, ${mgr.name}. You have parked the bus so violently that the EPA should audit your fuel emissions. You have ${cleanSheets} clean sheets, which is great if you hate fun. Your teams score goals with the frequency of a solar eclipse. This is soccer, not a highway construction zone. Go buy a forward or start watching some tape.`;
+        } else if (goals <= 2) {
+            roast = `Breaking Report: ${mgr.name}'s forwards couldn't finish a sentence, let alone a scoring opportunity. You have only ${goals} goals across all four of your drafted teams. Even with open nets and no goalkeepers, your strikers would probably find a way to pass backward. Please, send some shooting instructors to your squad immediately.`;
+        } else {
+            roast = `${mgr.name}: You are floating in the dead center. The absolute most boring, generic place to be. You're not good enough to fear, and not bad enough to be funny. You're the human equivalent of unseasoned chicken breast. Your draft strategy was basically a blindfolded child throwing darts at a map of Europe. Pick a side and either win or fail spectacularly, you spineless fence-sitter.`;
+        }
+        setActiveRoastText(roast);
+    };
+
+    // Turn-Based simulated retro battle arena with live health bars
+    const handleSimulateFight = () => {
+        if (!fighterA || !fighterB || fighterA === fighterB) return;
+        const pA = standings.find(s => s.name === fighterA);
+        const pB = standings.find(s => s.name === fighterB);
+        if (!pA || !pB) return;
+
+        setFightRunning(true);
+        setHpA(100);
+        setHpB(100);
+
+        const initialLogs = [
+            `⚔️ BATTLE INITIATED: ${pA.name} VS ${pB.name}!`,
+            `🤖 ROCK 'EM SOCK 'EM ROBOTS MODE: ACTIVE. PROTECT YOUR HEADS.`
+        ];
+        setFightLogs(initialLogs);
+
+        let currentHpA = 100;
+        let currentHpB = 100;
+        let logs = [...initialLogs];
+
+        const interval = setInterval(() => {
+            const attackerIsA = Math.random() > 0.5;
+            const damage = Math.floor(Math.random() * 20) + 15; // 15 to 35 damage
+
+            const punchesA = [
+                `👊 ${pA.name} lunges forward and absolutely decks ${pB.name} in the jaw, screaming about ${pB.name}'s garbage picks!`,
+                `💥 ${pA.name} unleashes a devastating hook. '${pB.name}'s teams play like they are recovering from a collective hangover!'`,
+                `🥊 ${pA.name} counters with a brutal throat punch. '${pB.name} has only ${pB.totalPoints} PTS and still has the audacity to step into this ring?'`,
+                `🤯 CRITICAL HIT! ${pA.name} connects with a massive headbutt. ${pB.name}'s head is practically loose on its spring!`
+            ];
+
+            const punchesB = [
+                `👊 ${pB.name} lunges forward and lands a savage left hook, mocking ${pA.name}'s tragic lineup!`,
+                `💥 ${pB.name} connects with a direct hit to the chest. '${pA.name}'s defensive strategies are a complete joke!'`,
+                `🥊 ${pB.name} retaliates with a low blow. 'Your tactical setup looks like a blind toddler arranged it!'`,
+                `🤯 CRITICAL HIT! ${pB.name} executes a violent uppercut. ${pA.name}'s health is dropping fast!`
+            ];
+
+            if (attackerIsA) {
+                currentHpB = Math.max(0, currentHpB - damage);
+                const punchText = punchesA[Math.floor(Math.random() * punchesA.length)];
+                logs.push(`${punchText} (-${damage} HP)`);
+                setHpB(currentHpB);
+            } else {
+                currentHpA = Math.max(0, currentHpA - damage);
+                const punchText = punchesB[Math.floor(Math.random() * punchesB.length)];
+                logs.push(`${punchText} (-${damage} HP)`);
+                setHpA(currentHpA);
+            }
+
+            setFightLogs([...logs]);
+
+            if (currentHpA <= 0 || currentHpB <= 0) {
+                clearInterval(interval);
+                setFightRunning(false);
+                if (currentHpA <= 0) {
+                    logs.push(`💀 HEAD POP! ${pA.name}'s head literally POPS off the spring!`);
+                    logs.push(`🏆 VICTORY: ${pB.name} stands victorious over the ruins of ${pA.name}'s dignity!`);
+                } else {
+                    logs.push(`💀 HEAD POP! ${pB.name}'s head literally POPS off the spring!`);
+                    logs.push(`🏆 VICTORY: ${pA.name} stands victorious over the ruins of ${pB.name}'s dignity!`);
+                }
+                setFightLogs([...logs]);
+            }
+        }, 1000);
+    };
+
+    const getHealthBarColor = (hp: number) => {
+        if (hp > 60) return 'bg-emerald-500';
+        if (hp > 30) return 'bg-amber-500';
+        return 'bg-rose-500 animate-pulse';
+    };
+
     return (
         <div className="relative min-h-screen font-sans text-slate-100 overflow-x-hidden">
 
@@ -459,7 +570,8 @@ export default function AutomatedDashboard() {
                                 activeTab === 'schedule' ? "url('/schedule.png')" :
                                     activeTab === 'rules' ? "url('/rules.png')" :
                                         activeTab === 'standings' ? "url('/leaderboard.png')" :
-                                            "url('/awards.png')"
+                                            activeTab === 'banter' ? "url('/scores.png')" :
+                                                "url('/awards.png')"
                 }}
             />
 
@@ -582,13 +694,13 @@ export default function AutomatedDashboard() {
                             </h1>
                         </div>
                         <div className="flex overflow-x-auto no-scrollbar bg-black/70 backdrop-blur-xl p-1 sm:p-1.5 rounded-lg border border-white/20 w-full md:w-auto shadow-2xl">
-                            {['draft', 'matches', 'schedule', 'standings', 'awards', 'rules'].map(tab => (
+                            {['draft', 'matches', 'schedule', 'standings', 'awards', 'rules', 'banter'].map(tab => (
                                 <button
                                     key={tab}
                                     onClick={() => setActiveTab(tab as any)}
                                     className={`flex-1 md:flex-none whitespace-nowrap px-2.5 sm:px-3 py-1.5 rounded-md text-[9px] sm:text-xs uppercase tracking-wider font-black transition-all duration-300 drop-shadow-md ${activeTab === tab ? 'bg-sky-500/20 text-sky-400 shadow-md border border-sky-400/50 scale-105' : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
                                 >
-                                    {tab === 'draft' ? 'Draft' : tab === 'matches' ? 'Scores' : tab === 'schedule' ? 'Schedule' : tab === 'standings' ? 'Leaderboard' : tab === 'awards' ? 'Awards' : 'Rules'}
+                                    {tab === 'draft' ? 'Draft' : tab === 'matches' ? 'Scores' : tab === 'schedule' ? 'Schedule' : tab === 'standings' ? 'Leaderboard' : tab === 'awards' ? 'Awards' : tab === 'rules' ? 'Rules' : 'Banter'}
                                 </button>
                             ))}
                         </div>
@@ -1159,7 +1271,7 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'awards' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
-                            {/* Golden Boot Compact Matte Card - Resized slightly larger but elegant */}
+                            {/* Golden Boot Compact Matte Card */}
                             <div className="bg-gradient-to-br from-amber-500/20 via-black/40 to-yellow-800/10 border border-amber-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3">
@@ -1207,12 +1319,12 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* Golden Glove Compact Matte Card - Resized slightly larger but elegant */}
+                            {/* Golden Glove Compact Matte Card */}
                             <div className="bg-gradient-to-br from-blue-500/20 via-black/40 to-slate-800/10 border border-blue-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
                                         <div className="bg-black/80 p-1.5 rounded-lg border border-blue-400/50 shadow-inner">
-                                            <span className="text-xl sm:text-2xl block leading-none drop-shadow-md">🧤</span>
+                                            <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">🧤</span>
                                         </div>
                                         <div>
                                             <h3 className={`text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest ${oswald.className}`}>Golden Glove</h3>
@@ -1237,8 +1349,8 @@ export default function AutomatedDashboard() {
                                                     <div className="flex items-center gap-2.5 min-w-0">
                                                         <span className="font-mono font-black text-xs text-slate-300 w-4 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
-                                                        <div className="flex flex-col min-w-0">
-                                                            <span className={`font-black text-base sm:text-lg md:text-xl leading-tight break-words text-sky-400 drop-shadow-md`}>{row.name}</span>
+                                                        <div className="flex flex-col min-w-0 font-semibold">
+                                                            <span className="font-black text-xs sm:text-lg leading-tight break-words text-sky-400 drop-shadow-md">{row.name}</span>
                                                             <span className="text-[10px] sm:text-xs text-slate-300 font-bold max-w-[120px] sm:max-w-[250px] truncate" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
@@ -1394,6 +1506,135 @@ export default function AutomatedDashboard() {
                                         </ul>
                                     </div>
 
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeTab === 'banter' && (
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
+                            {/* Savage Roast Generator */}
+                            <div className="bg-gradient-to-br from-red-500/20 via-black/50 to-orange-600/10 border border-red-500/30 rounded-xl p-4 sm:p-5 shadow-2xl flex flex-col h-full">
+                                <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3">
+                                    <span className="text-xl">🔥</span>
+                                    <div>
+                                        <h3 className={`text-sm sm:text-base font-black text-rose-400 uppercase tracking-widest ${oswald.className}`}>The Roast Room</h3>
+                                        <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">Real-Time Sarcastic Manager Evaluations</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-3 flex-grow">
+                                    <p className="text-[11px] text-slate-300 font-semibold leading-relaxed">
+                                        Select any manager from the league to generate a custom, dynamically computed roast reflecting their actual drafted countries, points, and current standing.
+                                    </p>
+                                    <div className="flex gap-2">
+                                        <select
+                                            value={selectedRoastManager}
+                                            onChange={(e) => setSelectedRoastManager(e.target.value)}
+                                            className="bg-black/90 border border-white/30 text-slate-200 text-xs font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-rose-500 flex-1 transition cursor-pointer"
+                                        >
+                                            <option value="">Select manager...</option>
+                                            {drafters.map(name => <option key={name} value={name}>{name}</option>)}
+                                        </select>
+                                        <button
+                                            onClick={handleGenerateRoast}
+                                            className="bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-widest px-4 py-2 rounded-lg transition-all active:scale-95"
+                                        >
+                                            Roast
+                                        </button>
+                                    </div>
+                                    {activeRoastText && (
+                                        <div className="bg-black/50 border border-red-500/20 p-3 rounded-lg text-xs leading-relaxed text-slate-200 font-semibold content-animate">
+                                            {activeRoastText}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Manager Arena Simulator */}
+                            <div className="bg-gradient-to-br from-sky-500/20 via-black/40 to-slate-800/10 border border-sky-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-5 rounded-xl h-full flex flex-col">
+                                    <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3">
+                                        <div className="bg-black/80 p-1.5 rounded-lg border border-sky-500/30 shadow-inner">
+                                            <span className="text-xl sm:text-2xl block leading-none drop-shadow-md">⚔️</span>
+                                        </div>
+                                        <div>
+                                            <h3 className={`text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-sky-500 uppercase tracking-widest ${oswald.className}`}>Manager Arena</h3>
+                                            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">Simulate Retro RPG Squad Duels</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-3 flex-grow flex flex-col justify-between">
+                                        <p className="text-[11px] text-slate-300 font-semibold leading-relaxed">
+                                            Select two managers to battle. The algorithm runs a turn-based combat simulation using their drafted countries, overall points, and live performance metrics.
+                                        </p>
+                                        <div className="flex flex-col sm:flex-row gap-2">
+                                            <select
+                                                value={fighterA}
+                                                onChange={(e) => setFighterA(e.target.value)}
+                                                className="bg-black/90 border border-white/30 text-slate-200 text-xs font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500 flex-1 transition cursor-pointer"
+                                            >
+                                                <option value="">Fighter A</option>
+                                                {drafters.map(name => <option key={name} value={name}>{name}</option>)}
+                                            </select>
+                                            <span className="text-center self-center text-xs font-black text-slate-400">VS</span>
+                                            <select
+                                                value={fighterB}
+                                                onChange={(e) => setFighterB(e.target.value)}
+                                                className="bg-black/90 border border-white/30 text-slate-200 text-xs font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500 flex-1 transition cursor-pointer"
+                                            >
+                                                <option value="">Fighter B</option>
+                                                {drafters.map(name => <option key={name} value={name}>{name}</option>)}
+                                            </select>
+                                        </div>
+
+                                        {/* Visual Arena Interface */}
+                                        {fighterA && fighterB && fighterA !== fighterB && (
+                                            <div className="bg-black/50 border border-white/5 rounded-lg p-3 my-2 flex flex-col items-center gap-2 content-animate">
+                                                <div className="flex justify-between items-center w-full px-2">
+                                                    {/* Fighter A status */}
+                                                    <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                                                        <ManagerAvatar name={fighterA} size="md" />
+                                                        <span className="text-[10px] font-black text-slate-100 truncate w-full text-center">{fighterA}</span>
+                                                        <div className="w-full bg-black border border-white/10 rounded-full h-2 overflow-hidden shadow-inner">
+                                                            <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpA)}`} style={{ width: `${hpA}%` }}></div>
+                                                        </div>
+                                                        <span className="text-[8px] font-mono font-bold text-slate-400">{hpA}/100 HP</span>
+                                                    </div>
+
+                                                    {/* Versus Sparks */}
+                                                    <div className="flex flex-col items-center justify-center px-3 shrink-0">
+                                                        <span className="text-red-500 font-mono font-black text-sm italic animate-pulse">VS</span>
+                                                    </div>
+
+                                                    {/* Fighter B status */}
+                                                    <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
+                                                        <ManagerAvatar name={fighterB} size="md" />
+                                                        <span className="text-[10px] font-black text-slate-100 truncate w-full text-center">{fighterB}</span>
+                                                        <div className="w-full bg-black border border-white/10 rounded-full h-2 overflow-hidden shadow-inner">
+                                                            <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpB)}`} style={{ width: `${hpB}%` }}></div>
+                                                        </div>
+                                                        <span className="text-[8px] font-mono font-bold text-slate-400">{hpB}/100 HP</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <button
+                                            onClick={handleSimulateFight}
+                                            disabled={fightRunning}
+                                            className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-widest py-2 rounded-lg transition-all active:scale-95 shadow-md shadow-sky-500/20"
+                                        >
+                                            {fightRunning ? 'Brawling...' : 'Fight!'}
+                                        </button>
+                                        {fightLogs.length > 0 && (
+                                            <div className="bg-black/50 border border-sky-500/20 p-3 rounded-lg text-xs leading-relaxed text-slate-200 font-semibold space-y-1 content-animate h-40 overflow-y-auto no-scrollbar">
+                                                {fightLogs.map((log, idx) => (
+                                                    <p key={idx} className={idx === 0 || idx === fightLogs.length - 1 ? "text-sky-400 font-bold" : "text-slate-300"}>
+                                                        {log}
+                                                    </p>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
