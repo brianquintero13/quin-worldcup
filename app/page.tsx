@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { db } from '../lib/firebase';
 import { ref, onValue } from 'firebase/database';
 import { Oswald } from 'next/font/google';
@@ -65,8 +65,7 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     });
     if (groupName) {
         const groupMatches = matchesList.filter(m => m.group === groupName);
-        const allFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED');
-        if (allFinished) {
+        if (groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED')) {
             const table: Record<string, any> = {};
             groupMatches.forEach(m => {
                 if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
@@ -114,6 +113,10 @@ export default function AutomatedDashboard() {
     const [fightRunning, setFightRunning] = useState<boolean>(false);
     const [hpA, setHpA] = useState<number>(100);
     const [hpB, setHpB] = useState<number>(100);
+    const [animA, setAnimA] = useState<string>('');
+    const [animB, setAnimB] = useState<string>('');
+    const [hitEffect, setHitEffect] = useState<string>('');
+    const fightActiveRef = useRef(false);
 
     useEffect(() => {
         const stateRef = ref(db, 'state');
@@ -138,6 +141,11 @@ export default function AutomatedDashboard() {
         fetchLiveScores();
         const interval = setInterval(fetchLiveScores, 60000);
         return () => clearInterval(interval);
+    }, []);
+
+    // Cleanup fight loop on unmount
+    useEffect(() => {
+        return () => { fightActiveRef.current = false; };
     }, []);
 
     const teamsMatch = (nameA: string, nameB: string): boolean => {
@@ -300,7 +308,6 @@ export default function AutomatedDashboard() {
             });
         }
 
-        // Sarcastic, "no holds barred" dynamic roasts for the ticker tape
         if (overallLeaders.length > 0) {
             const lastPlace = overallLeaders[overallLeaders.length - 1];
             const leader = overallLeaders[0];
@@ -324,18 +331,12 @@ export default function AutomatedDashboard() {
 
     const tickerHeadlines = getTickerHeadlines();
 
-    // Compile the complete set of eliminated country names dynamically
     const eliminatedTeamsSet = new Set<string>();
     uniqueMatches.forEach(m => {
-        if (m.homeTeam && m.homeTeam !== 'TBD' && isTeamEliminated(m.homeTeam, uniqueMatches)) {
-            eliminatedTeamsSet.add(m.homeTeam.toUpperCase());
-        }
-        if (m.awayTeam && m.awayTeam !== 'TBD' && isTeamEliminated(m.awayTeam, uniqueMatches)) {
-            eliminatedTeamsSet.add(m.awayTeam.toUpperCase());
-        }
+        if (m.homeTeam && m.homeTeam !== 'TBD' && isTeamEliminated(m.homeTeam, uniqueMatches)) eliminatedTeamsSet.add(m.homeTeam.toUpperCase());
+        if (m.awayTeam && m.awayTeam !== 'TBD' && isTeamEliminated(m.awayTeam, uniqueMatches)) eliminatedTeamsSet.add(m.awayTeam.toUpperCase());
     });
 
-    // Dynamically generates the no-holds-barred Matchday Savage Report
     const getSavageReport = () => {
         if (overallLeaders.length < 2) return null;
         const king = overallLeaders[0];
@@ -351,7 +352,6 @@ export default function AutomatedDashboard() {
                     <h3 className={`text-[10px] sm:text-xs font-mono font-black text-rose-400 uppercase tracking-widest drop-shadow-md`}>Matchday Savage Report</h3>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-                    {/* LEADER PANEL */}
                     <div className="bg-black/60 border border-emerald-500/20 p-3 rounded-lg flex flex-col justify-between">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
@@ -367,8 +367,6 @@ export default function AutomatedDashboard() {
                             </p>
                         </div>
                     </div>
-
-                    {/* LAST PLACE PANEL */}
                     <div className="bg-black/60 border border-red-500/20 p-3 rounded-lg flex flex-col justify-between">
                         <div>
                             <div className="flex items-center gap-2 mb-2">
@@ -429,7 +427,7 @@ export default function AutomatedDashboard() {
         );
     };
 
-    // Uncensored, savage manager evaluations (Rated R / Sarcastic)
+    // Advanced Procedural Roast Engine (No holds barred, rated R adjacent)
     const handleGenerateRoast = () => {
         if (!selectedRoastManager) return;
         const mgr = standings.find(s => s.name === selectedRoastManager);
@@ -440,35 +438,102 @@ export default function AutomatedDashboard() {
         const cleanSheets = mgr.totalCleanSheets;
         const goals = mgr.totalGoals;
 
-        let roast = ``;
+        const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
+
+        const intros = [
+            `Alright, let's look at the absolute trainwreck that is ${mgr.name}.`,
+            `Look who it is. The so-called 'tactical genius', ${mgr.name}.`,
+            `Time to drag ${mgr.name} through the absolute mud.`,
+            `I honestly didn't think it was mathematically possible for ${mgr.name} to be this embarrassing, but here we are.`,
+            `Let's put a spotlight on ${mgr.name}, a manager whose tactical IQ rivals a concussed pigeon.`,
+            `Brace yourselves. We are about to analyze the joke that is ${mgr.name}'s entire existence in this league.`
+        ];
+
+        const teamRoasts = [
+            `You seriously drafted ${mgr.teams.join(', ')}. What was your strategy? Throwing darts at a map while blackout drunk?`,
+            `With a lineup consisting of ${mgr.teams.join(', ')}, it's a miracle you even remember how to breathe.`,
+            `Looking at your squad (${mgr.teams.join(', ')}), I can only assume you lost a severe bet or actively hate winning.`,
+            `Did you intentionally pick ${mgr.teams.join(', ')} just to punish yourself? Because watching your teams play is basically a war crime.`,
+            `Your reliance on ${mgr.teams[0]} is genuinely pathetic. My dead grandmother could scout better than you.`
+        ];
+
+        let rankRoast = "";
         if (isFirstPlace) {
-            roast = `Listen up, ${mgr.name}. Sit down, because your ego needs a critical blow. Yes, you are currently in 1st place with ${mgr.totalPoints} PTS. But let's be fucking real: your draft strategy required the cognitive load of a goldfish. You literally just picked the top four tournament favorites on the board because you are a spineless coward. You’re riding on the coattails of giants and walk around like you're some sort of tactical mastermind. If your favorites choke—and God, we pray they do—the absolute humiliation in the group chat will be legendary.`;
+            rankRoast = pick([
+                `You're currently in 1st place with ${mgr.totalPoints} PTS, but don't flatter yourself. You drafted the easiest favorites because you have zero spine.`,
+                `Wow, ${mgr.totalPoints} PTS and the #1 spot. You're riding the coattails of tournament favorites like an absolute parasite.`,
+                `Sitting at the top... for now. We all know this lead is built on pure luck and generic, coward-level draft picks. You will choke.`
+            ]);
         } else if (isLastPlace) {
-            roast = `We need to talk about ${mgr.name}. Having ${mgr.totalPoints} PTS at this stage is a historic, god-awful disaster. Your drafted squads are playing like they are legally blind, actively hungover, and forgot where the ball is. You've managed to build an absolute dumpster fire. Honestly, delete WebStorm, throw your computer off a bridge, and apologize to everyone for wasting a draft slot. You are the official clown of the league.`;
-        } else if (cleanSheets >= 5) {
-            roast = `Congratulations, ${mgr.name}, you have parked the bus so hard you're basically clogging the local plumbing. You have ${cleanSheets} clean sheets, which is great if you absolutely hate fun and want to bore the rest of us to death. Your forwards score goals with the frequency of a solar eclipse. This is soccer, not a highway construction blockade. Go buy an actual striker or go back to playing defensive checkers.`;
-        } else if (goals <= 2) {
-            roast = `Savage report: ${mgr.name}'s strikers couldn't finish a sentence, let alone a scoring chance. You have a tragic ${goals} goals across all your squads. If you put an open net with no goalkeeper on the pitch, your forwards would probably find a way to pass backward into their own goalie's arms. Seriously, send some basic coordination instructors to your team immediately.`;
+            rankRoast = pick([
+                `Dead fucking last with ${mgr.totalPoints} PTS. You are a historical embarrassment to this friend group. Delete your account.`,
+                `Last place. ${mgr.totalPoints} PTS. Your teams are moving slower than a line of parked cars. Please just forfeit now to save us the eye-sore.`,
+                `Sitting at the absolute bottom of the barrel. Your draft was essentially a charity donation to the rest of the group. You are a walking L.`
+            ]);
         } else {
-            roast = `${mgr.name}: You are floating in the dead center. The absolute most boring, generic place to be. You're not good enough to get respected, and you're not bad enough to be funny. You're the human equivalent of unseasoned, boiled chicken breast. You drafted ${mgr.teams.join(', ')}—this looks like a blindfolded toddler threw darts at a globe. Pick a side, get competitive, or fail spectacularly. Being this average is just pathetic.`;
+            rankRoast = pick([
+                `Floating in the middle of the pack with ${mgr.totalPoints} PTS. You're the human equivalent of unseasoned chicken breast. Totally irrelevant.`,
+                `${mgr.totalPoints} PTS puts you perfectly in the zone of mediocrity. Not good enough to be feared, not bad enough to be funny. Just sad.`,
+                `Middle of the table. You are entirely forgettable. In a week, no one will even remember your drafted teams existed.`
+            ]);
         }
-        setActiveRoastText(roast);
+
+        let statRoast = "";
+        if (cleanSheets >= 5) {
+            statRoast = pick([
+                `You've parked the bus for ${cleanSheets} clean sheets like a massive coward. Scoring goals is allowed, you know?`,
+                `Defensive mastermind? No, you're just boring. ${cleanSheets} clean sheets makes watching your games an absolute snooze-fest.`
+            ]);
+        } else if (goals <= 2) {
+            statRoast = pick([
+                `Your forwards have produced a pathetic ${goals} goals. Even with open nets, your strikers would find a way to miss.`,
+                `Only ${goals} goals? I've seen blindfolded toddlers with better finishing ability than your entire squad.`
+            ]);
+        } else if (goals >= 10) {
+            statRoast = pick([
+                `Sure, you've stumbled your way into ${goals} goals, but we all know it's purely luck. Your defense still leaks like a broken sieve.`,
+                `You managed to get ${goals} goals somehow. Even a broken clock is right twice a day.`
+            ]);
+        } else {
+            statRoast = pick([
+                `Your stats are just a chaotic mess. ${goals} goals and ${cleanSheets} clean sheets of pure, unadulterated boredom.`,
+                `Nothing stands out. You have ${goals} goals and ${cleanSheets} clean sheets. Yawn.`
+            ]);
+        }
+
+        const outros = [
+            `Do us all a favor and log out.`,
+            `Better luck next time, you absolute clown.`,
+            `Go read a fucking book on football tactics.`,
+            `I'd tell you to fix your strategy, but we both know you can't fix stupid.`,
+            `Now go sit in the corner and think about how badly you screwed this up.`
+        ];
+
+        setActiveRoastText(`${pick(intros)} ${pick(teamRoasts)} ${rankRoast} ${statRoast} ${pick(outros)}`);
     };
 
-    // Rock 'Em Sock 'Em turn-based arena battle with live ticking health bars
+    // Animated Rock Em Sock Em Fighting Simulator
     const handleSimulateFight = () => {
         if (!fighterA || !fighterB || fighterA === fighterB) return;
+        if (fightActiveRef.current) return;
+
         const pA = standings.find(s => s.name === fighterA);
         const pB = standings.find(s => s.name === fighterB);
         if (!pA || !pB) return;
 
+        fightActiveRef.current = true;
         setFightRunning(true);
         setHpA(100);
         setHpB(100);
+        setAnimA('');
+        setAnimB('');
+        setHitEffect('');
+
+        const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
 
         const initialLogs = [
             `⚔️ BATTLE INITIATED: ${pA.name} VS ${pB.name}!`,
-            `🤖 ROCK 'EM SOCK 'EM ROBOTS ACTIVE. REMOVE THE HEAD GUARDS.`
+            `🤖 ROCK 'EM SOCK 'EM MODE: ACTIVE. PROTECT YOUR NECK SPRINGS.`
         ];
         setFightLogs(initialLogs);
 
@@ -476,51 +541,104 @@ export default function AutomatedDashboard() {
         let currentHpB = 100;
         let logs = [...initialLogs];
 
-        const interval = setInterval(() => {
-            const attackerIsA = Math.random() > 0.5;
-            const damage = Math.floor(Math.random() * 20) + 15; // 15 to 35 damage
+        const combatMoves = [
+            `[ATTACKER] lunges forward and decks [DEFENDER] right in the mouth, laughing about [DEFENDER]'s garbage lineup!`,
+            `[ATTACKER] connects a brutal left hook! '[DEFENDER]'s teams play like uncoordinated toddlers!'`,
+            `[ATTACKER] lands a solid low-blow. 'You only have [DEFENDER_PTS] PTS and you step into this ring?!'`,
+            `[ATTACKER] unleashes a savage headbutt. [DEFENDER]'s head is shaking loose on its spring!`,
+            `[ATTACKER] grabs a folding chair and smashes it over [DEFENDER]'s drafted squad!`,
+            `[ATTACKER] screams 'Your tactics are dogshit!' while delivering a flying knee to [DEFENDER]'s jaw!`,
+            `[ATTACKER] completely disrespects [DEFENDER] with a backhand slap. Emotional damage is severe!`,
+            `[ATTACKER] sweeps the leg! [DEFENDER] drops harder than their standings rank!`,
+            `[ATTACKER] points at the scoreboard. [DEFENDER] is momentarily distracted by their pathetic [DEFENDER_PTS] points and gets punched in the throat!`,
+            `[ATTACKER] goes feral, biting [DEFENDER]'s ear off! Total absolute savagery!`,
+            `[ATTACKER] whispers 'You drafted those teams on purpose...' and delivers a crushing uppercut!`,
+            `[ATTACKER] executes a devastating suplex. [DEFENDER]'s spine takes heavy damage!`,
+        ];
 
-            const punchesA = [
-                `👊 ${pA.name} lunges forward and decks ${pB.name} right in the mouth, laughing about ${pB.name}'s trash lineup!`,
-                `💥 ${pA.name} connects a brutal left hook. '${pB.name}'s teams play like a bunch of uncoordinated toddlers!'`,
-                `🥊 ${pA.name} lands a solid low-blow. 'You have only ${pB.totalPoints} PTS and still thought you could stand in this ring?'`,
-                `🤯 CRITICAL HIT! ${pA.name} unleashes a savage headbutt. ${pB.name}'s head is shaking loose on its spring!`
-            ];
+        const executeTurn = () => {
+            if (!fightActiveRef.current) return;
 
-            const punchesB = [
-                `👊 ${pB.name} charges and lands a massive jab to ${pA.name}'s face, mocking their horrific draft picks!`,
-                `💥 ${pB.name} connects with a direct hit to the chest. '${pA.name}'s clean sheets stats are a fucking joke!'`,
-                `🥊 ${pB.name} retaliates with a brutal throat punch. 'Your strategies look like they were drawn up on a wet napkin!'`,
-                `🤯 CRITICAL HIT! ${pB.name} executes a violent uppercut. ${pA.name}'s metal neck is twisting!`
-            ];
+            const pointDiff = pA.totalPoints - pB.totalPoints;
+            const aWinProb = 0.5 + (pointDiff * 0.005);
+            const finalAProb = Math.max(0.2, Math.min(0.8, aWinProb));
+            const attackerIsA = Math.random() <= finalAProb;
+
+            let isCrit = Math.random() > 0.8;
+            let damage = Math.floor(Math.random() * 12) + 12;
+            if (isCrit) damage = Math.floor(damage * 1.8);
+
+            let moveStr = "";
+            const comicTexts = ['BAM!', 'POW!', 'CRACK!', 'WHACK!', 'BOOF!', 'SMASH!'];
+            const effectWord = isCrit ? 'CRITICAL!' : pick(comicTexts);
 
             if (attackerIsA) {
-                currentHpB = Math.max(0, currentHpB - damage);
-                const punchText = punchesA[Math.floor(Math.random() * punchesA.length)];
-                logs.push(`${punchText} (-${damage} HP)`);
-                setHpB(currentHpB);
+                moveStr = pick(combatMoves).replace(/\[ATTACKER\]/g, pA.name).replace(/\[DEFENDER\]/g, pB.name).replace(/\[DEFENDER_PTS\]/g, pB.totalPoints.toString());
+                setAnimA('anim-punch-r');
+
+                setTimeout(() => {
+                    if (!fightActiveRef.current) return;
+                    currentHpB = Math.max(0, currentHpB - damage);
+                    setHpB(currentHpB);
+                    setAnimB('anim-hit');
+                    setHitEffect(effectWord);
+
+                    logs.push(`👊 ${moveStr} (-${damage} HP)`);
+                    setFightLogs([...logs]);
+
+                    setTimeout(() => {
+                        if (!fightActiveRef.current) return;
+                        setAnimA('');
+                        setAnimB('');
+                        setHitEffect('');
+                        checkEnd();
+                    }, 600);
+                }, 200);
             } else {
-                currentHpA = Math.max(0, currentHpA - damage);
-                const punchText = punchesB[Math.floor(Math.random() * punchesB.length)];
-                logs.push(`${punchText} (-${damage} HP)`);
-                setHpA(currentHpA);
+                moveStr = pick(combatMoves).replace(/\[ATTACKER\]/g, pB.name).replace(/\[DEFENDER\]/g, pA.name).replace(/\[DEFENDER_PTS\]/g, pA.totalPoints.toString());
+                setAnimB('anim-punch-l');
+
+                setTimeout(() => {
+                    if (!fightActiveRef.current) return;
+                    currentHpA = Math.max(0, currentHpA - damage);
+                    setHpA(currentHpA);
+                    setAnimA('anim-hit');
+                    setHitEffect(effectWord);
+
+                    logs.push(`👊 ${moveStr} (-${damage} HP)`);
+                    setFightLogs([...logs]);
+
+                    setTimeout(() => {
+                        if (!fightActiveRef.current) return;
+                        setAnimA('');
+                        setAnimB('');
+                        setHitEffect('');
+                        checkEnd();
+                    }, 600);
+                }, 200);
             }
+        };
 
-            setFightLogs([...logs]);
-
+        const checkEnd = () => {
             if (currentHpA <= 0 || currentHpB <= 0) {
-                clearInterval(interval);
-                setFightRunning(false);
                 if (currentHpA <= 0) {
-                    logs.push(`💀 HEAD POP! ${pA.name}'s head literally POPS off the metal spring!`);
-                    logs.push(`🏆 FIGHT OVER: ${pB.name} stands victorious over the shattered wreckage of ${pA.name}'s self-esteem!`);
+                    setAnimA('anim-dead');
+                    logs.push(`💀 BOING! ${pA.name}'s head literally POPS off the spring!`);
+                    logs.push(`🏆 UPSET ALERT?! ${pB.name} is the last manager standing!`);
                 } else {
-                    logs.push(`💀 HEAD POP! ${pB.name}'s head literally POPS off the metal spring!`);
-                    logs.push(`🏆 FIGHT OVER: ${pA.name} stands victorious over the shattered wreckage of ${pB.name}'s self-esteem!`);
+                    setAnimB('anim-dead');
+                    logs.push(`💀 BOING! ${pB.name}'s head literally POPS off the spring!`);
+                    logs.push(`🏆 FLAWLESS VICTORY! ${pA.name} absolutely demolishes ${pB.name}!`);
                 }
                 setFightLogs([...logs]);
+                setFightRunning(false);
+                fightActiveRef.current = false;
+            } else {
+                setTimeout(executeTurn, 400);
             }
-        }, 1000);
+        };
+
+        setTimeout(executeTurn, 1000);
     };
 
     const getHealthBarColor = (hp: number) => {
@@ -545,20 +663,47 @@ export default function AutomatedDashboard() {
                     0% { transform: translateX(0); }
                     100% { transform: translateX(-33.33%); }
                 }
+
+                /* Rock Em Sock Em Animations */
+                @keyframes punchRight {
+                    0% { transform: translateX(0) scale(1); }
+                    50% { transform: translateX(60px) scale(1.2) rotate(15deg); z-index: 50; }
+                    100% { transform: translateX(0) scale(1); z-index: 1; }
+                }
+                @keyframes punchLeft {
+                    0% { transform: translateX(0) scale(1); }
+                    50% { transform: translateX(-60px) scale(1.2) rotate(-15deg); z-index: 50; }
+                    100% { transform: translateX(0) scale(1); z-index: 1; }
+                }
+                @keyframes shakeHit {
+                    0% { transform: translateX(0) rotate(0); filter: brightness(1) sepia(0); }
+                    20% { transform: translateX(-10px) rotate(-10deg); filter: brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5); }
+                    40% { transform: translateX(10px) rotate(10deg); }
+                    60% { transform: translateX(-10px) rotate(-10deg); }
+                    80% { transform: translateX(10px) rotate(10deg); }
+                    100% { transform: translateX(0) rotate(0); filter: brightness(1) sepia(0); }
+                }
+                @keyframes headPop {
+                    0% { transform: translateY(0) rotate(0); opacity: 1; }
+                    100% { transform: translateY(-300px) rotate(720deg); opacity: 0; }
+                }
+                @keyframes popIn {
+                    0% { transform: scale(0.5); opacity: 0; }
+                    50% { transform: scale(1.5); opacity: 1; }
+                    100% { transform: scale(1); opacity: 0; }
+                }
+
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
-                .animate-marquee {
-                    display: flex;
-                    width: max-content;
-                    animation: marquee 50s linear infinite;
-                }
-                .animate-marquee:hover {
-                    animation-play-state: paused;
-                }
-                .avatar-img-custom {
-                    object-fit: cover;
-                    object-position: center 25%;
-                }
+                .animate-marquee { display: flex; width: max-content; animation: marquee 50s linear infinite; }
+                .animate-marquee:hover { animation-play-state: paused; }
+                .avatar-img-custom { object-fit: cover; object-position: center 25%; }
+
+                .anim-punch-r { animation: punchRight 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+                .anim-punch-l { animation: punchLeft 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+                .anim-hit { animation: shakeHit 0.4s ease-in-out; }
+                .anim-dead { animation: headPop 1s forwards ease-in; }
+                .anim-comic-text { animation: popIn 0.6s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275); }
             `}</style>
 
             <div
@@ -715,7 +860,6 @@ export default function AutomatedDashboard() {
                             Live news
                         </div>
                         <div className="flex whitespace-nowrap pl-24 animate-marquee font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white gap-16">
-                            {/* Render duplicated array contents side-by-side to construct an endless loop */}
                             {[...tickerHeadlines, ...tickerHeadlines, ...tickerHeadlines].map((headline, idx) => (
                                 <span key={idx} className="flex items-center gap-2">
                                     {headline}
@@ -819,7 +963,6 @@ export default function AutomatedDashboard() {
                                 <div className="flex flex-col gap-2.5 w-full sm:w-auto">
                                     <h2 className={`text-lg sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>ALL SCORES</h2>
 
-                                    {/* Matches view formatting selector */}
                                     <div className="flex bg-black/60 border border-white/10 p-0.5 rounded-lg shadow-md w-max">
                                         <button
                                             onClick={() => setMatchesSubTab('groups')}
@@ -862,7 +1005,6 @@ export default function AutomatedDashboard() {
                                 )}
                             </div>
 
-                            {/* Render Group list display */}
                             {matchesSubTab === 'groups' && (
                                 <div className="space-y-4">
                                     {filteredGroupNames.length === 0 ? (
@@ -961,7 +1103,7 @@ export default function AutomatedDashboard() {
                                                                         <div className={`flex-1 flex flex-col items-start text-left min-w-0 ${awayEliminated ? 'opacity-35 grayscale' : ''}`}>
                                                                             <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-start min-w-0">
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.awayTeam} /></div>
-                                                                                <span className={`text-[9px] sm:text-[10px] truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
+                                                                                <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
                                                                             </div>
                                                                             {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{awayDrafter}</span>}
                                                                         </div>
@@ -977,10 +1119,10 @@ export default function AutomatedDashboard() {
                                 </div>
                             )}
 
-                            {/* Render interactive horizontal scrolling Tournament Bracket Board */}
+                            {/* Render interactive horizontal scrolling Tournament Bracket Board (Tree format) */}
                             {matchesSubTab === 'bracket' && (
                                 <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 sm:p-5 shadow-2xl overflow-x-auto no-scrollbar content-animate">
-                                    <div className="flex gap-6 sm:gap-8 min-w-[1250px] items-start pb-2 h-[720px]">
+                                    <div className="flex gap-6 sm:gap-8 min-w-[1250px] h-[720px] items-stretch pb-2">
 
                                         {/* Column 1: Round of 32 */}
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
@@ -1063,7 +1205,6 @@ export default function AutomatedDashboard() {
                                 </h2>
 
                                 <div className="flex flex-wrap items-center gap-2">
-                                    {/* Grid / Table Toggle Layout format selection */}
                                     <div className="flex bg-black/60 border border-white/10 p-0.5 rounded-lg shadow-md">
                                         <button
                                             onClick={() => setStandingsView('grid')}
@@ -1087,7 +1228,6 @@ export default function AutomatedDashboard() {
                                         </button>
                                     </div>
 
-                                    {/* Projected Standings Toggle button */}
                                     <button
                                         onClick={() => setShowProjected(!showProjected)}
                                         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md ${
@@ -1102,16 +1242,13 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* Render visual layouts when standingsView is in Grid format */}
                             {standingsView === 'grid' && (
                                 <div className="space-y-4 sm:space-y-6">
-                                    {/* 2x6 Position Grid Section - Doubled Image Size */}
                                     <div className="bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-4 shadow-2xl">
                                         <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-3">
                                             <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest drop-shadow-md">Current Standings Grid</h3>
                                             <span className="text-[8px] font-mono text-slate-400">Ordered 1st to 12th</span>
                                         </div>
-                                        {/* Responsive grid layout: 3 columns on mobile (4 rows), 6 columns on tablet/desktop (2 rows) */}
                                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
                                             {overallLeaders.map((leader, index) => {
                                                 const rankColor =
@@ -1126,17 +1263,12 @@ export default function AutomatedDashboard() {
                                                         onClick={() => setSelectedManager(leader)}
                                                         className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex flex-col items-center justify-center relative cursor-pointer hover:bg-black/90 hover:border-sky-400/50 transition-all duration-300 group shadow-md"
                                                     >
-                                                        {/* Overlaid Position Badge */}
                                                         <div className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[8px] font-black font-mono shadow-md ${rankColor}`}>
                                                             #{index + 1}
                                                         </div>
-
-                                                        {/* Large Avatar */}
                                                         <div className="mb-2">
                                                             <ManagerAvatar name={leader.name} size="lg" />
                                                         </div>
-
-                                                        {/* Name and points */}
                                                         <div className="text-center w-full min-w-0">
                                                             <span className="block font-black text-[10px] sm:text-xs text-white truncate drop-shadow-md group-hover:text-sky-400 transition-colors">
                                                                 {leader.name}
@@ -1151,17 +1283,15 @@ export default function AutomatedDashboard() {
                                         </div>
                                     </div>
 
-                                    {/* Dynamically Generated Savage Report */}
                                     {getSavageReport()}
 
-                                    {/* Top 3 Podium Displays */}
                                     <div className="grid grid-cols-3 gap-2 sm:gap-5">
                                         {overallLeaders.slice(0, 3).map((leader, i) => (
                                             <div
                                                 key={leader.name}
                                                 onClick={() => setSelectedManager(leader)}
                                                 className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 cursor-pointer hover:bg-black/40 ${
-                                                    i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
+                                                    i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
                                                         i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
                                                             'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
                                                 }`}>
@@ -1190,7 +1320,6 @@ export default function AutomatedDashboard() {
                                 </div>
                             )}
 
-                            {/* Render tabular statistical listings when standingsView is in Table format */}
                             {standingsView === 'table' && (
                                 <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto content-animate">
                                     <table className="w-full text-left text-[10px] sm:text-sm border-collapse min-w-[500px] sm:min-w-[800px]">
@@ -1247,7 +1376,6 @@ export default function AutomatedDashboard() {
                                 </div>
                             )}
 
-                            {/* Redesigned structured point system badge strip placed cleanly at the very bottom */}
                             <div className="bg-black/70 backdrop-blur-xl border border-white/10 rounded-xl p-3 shadow-2xl hidden md:block mt-4 sm:mt-6">
                                 <div className="flex justify-between items-center border-b border-white/10 pb-2 mb-2">
                                     <h3 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest drop-shadow-md">Scoring System Reference</h3>
@@ -1272,7 +1400,6 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'awards' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
-                            {/* Golden Boot Compact Matte Card - Resized slightly larger but elegant */}
                             <div className="bg-gradient-to-br from-amber-500/20 via-black/40 to-yellow-800/10 border border-amber-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3">
@@ -1320,7 +1447,6 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* Golden Glove Compact Matte Card - Resized slightly larger but elegant */}
                             <div className="bg-gradient-to-br from-blue-500/20 via-black/40 to-slate-800/10 border border-blue-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
@@ -1352,7 +1478,7 @@ export default function AutomatedDashboard() {
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0 font-semibold">
                                                             <span className="font-black text-xs sm:text-lg leading-tight break-words text-sky-400 drop-shadow-md">{row.name}</span>
-                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold max-w-[120px] sm:max-w-[250px] truncate" title={breakdownText}>
+                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold max-w-[140px] sm:max-w-[250px] truncate" title={breakdownText}>
                                                                 {breakdownText || "No clean sheets yet"}
                                                             </span>
                                                         </div>
@@ -1373,34 +1499,34 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'rules' && (
                         <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>LEAGUE RULES & PAYOUTS</h2>
+                            <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>LEAGUE RULES & PAYOUTS</h2>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
 
                                 <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
-                                    <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-5 rounded-xl h-full flex flex-col">
-                                        <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
-                                            <div className="bg-black/80 p-2 rounded-lg border border-emerald-400/50 shadow-inner">
-                                                <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">💰</span>
+                                    <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
+                                        <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
+                                            <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-emerald-400/50 shadow-inner">
+                                                <span className="text-3xl sm:text-5xl block leading-none drop-shadow-md">💰</span>
                                             </div>
                                             <div>
-                                                <h2 className={`text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-emerald-500 uppercase tracking-widest drop-shadow-md ${oswald.className}`}>Prize Pool</h2>
-                                                <p className="text-emerald-300 text-[8px] sm:text-xs font-mono font-black tracking-widest uppercase mt-0.5">Entry & Payout Structure</p>
+                                                <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-200 to-emerald-500 uppercase tracking-widest drop-shadow-md sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>Prize Pool</h2>
+                                                <p className="text-emerald-300 text-[9px] sm:text-sm font-mono font-black tracking-widest uppercase mt-1 sm:mt-1.5 drop-shadow-md sm:[text-shadow:0_2px_4px_black]">Entry & Payout Structure</p>
                                             </div>
                                         </div>
 
-                                        <div className="space-y-2">
-                                            <div className="flex justify-between items-center bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md">
-                                                <span className="text-slate-200 font-black text-xs sm:text-base">1st Place (Overall)</span>
-                                                <span className={`text-emerald-400 font-black text-lg sm:text-2xl ${oswald.className}`}>50%</span>
+                                        <div className="space-y-3 sm:space-y-4">
+                                            <div className="flex justify-between items-center bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md">
+                                                <span className="text-slate-200 font-black text-sm sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black]">1st Place (Overall)</span>
+                                                <span className={`text-emerald-400 font-black text-xl sm:text-3xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>50%</span>
                                             </div>
-                                            <div className="flex justify-between items-center bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md">
-                                                <span className="text-slate-200 font-black text-xs sm:text-base">2nd Place (Overall)</span>
-                                                <span className={`text-emerald-400 font-black text-lg sm:text-2xl ${oswald.className}`}>25%</span>
+                                            <div className="flex justify-between items-center bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md">
+                                                <span className="text-slate-200 font-black text-sm sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black]">2nd Place (Overall)</span>
+                                                <span className={`text-emerald-400 font-black text-xl sm:text-3xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>25%</span>
                                             </div>
-                                            <div className="flex justify-between items-center bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md">
-                                                <span className="text-slate-200 font-black text-xs sm:text-base">Golden Boot</span>
-                                                <span className={`text-amber-400 font-black text-lg sm:text-2xl ${oswald.className}`}>15%</span>
+                                            <div className="flex justify-between items-center bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md">
+                                                <span className="text-slate-200 font-black text-sm sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black]">Golden Boot</span>
+                                                <span className={`text-amber-400 font-black text-xl sm:text-3xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>15%</span>
                                             </div>
                                             <div className="flex justify-between items-center bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md">
                                                 <span className="text-slate-200 font-black text-sm sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black]">Golden Glove</span>
@@ -1410,66 +1536,66 @@ export default function AutomatedDashboard() {
                                     </div>
                                 </div>
 
-                                <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
-                                    <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-5 rounded-xl h-full flex flex-col">
-                                        <div className="flex items-center gap-3 sm:gap-4 mb-4 border-b border-white/20 pb-3">
-                                            <div className="bg-black/80 p-2 rounded-lg border border-amber-400/50 shadow-inner">
-                                                <span className="text-xl sm:text-3xl block leading-none drop-shadow-md">📊</span>
+                                <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
+                                    <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
+                                        <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
+                                            <div className="bg-black/80 p-2 sm:p-4 rounded-xl border border-amber-400/50 shadow-inner">
+                                                <span className="text-3xl sm:text-5xl block leading-none drop-shadow-md">📊</span>
                                             </div>
                                             <div>
-                                                <h2 className={`text-lg sm:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest ${oswald.className}`}>Scoring System</h2>
-                                                <p className="text-[#fbbf24] text-[8px] sm:text-xs font-mono font-black tracking-widest uppercase mt-0.5">How To Earn Points</p>
+                                                <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>Scoring System</h2>
+                                                <p className="text-[#fbbf24] text-[9px] sm:text-sm font-mono font-black tracking-widest uppercase mt-1 sm:mt-1.5 drop-shadow-md sm:[text-shadow:0_2px_4px_black]">How To Earn Points</p>
                                             </div>
                                         </div>
 
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-3">
-                                                <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+4</span>
-                                                <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Win Match</span>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                                            <div className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
+                                                <span className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+4</span>
+                                                <span className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win Match</span>
                                             </div>
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-2.5 sm:p-3">
-                                                <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+2</span>
-                                                <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Group Draw</span>
+                                            <div className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
+                                                <span className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+2</span>
+                                                <span className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Group Draw</span>
                                             </div>
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-2.5 sm:p-3">
-                                                <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+1</span>
-                                                <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Goal Scored</span>
+                                            <div className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
+                                                <span className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+1</span>
+                                                <span className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Goal Scored</span>
                                             </div>
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-2.5 sm:p-3">
-                                                <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+2</span>
-                                                <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Clean Sheet</span>
+                                            <div className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
+                                                <span className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+2</span>
+                                                <span className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Clean Sheet</span>
                                             </div>
-                                            <div className="bg-black/60 border border-white/10 p-2.5 sm:p-3 rounded-lg shadow-md flex items-center gap-2.5 sm:p-3 sm:col-span-2">
-                                                <span className={`text-[#fbbf24] font-black text-base sm:text-xl ${oswald.className}`}>+8</span>
-                                                <span className="text-white font-black text-[9px] sm:text-xs uppercase tracking-widest">Advance out of Group</span>
+                                            <div className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3 sm:col-span-2">
+                                                <span className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+8</span>
+                                                <span className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Advance out of Group</span>
                                             </div>
 
-                                            <div className="col-span-1 sm:col-span-2 mt-1">
-                                                <h3 className="text-slate-300 font-mono text-[8px] sm:text-[10px] uppercase tracking-widest font-black mb-2 border-b border-white/10 pb-1.5 drop-shadow-md">Knockout Stage Bonuses</h3>
-                                                <div className="grid grid-cols-2 gap-2 text-[11px] sm:text-xs">
-                                                    <div className="flex justify-between items-center font-black">
-                                                        <span className="text-white">Win R32</span>
-                                                        <span className={`text-[#fbbf24] text-sm sm:text-lg ${oswald.className}`}>+10</span>
+                                            <div className="col-span-1 sm:col-span-2 mt-1 sm:mt-2">
+                                                <h3 className="text-slate-300 font-mono text-[9px] sm:text-xs uppercase tracking-widest font-black mb-2 sm:mb-3 border-b border-white/10 pb-1.5 sm:pb-2 drop-shadow-md">Knockout Stage Bonuses</h3>
+                                                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                                    <div className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win R32</span>
+                                                        <span className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+10</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center font-black">
-                                                        <span className="text-white">Win R16</span>
-                                                        <span className={`text-[#fbbf24] text-sm sm:text-lg ${oswald.className}`}>+12</span>
+                                                    <div className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win R16</span>
+                                                        <span className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+12</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center font-black">
-                                                        <span className="text-white">Win QF</span>
-                                                        <span className={`text-[#fbbf24] text-sm sm:text-lg ${oswald.className}`}>+15</span>
+                                                    <div className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win QF</span>
+                                                        <span className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+15</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center font-black">
-                                                        <span className="text-white">Win SF</span>
-                                                        <span className={`text-[#fbbf24] text-sm sm:text-lg ${oswald.className}`}>+20</span>
+                                                    <div className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win SF</span>
+                                                        <span className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+20</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center font-black">
-                                                        <span className="text-white">Win 3rd</span>
-                                                        <span className={`text-[#fbbf24] text-sm sm:text-lg ${oswald.className}`}>+10</span>
+                                                    <div className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win 3rd</span>
+                                                        <span className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+10</span>
                                                     </div>
-                                                    <div className="flex justify-between items-center font-black">
-                                                        <span className="text-white">Win Final</span>
-                                                        <span className={`text-[#fbbf24] text-sm sm:text-lg ${oswald.className}`}>+30</span>
+                                                    <div className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win Final</span>
+                                                        <span className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+30</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1478,32 +1604,32 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl mt-4">
-                                <div className="bg-black/80 px-4 sm:px-6 py-2.5 sm:py-3 border-b border-white/20 flex justify-between items-center">
-                                    <h3 className={`font-black text-white text-base sm:text-xl uppercase tracking-widest ${oswald.className}`}>Format & Guidelines</h3>
+                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl mt-4 sm:mt-8">
+                                <div className="bg-black/80 px-4 sm:px-6 py-3 sm:py-4 border-b border-white/20 flex justify-between items-center">
+                                    <h3 className={`font-black text-white text-lg sm:text-2xl uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Format & Guidelines</h3>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 sm:p-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 p-4 sm:p-8">
 
                                     <div>
-                                        <h4 className="text-sky-400 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-2 sm:mb-3 flex items-center gap-2 border-b border-white/10 pb-1.5"><span className="text-base sm:text-lg">👥</span> Draft & Teams</h4>
-                                        <ul className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs text-slate-200 font-semibold leading-relaxed">
-                                            <li><span className="text-sky-400 mr-1.5">■</span> Exactly 12 players participate.</li>
-                                            <li><span className="text-sky-400 mr-1.5">■</span> Each player drafts 4 national teams via a snake draft format.</li>
-                                            <li><span className="text-sky-400 mr-1.5">■</span> All 48 tournament teams are drafted, meaning every match affects the standings.</li>
-                                            <li><span className="text-sky-400 mr-1.5">■</span> Drafts are locked before the June 11, 2026 kickoff.</li>
-                                            <li><span className="text-sky-400 mr-1.5">■</span> No trades are allowed after the draft closes.</li>
+                                        <h4 className="text-sky-400 font-black uppercase tracking-widest text-[11px] sm:text-sm mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2 drop-shadow-md"><span className="text-lg sm:text-xl">👥</span> Draft & Teams</h4>
+                                        <ul className="space-y-2 sm:space-y-3 text-[11px] sm:text-sm text-slate-200 font-semibold drop-shadow-md leading-relaxed">
+                                            <li><span className="text-sky-400 mr-2">■</span> Exactly 12 players participate.</li>
+                                            <li><span className="text-sky-400 mr-2">■</span> Each player drafts 4 national teams via a snake draft format.</li>
+                                            <li><span className="text-sky-400 mr-2">■</span> All 48 tournament teams are drafted, meaning every match affects the standings.</li>
+                                            <li><span className="text-sky-400 mr-2">■</span> Drafts are locked before the June 11, 2026 kickoff.</li>
+                                            <li><span className="text-sky-400 mr-2">■</span> No trades are allowed after the draft closes.</li>
                                         </ul>
                                     </div>
 
                                     <div>
-                                        <h4 className="text-sky-400 font-black uppercase tracking-widest text-[10px] sm:text-xs mb-2 sm:mb-3 flex items-center gap-2 border-b border-white/10 pb-1.5"><span className="text-base sm:text-lg">⚖️</span> Tie-Breakers & Rules</h4>
-                                        <ul className="space-y-1.5 sm:space-y-2 text-[10px] sm:text-xs text-slate-200 font-semibold leading-relaxed">
-                                            <li><span className="text-sky-400 mr-1.5">■</span> <strong>Stacking Points:</strong> Advancement and win bonuses stack on a single match result. (e.g., A quarterfinal win earns 19 points: 4 for the win + 15 for advancing).</li>
-                                            <li><span className="text-sky-400 mr-1.5">■</span> <strong>Penalties:</strong> Goals scored during penalty shootouts do not count toward your total.</li>
-                                            <li><span className="text-sky-400 mr-1.5">■</span> <strong>Clean Sheets:</strong> Clean sheets are judged at the 90-minute mark only, excluding shootouts.</li>
-                                            <li><span className="text-sky-400 mr-1.5">■</span> <strong>Tie-Breakers:</strong> In the event of a tie for the Golden Boot or Golden Glove, the prize is split equally between the tied players.</li>
-                                            <li><span className="text-sky-400 mr-1.5">■</span> <strong>Strategy:</strong> Drafting four teams that make deep runs will typically outscore drafting one tournament champion and three group-stage exits.</li>
+                                        <h4 className="text-sky-400 font-black uppercase tracking-widest text-[11px] sm:text-sm mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2 drop-shadow-md"><span className="text-lg sm:text-xl">⚖️</span> Tie-Breakers & Rules</h4>
+                                        <ul className="space-y-2 sm:space-y-3 text-[11px] sm:text-sm text-slate-200 font-semibold drop-shadow-md leading-relaxed">
+                                            <li><span className="text-sky-400 mr-2">■</span> <strong>Stacking Points:</strong> Advancement and win bonuses stack on a single match result. (e.g., A quarterfinal win earns 19 points: 4 for the win + 15 for advancing).</li>
+                                            <li><span className="text-sky-400 mr-2">■</span> <strong>Penalties:</strong> Goals scored during penalty shootouts do not count toward your total.</li>
+                                            <li><span className="text-sky-400 mr-2">■</span> <strong>Clean Sheets:</strong> Clean sheets are judged at the 90-minute mark only, excluding shootouts.</li>
+                                            <li><span className="text-sky-400 mr-2">■</span> <strong>Tie-Breakers:</strong> In the event of a tie for the Golden Boot or Golden Glove, the prize is split equally between the tied players.</li>
+                                            <li><span className="text-sky-400 mr-2">■</span> <strong>Strategy:</strong> Drafting four teams that make deep runs will typically outscore drafting one tournament champion and three group-stage exits.</li>
                                         </ul>
                                     </div>
 
@@ -1591,52 +1717,61 @@ export default function AutomatedDashboard() {
                                             </select>
                                         </div>
 
-                                        {/* Visual Arena Interface - Pronounced and Larger */}
+                                        {/* Visual Arena Interface */}
                                         {fighterA && fighterB && fighterA !== fighterB && (
-                                            <div className="bg-black border border-white/10 rounded-xl p-4 my-2.5 flex flex-col items-center gap-3 content-animate shadow-2xl">
-                                                <div className="flex justify-between items-center w-full px-2">
-                                                    {/* Fighter A status */}
-                                                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                                                        <ManagerAvatar name={fighterA} size="lg" />
-                                                        <span className="text-xs sm:text-sm font-black text-slate-100 truncate w-full text-center">{fighterA}</span>
-                                                        <div className="w-full bg-black border border-white/20 rounded-full h-3.5 overflow-hidden shadow-inner">
-                                                            <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpA)}`} style={{ width: `${hpA}%` }}></div>
-                                                        </div>
-                                                        <span className="text-[9px] sm:text-[11px] font-mono font-bold text-slate-300">{hpA}/100 HP</span>
+                                            <div className="bg-black border border-white/10 rounded-xl p-4 my-2.5 flex justify-between items-center gap-3 content-animate shadow-2xl overflow-hidden relative">
+                                                {/* Fighter A status */}
+                                                <div className={`flex flex-col items-center gap-2 flex-1 min-w-0 transition-transform ${animA}`}>
+                                                    <ManagerAvatar name={fighterA} size="lg" />
+                                                    <span className="text-xs sm:text-sm font-black text-slate-100 truncate w-full text-center">{fighterA}</span>
+                                                    <div className="w-full bg-black border border-white/20 rounded-full h-3.5 overflow-hidden shadow-inner">
+                                                        <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpA)}`} style={{ width: `${hpA}%` }}></div>
                                                     </div>
+                                                    <span className="text-[9px] sm:text-[11px] font-mono font-bold text-slate-300">{hpA}/100 HP</span>
+                                                </div>
 
-                                                    {/* Versus Sparks */}
-                                                    <div className="flex flex-col items-center justify-center px-4 shrink-0">
+                                                {/* Versus Sparks & Combat Hit Text */}
+                                                <div className="flex flex-col items-center justify-center w-16 sm:w-24 shrink-0 relative h-full z-40">
+                                                    {hitEffect ? (
+                                                        <span className="absolute text-[#fbbf24] font-black text-xl sm:text-4xl italic drop-shadow-[0_0_15px_rgba(255,0,0,1)] z-50 anim-comic-text whitespace-nowrap [-webkit-text-stroke:1px_black]">
+                                                            {hitEffect}
+                                                        </span>
+                                                    ) : (
                                                         <span className="text-red-500 font-mono font-black text-base sm:text-lg italic animate-pulse">VS</span>
-                                                    </div>
+                                                    )}
+                                                </div>
 
-                                                    {/* Fighter B status */}
-                                                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
-                                                        <ManagerAvatar name={fighterB} size="lg" />
-                                                        <span className="text-xs sm:text-sm font-black text-slate-100 truncate w-full text-center">{fighterB}</span>
-                                                        <div className="w-full bg-black border border-white/20 rounded-full h-3.5 overflow-hidden shadow-inner">
-                                                            <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpB)}`} style={{ width: `${hpB}%` }}></div>
-                                                        </div>
-                                                        <span className="text-[9px] sm:text-[11px] font-mono font-bold text-slate-300">{hpB}/100 HP</span>
+                                                {/* Fighter B status */}
+                                                <div className={`flex flex-col items-center gap-2 flex-1 min-w-0 transition-transform ${animB}`}>
+                                                    <ManagerAvatar name={fighterB} size="lg" />
+                                                    <span className="text-xs sm:text-sm font-black text-slate-100 truncate w-full text-center">{fighterB}</span>
+                                                    <div className="w-full bg-black border border-white/20 rounded-full h-3.5 overflow-hidden shadow-inner">
+                                                        <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpB)}`} style={{ width: `${hpB}%` }}></div>
                                                     </div>
+                                                    <span className="text-[9px] sm:text-[11px] font-mono font-bold text-slate-300">{hpB}/100 HP</span>
                                                 </div>
                                             </div>
                                         )}
 
                                         <button
                                             onClick={handleSimulateFight}
-                                            disabled={fightRunning}
-                                            className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:opacity-50 text-white font-black text-xs sm:text-sm uppercase tracking-widest py-3 rounded-lg transition-all active:scale-95 shadow-md shadow-sky-500/20"
+                                            disabled={fightRunning || !fighterA || !fighterB || fighterA === fighterB}
+                                            className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-slate-800 disabled:text-slate-500 disabled:opacity-70 text-white font-black text-xs sm:text-sm uppercase tracking-widest py-3 rounded-lg transition-all active:scale-95 shadow-md shadow-sky-500/20 cursor-pointer"
                                         >
                                             {fightRunning ? 'Brawling...' : 'Fight!'}
                                         </button>
+
+                                        {/* Combat Log */}
                                         {fightLogs.length > 0 && (
-                                            <div className="bg-black border border-sky-500/20 p-3.5 rounded-lg text-xs sm:text-sm leading-relaxed text-slate-200 font-semibold space-y-1 content-animate h-48 overflow-y-auto no-scrollbar">
-                                                {fightLogs.map((log, idx) => (
-                                                    <p key={idx} className={idx === 0 || idx === fightLogs.length - 1 ? "text-sky-400 font-bold" : "text-slate-300"}>
-                                                        {log}
-                                                    </p>
-                                                ))}
+                                            <div className="bg-black border border-sky-500/20 p-3.5 rounded-lg text-xs sm:text-sm leading-relaxed text-slate-200 font-semibold space-y-1.5 content-animate h-48 overflow-y-auto no-scrollbar">
+                                                {fightLogs.map((log, idx) => {
+                                                    const isCritical = log.includes('POPS off') || log.includes('VICTORY') || log.includes('UPSET ALERT');
+                                                    return (
+                                                        <p key={idx} className={idx === 0 ? "text-sky-400 font-bold mb-2" : isCritical ? "text-[#fbbf24] font-black uppercase text-sm sm:text-base mt-2" : "text-slate-300"}>
+                                                            {log}
+                                                        </p>
+                                                    );
+                                                })}
                                             </div>
                                         )}
                                     </div>
