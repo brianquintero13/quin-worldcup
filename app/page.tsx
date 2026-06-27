@@ -65,7 +65,8 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     });
     if (groupName) {
         const groupMatches = matchesList.filter(m => m.group === groupName);
-        if (groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED')) {
+        const allFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED');
+        if (allFinished) {
             const table: Record<string, any> = {};
             groupMatches.forEach(m => {
                 if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
@@ -428,7 +429,7 @@ export default function AutomatedDashboard() {
         );
     };
 
-    // Uncensored, savage manager evaluations
+    // Uncensored, savage manager evaluations (Rated R / Sarcastic)
     const handleGenerateRoast = () => {
         if (!selectedRoastManager) return;
         const mgr = standings.find(s => s.name === selectedRoastManager);
@@ -441,20 +442,20 @@ export default function AutomatedDashboard() {
 
         let roast = ``;
         if (isFirstPlace) {
-            roast = `Uncensored reality check: ${mgr.name} is sitting in 1st place with ${mgr.totalPoints} PTS. You drafted the heaviest tournament favorites because you have zero risk tolerance, you absolute coward. You are riding the coattails of giants like a parasite. Your 'tactical genius' is just copying a FIFA world rankings list and hoping for the best. Enjoy the group stage padding before a proper knockout upset exposes your complete lack of strategic depth.`;
+            roast = `Listen up, ${mgr.name}. Sit down, because your ego needs a critical blow. Yes, you are currently in 1st place with ${mgr.totalPoints} PTS. But let's be fucking real: your draft strategy required the cognitive load of a goldfish. You literally just picked the top four tournament favorites on the board because you are a spineless coward. You’re riding on the coattails of giants and walk around like you're some sort of tactical mastermind. If your favorites choke—and God, we pray they do—the absolute humiliation in the group chat will be legendary.`;
         } else if (isLastPlace) {
-            roast = `Savage Analysis: ${mgr.name}'s performance is a historic disaster. You have a pathetic ${mgr.totalPoints} PTS. Your drafted teams look like they are legally blind and recovering from a collective hangover. You've managed to build a squad of pure, unadulterated garbage. Honestly, close WebStorm, delete your repository, and log off the group chat. It's embarrassing.`;
+            roast = `We need to talk about ${mgr.name}. Having ${mgr.totalPoints} PTS at this stage is a historic, god-awful disaster. Your drafted squads are playing like they are legally blind, actively hungover, and forgot where the ball is. You've managed to build an absolute dumpster fire. Honestly, delete WebStorm, throw your computer off a bridge, and apologize to everyone for wasting a draft slot. You are the official clown of the league.`;
         } else if (cleanSheets >= 5) {
-            roast = `Listen, ${mgr.name}. You have parked the bus so violently that the EPA should audit your fuel emissions. You have ${cleanSheets} clean sheets, which is great if you hate fun. Your teams score goals with the frequency of a solar eclipse. This is soccer, not a highway construction zone. Go buy a forward or start watching some tape.`;
+            roast = `Congratulations, ${mgr.name}, you have parked the bus so hard you're basically clogging the local plumbing. You have ${cleanSheets} clean sheets, which is great if you absolutely hate fun and want to bore the rest of us to death. Your forwards score goals with the frequency of a solar eclipse. This is soccer, not a highway construction blockade. Go buy an actual striker or go back to playing defensive checkers.`;
         } else if (goals <= 2) {
-            roast = `Breaking Report: ${mgr.name}'s forwards couldn't finish a sentence, let alone a scoring opportunity. You have only ${goals} goals across all four of your drafted teams. Even with open nets and no goalkeepers, your strikers would probably find a way to pass backward. Please, send some shooting instructors to your squad immediately.`;
+            roast = `Savage report: ${mgr.name}'s strikers couldn't finish a sentence, let alone a scoring chance. You have a tragic ${goals} goals across all your squads. If you put an open net with no goalkeeper on the pitch, your forwards would probably find a way to pass backward into their own goalie's arms. Seriously, send some basic coordination instructors to your team immediately.`;
         } else {
-            roast = `${mgr.name}: You are floating in the dead center. The absolute most boring, generic place to be. You're not good enough to fear, and not bad enough to be funny. You're the human equivalent of unseasoned chicken breast. Your draft strategy was basically a blindfolded child throwing darts at a map of Europe. Pick a side and either win or fail spectacularly, you spineless fence-sitter.`;
+            roast = `${mgr.name}: You are floating in the dead center. The absolute most boring, generic place to be. You're not good enough to get respected, and you're not bad enough to be funny. You're the human equivalent of unseasoned, boiled chicken breast. You drafted ${mgr.teams.join(', ')}—this looks like a blindfolded toddler threw darts at a globe. Pick a side, get competitive, or fail spectacularly. Being this average is just pathetic.`;
         }
         setActiveRoastText(roast);
     };
 
-    // Turn-Based simulated retro battle arena with live health bars
+    // Rock 'Em Sock 'Em turn-based arena battle with live ticking health bars
     const handleSimulateFight = () => {
         if (!fighterA || !fighterB || fighterA === fighterB) return;
         const pA = standings.find(s => s.name === fighterA);
@@ -467,7 +468,7 @@ export default function AutomatedDashboard() {
 
         const initialLogs = [
             `⚔️ BATTLE INITIATED: ${pA.name} VS ${pB.name}!`,
-            `🤖 ROCK 'EM SOCK 'EM ROBOTS MODE: ACTIVE. PROTECT YOUR HEADS.`
+            `🤖 ROCK 'EM SOCK 'EM ROBOTS ACTIVE. REMOVE THE HEAD GUARDS.`
         ];
         setFightLogs(initialLogs);
 
@@ -480,17 +481,17 @@ export default function AutomatedDashboard() {
             const damage = Math.floor(Math.random() * 20) + 15; // 15 to 35 damage
 
             const punchesA = [
-                `👊 ${pA.name} lunges forward and absolutely decks ${pB.name} in the jaw, screaming about ${pB.name}'s garbage picks!`,
-                `💥 ${pA.name} unleashes a devastating hook. '${pB.name}'s teams play like they are recovering from a collective hangover!'`,
-                `🥊 ${pA.name} counters with a brutal throat punch. '${pB.name} has only ${pB.totalPoints} PTS and still has the audacity to step into this ring?'`,
-                `🤯 CRITICAL HIT! ${pA.name} connects with a massive headbutt. ${pB.name}'s head is practically loose on its spring!`
+                `👊 ${pA.name} lunges forward and decks ${pB.name} right in the mouth, laughing about ${pB.name}'s trash lineup!`,
+                `💥 ${pA.name} connects a brutal left hook. '${pB.name}'s teams play like a bunch of uncoordinated toddlers!'`,
+                `🥊 ${pA.name} lands a solid low-blow. 'You have only ${pB.totalPoints} PTS and still thought you could stand in this ring?'`,
+                `🤯 CRITICAL HIT! ${pA.name} unleashes a savage headbutt. ${pB.name}'s head is shaking loose on its spring!`
             ];
 
             const punchesB = [
-                `👊 ${pB.name} lunges forward and lands a savage left hook, mocking ${pA.name}'s tragic lineup!`,
-                `💥 ${pB.name} connects with a direct hit to the chest. '${pA.name}'s defensive strategies are a complete joke!'`,
-                `🥊 ${pB.name} retaliates with a low blow. 'Your tactical setup looks like a blind toddler arranged it!'`,
-                `🤯 CRITICAL HIT! ${pB.name} executes a violent uppercut. ${pA.name}'s health is dropping fast!`
+                `👊 ${pB.name} charges and lands a massive jab to ${pA.name}'s face, mocking their horrific draft picks!`,
+                `💥 ${pB.name} connects with a direct hit to the chest. '${pA.name}'s clean sheets stats are a fucking joke!'`,
+                `🥊 ${pB.name} retaliates with a brutal throat punch. 'Your strategies look like they were drawn up on a wet napkin!'`,
+                `🤯 CRITICAL HIT! ${pB.name} executes a violent uppercut. ${pA.name}'s metal neck is twisting!`
             ];
 
             if (attackerIsA) {
@@ -511,11 +512,11 @@ export default function AutomatedDashboard() {
                 clearInterval(interval);
                 setFightRunning(false);
                 if (currentHpA <= 0) {
-                    logs.push(`💀 HEAD POP! ${pA.name}'s head literally POPS off the spring!`);
-                    logs.push(`🏆 VICTORY: ${pB.name} stands victorious over the ruins of ${pA.name}'s dignity!`);
+                    logs.push(`💀 HEAD POP! ${pA.name}'s head literally POPS off the metal spring!`);
+                    logs.push(`🏆 FIGHT OVER: ${pB.name} stands victorious over the shattered wreckage of ${pA.name}'s self-esteem!`);
                 } else {
-                    logs.push(`💀 HEAD POP! ${pB.name}'s head literally POPS off the spring!`);
-                    logs.push(`🏆 VICTORY: ${pA.name} stands victorious over the ruins of ${pB.name}'s dignity!`);
+                    logs.push(`💀 HEAD POP! ${pB.name}'s head literally POPS off the metal spring!`);
+                    logs.push(`🏆 FIGHT OVER: ${pA.name} stands victorious over the shattered wreckage of ${pB.name}'s self-esteem!`);
                 }
                 setFightLogs([...logs]);
             }
@@ -960,7 +961,7 @@ export default function AutomatedDashboard() {
                                                                         <div className={`flex-1 flex flex-col items-start text-left min-w-0 ${awayEliminated ? 'opacity-35 grayscale' : ''}`}>
                                                                             <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-start min-w-0">
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.awayTeam} /></div>
-                                                                                <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
+                                                                                <span className={`text-[9px] sm:text-[10px] truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
                                                                             </div>
                                                                             {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{awayDrafter}</span>}
                                                                         </div>
@@ -1160,7 +1161,7 @@ export default function AutomatedDashboard() {
                                                 key={leader.name}
                                                 onClick={() => setSelectedManager(leader)}
                                                 className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 cursor-pointer hover:bg-black/40 ${
-                                                    i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
+                                                    i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
                                                         i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
                                                             'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
                                                 }`}>
@@ -1271,7 +1272,7 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'awards' && (
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
-                            {/* Golden Boot Compact Matte Card */}
+                            {/* Golden Boot Compact Matte Card - Resized slightly larger but elegant */}
                             <div className="bg-gradient-to-br from-amber-500/20 via-black/40 to-yellow-800/10 border border-amber-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3">
@@ -1303,7 +1304,7 @@ export default function AutomatedDashboard() {
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0">
                                                             <span className="font-black text-xs sm:text-lg leading-tight break-words text-sky-400 drop-shadow-md">{row.name}</span>
-                                                            <span className="text-[9px] sm:text-[10px] text-slate-300 font-bold max-w-[120px] sm:max-w-[220px] truncate" title={breakdownText}>
+                                                            <span className="text-[8px] sm:text-[9px] text-slate-300 font-bold max-w-[120px] sm:max-w-[220px] truncate" title={breakdownText}>
                                                                 {breakdownText || "No goals yet"}
                                                             </span>
                                                         </div>
@@ -1319,7 +1320,7 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* Golden Glove Compact Matte Card */}
+                            {/* Golden Glove Compact Matte Card - Resized slightly larger but elegant */}
                             <div className="bg-gradient-to-br from-blue-500/20 via-black/40 to-slate-800/10 border border-blue-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
@@ -1512,107 +1513,111 @@ export default function AutomatedDashboard() {
                     )}
 
                     {activeTab === 'banter' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto content-animate">
                             {/* Savage Roast Generator */}
-                            <div className="bg-gradient-to-br from-red-500/20 via-black/50 to-orange-600/10 border border-red-500/30 rounded-xl p-4 sm:p-5 shadow-2xl flex flex-col h-full">
-                                <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3">
-                                    <span className="text-xl">🔥</span>
-                                    <div>
-                                        <h3 className={`text-sm sm:text-base font-black text-rose-400 uppercase tracking-widest ${oswald.className}`}>The Roast Room</h3>
-                                        <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">Real-Time Sarcastic Manager Evaluations</span>
-                                    </div>
-                                </div>
-                                <div className="space-y-3 flex-grow">
-                                    <p className="text-[11px] text-slate-300 font-semibold leading-relaxed">
-                                        Select any manager from the league to generate a custom, dynamically computed roast reflecting their actual drafted countries, points, and current standing.
-                                    </p>
-                                    <div className="flex gap-2">
-                                        <select
-                                            value={selectedRoastManager}
-                                            onChange={(e) => setSelectedRoastManager(e.target.value)}
-                                            className="bg-black/90 border border-white/30 text-slate-200 text-xs font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-rose-500 flex-1 transition cursor-pointer"
-                                        >
-                                            <option value="">Select manager...</option>
-                                            {drafters.map(name => <option key={name} value={name}>{name}</option>)}
-                                        </select>
-                                        <button
-                                            onClick={handleGenerateRoast}
-                                            className="bg-rose-600 hover:bg-rose-700 text-white font-black text-xs uppercase tracking-widest px-4 py-2 rounded-lg transition-all active:scale-95"
-                                        >
-                                            Roast
-                                        </button>
-                                    </div>
-                                    {activeRoastText && (
-                                        <div className="bg-black/50 border border-red-500/20 p-3 rounded-lg text-xs leading-relaxed text-slate-200 font-semibold content-animate">
-                                            {activeRoastText}
+                            <div className="bg-gradient-to-br from-red-500/30 via-black/80 to-orange-600/20 border border-red-500/40 p-[1px] rounded-xl shadow-2xl h-full">
+                                <div className="bg-black/85 backdrop-blur-xl p-5 sm:p-6 rounded-xl h-full flex flex-col justify-between">
+                                    <div className="flex items-center gap-3 border-b border-white/10 pb-3 mb-4">
+                                        <div className="bg-black/90 p-2 rounded-lg border border-red-500/50 shadow-inner text-xl sm:text-2xl">
+                                            🔥
                                         </div>
-                                    )}
+                                        <div>
+                                            <h3 className={`text-sm sm:text-base font-black text-rose-400 uppercase tracking-widest ${oswald.className}`}>The Roast Room</h3>
+                                            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">Real-Time Sarcastic Manager Evaluations</span>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 flex-grow">
+                                        <p className="text-xs sm:text-sm text-slate-200 font-semibold leading-relaxed">
+                                            Select any manager from the league to generate a custom, dynamically computed roast reflecting their actual drafted countries, points, and current standing.
+                                        </p>
+                                        <div className="flex flex-col sm:flex-row gap-2">
+                                            <select
+                                                value={selectedRoastManager}
+                                                onChange={(e) => setSelectedRoastManager(e.target.value)}
+                                                className="bg-black border border-white/30 text-white text-sm font-black rounded-lg px-4 py-2.5 focus:outline-none focus:border-rose-500 flex-1 transition cursor-pointer"
+                                            >
+                                                <option value="">Select manager...</option>
+                                                {drafters.map(name => <option key={name} value={name}>{name}</option>)}
+                                            </select>
+                                            <button
+                                                onClick={handleGenerateRoast}
+                                                className="bg-rose-600 hover:bg-rose-700 text-white font-black text-sm uppercase tracking-widest px-6 py-2.5 rounded-lg transition-all active:scale-95 shadow-md shadow-rose-600/20"
+                                            >
+                                                Roast
+                                            </button>
+                                        </div>
+                                        {activeRoastText && (
+                                            <div className="bg-black border border-red-500/20 p-4 rounded-lg text-sm sm:text-base leading-relaxed text-slate-200 font-semibold content-animate">
+                                                {activeRoastText}
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
 
                             {/* Manager Arena Simulator */}
-                            <div className="bg-gradient-to-br from-sky-500/20 via-black/40 to-slate-800/10 border border-sky-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
-                                <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-5 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 border-b border-white/10 pb-2 mb-3">
-                                        <div className="bg-black/80 p-1.5 rounded-lg border border-sky-500/30 shadow-inner">
-                                            <span className="text-xl sm:text-2xl block leading-none drop-shadow-md">⚔️</span>
+                            <div className="bg-gradient-to-br from-sky-500/30 via-black/80 to-slate-800/20 border border-sky-500/40 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
+                                <div className="bg-black/85 backdrop-blur-xl p-5 sm:p-6 rounded-xl h-full flex flex-col">
+                                    <div className="flex items-center gap-3 border-b border-white/10 pb-3 mb-4">
+                                        <div className="bg-black/90 p-2 rounded-lg border border-sky-500/50 shadow-inner text-xl sm:text-2xl">
+                                            ⚔️
                                         </div>
                                         <div>
                                             <h3 className={`text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-sky-500 uppercase tracking-widest ${oswald.className}`}>Manager Arena</h3>
-                                            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">Simulate Retro RPG Squad Duels</span>
+                                            <span className="text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Simulate Retro RPG Squad Duels</span>
                                         </div>
                                     </div>
-                                    <div className="space-y-3 flex-grow flex flex-col justify-between">
-                                        <p className="text-[11px] text-slate-300 font-semibold leading-relaxed">
+                                    <div className="space-y-4 flex-grow flex flex-col justify-between">
+                                        <p className="text-xs sm:text-sm text-slate-200 font-semibold leading-relaxed">
                                             Select two managers to battle. The algorithm runs a turn-based combat simulation using their drafted countries, overall points, and live performance metrics.
                                         </p>
-                                        <div className="flex flex-col sm:flex-row gap-2">
+                                        <div className="flex flex-col sm:flex-row gap-2.5">
                                             <select
                                                 value={fighterA}
                                                 onChange={(e) => setFighterA(e.target.value)}
-                                                className="bg-black/90 border border-white/30 text-slate-200 text-xs font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500 flex-1 transition cursor-pointer"
+                                                className="bg-black border border-white/30 text-white text-sm font-black rounded-lg px-4 py-2.5 focus:outline-none focus:border-sky-500 flex-1 transition cursor-pointer"
                                             >
                                                 <option value="">Fighter A</option>
                                                 {drafters.map(name => <option key={name} value={name}>{name}</option>)}
                                             </select>
-                                            <span className="text-center self-center text-xs font-black text-slate-400">VS</span>
+                                            <span className="text-center self-center text-sm font-black text-slate-400">VS</span>
                                             <select
                                                 value={fighterB}
                                                 onChange={(e) => setFighterB(e.target.value)}
-                                                className="bg-black/90 border border-white/30 text-slate-200 text-xs font-bold rounded-lg px-3 py-2 focus:outline-none focus:border-sky-500 flex-1 transition cursor-pointer"
+                                                className="bg-black border border-white/30 text-white text-sm font-black rounded-lg px-4 py-2.5 focus:outline-none focus:border-sky-500 flex-1 transition cursor-pointer"
                                             >
                                                 <option value="">Fighter B</option>
                                                 {drafters.map(name => <option key={name} value={name}>{name}</option>)}
                                             </select>
                                         </div>
 
-                                        {/* Visual Arena Interface */}
+                                        {/* Visual Arena Interface - Pronounced and Larger */}
                                         {fighterA && fighterB && fighterA !== fighterB && (
-                                            <div className="bg-black/50 border border-white/5 rounded-lg p-3 my-2 flex flex-col items-center gap-2 content-animate">
+                                            <div className="bg-black border border-white/10 rounded-xl p-4 my-2.5 flex flex-col items-center gap-3 content-animate shadow-2xl">
                                                 <div className="flex justify-between items-center w-full px-2">
                                                     {/* Fighter A status */}
-                                                    <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-                                                        <ManagerAvatar name={fighterA} size="md" />
-                                                        <span className="text-[10px] font-black text-slate-100 truncate w-full text-center">{fighterA}</span>
-                                                        <div className="w-full bg-black border border-white/10 rounded-full h-2 overflow-hidden shadow-inner">
+                                                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                                                        <ManagerAvatar name={fighterA} size="lg" />
+                                                        <span className="text-xs sm:text-sm font-black text-slate-100 truncate w-full text-center">{fighterA}</span>
+                                                        <div className="w-full bg-black border border-white/20 rounded-full h-3.5 overflow-hidden shadow-inner">
                                                             <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpA)}`} style={{ width: `${hpA}%` }}></div>
                                                         </div>
-                                                        <span className="text-[8px] font-mono font-bold text-slate-400">{hpA}/100 HP</span>
+                                                        <span className="text-[9px] sm:text-[11px] font-mono font-bold text-slate-300">{hpA}/100 HP</span>
                                                     </div>
 
                                                     {/* Versus Sparks */}
-                                                    <div className="flex flex-col items-center justify-center px-3 shrink-0">
-                                                        <span className="text-red-500 font-mono font-black text-sm italic animate-pulse">VS</span>
+                                                    <div className="flex flex-col items-center justify-center px-4 shrink-0">
+                                                        <span className="text-red-500 font-mono font-black text-base sm:text-lg italic animate-pulse">VS</span>
                                                     </div>
 
                                                     {/* Fighter B status */}
-                                                    <div className="flex flex-col items-center gap-1.5 flex-1 min-w-0">
-                                                        <ManagerAvatar name={fighterB} size="md" />
-                                                        <span className="text-[10px] font-black text-slate-100 truncate w-full text-center">{fighterB}</span>
-                                                        <div className="w-full bg-black border border-white/10 rounded-full h-2 overflow-hidden shadow-inner">
+                                                    <div className="flex flex-col items-center gap-2 flex-1 min-w-0">
+                                                        <ManagerAvatar name={fighterB} size="lg" />
+                                                        <span className="text-xs sm:text-sm font-black text-slate-100 truncate w-full text-center">{fighterB}</span>
+                                                        <div className="w-full bg-black border border-white/20 rounded-full h-3.5 overflow-hidden shadow-inner">
                                                             <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpB)}`} style={{ width: `${hpB}%` }}></div>
                                                         </div>
-                                                        <span className="text-[8px] font-mono font-bold text-slate-400">{hpB}/100 HP</span>
+                                                        <span className="text-[9px] sm:text-[11px] font-mono font-bold text-slate-300">{hpB}/100 HP</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1621,12 +1626,12 @@ export default function AutomatedDashboard() {
                                         <button
                                             onClick={handleSimulateFight}
                                             disabled={fightRunning}
-                                            className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:opacity-50 text-white font-black text-xs uppercase tracking-widest py-2 rounded-lg transition-all active:scale-95 shadow-md shadow-sky-500/20"
+                                            className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:opacity-50 text-white font-black text-xs sm:text-sm uppercase tracking-widest py-3 rounded-lg transition-all active:scale-95 shadow-md shadow-sky-500/20"
                                         >
                                             {fightRunning ? 'Brawling...' : 'Fight!'}
                                         </button>
                                         {fightLogs.length > 0 && (
-                                            <div className="bg-black/50 border border-sky-500/20 p-3 rounded-lg text-xs leading-relaxed text-slate-200 font-semibold space-y-1 content-animate h-40 overflow-y-auto no-scrollbar">
+                                            <div className="bg-black border border-sky-500/20 p-3.5 rounded-lg text-xs sm:text-sm leading-relaxed text-slate-200 font-semibold space-y-1 content-animate h-48 overflow-y-auto no-scrollbar">
                                                 {fightLogs.map((log, idx) => (
                                                     <p key={idx} className={idx === 0 || idx === fightLogs.length - 1 ? "text-sky-400 font-bold" : "text-slate-300"}>
                                                         {log}
