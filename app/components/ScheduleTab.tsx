@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Oswald } from 'next/font/google';
 import FlagIcon from './FlagIcon';
 
@@ -7,38 +7,26 @@ const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
 interface ScheduleTabProps {
     eliminatedTeams?: Set<string>;
+    modifiedMatches: any[];
+    adjustWhatIf: (matchId: string, side: 'home' | 'away', amount: number) => void;
 }
 
-export default function ScheduleTab({ eliminatedTeams = new Set() }: { eliminatedTeams?: Set<string> }) {
+export default function ScheduleTab({
+                                        eliminatedTeams = new Set(),
+                                        modifiedMatches,
+                                        adjustWhatIf
+                                    }: ScheduleTabProps) {
     const [selectedDate, setSelectedDate] = useState(() => {
         const local = new Date();
         const offset = local.getTimezoneOffset();
         const localDate = new Date(local.getTime() - (offset * 60 * 1000));
         return localDate.toISOString().split('T')[0];
     });
-    const [games, setGames] = useState<any[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
 
-    useEffect(() => {
-        async function fetchGames() {
-            setIsLoading(true);
-            try {
-                const res = await fetch(`/api/schedule?date=${selectedDate}`);
-                const data = await res.json();
-
-                if (data.success && data.matches) {
-                    setGames(data.matches);
-                } else {
-                    setGames([]);
-                }
-            } catch (error) {
-                console.error("Error fetching schedule:", error);
-            }
-            setIsLoading(false);
-        }
-
-        fetchGames();
-    }, [selectedDate]);
+    // Instantly filter games for the selected date from the globally active modifiedMatches list
+    const games = modifiedMatches.filter(m => {
+        return m.utcDate && m.utcDate.startsWith(selectedDate);
+    });
 
     const getSurroundingDays = (centerDateStr: string) => {
         const baseDate = new Date(centerDateStr + 'T12:00:00Z');
@@ -61,7 +49,7 @@ export default function ScheduleTab({ eliminatedTeams = new Set() }: { eliminate
     return (
         <div className="flex flex-col space-y-3 sm:space-y-4 w-full max-w-4xl mx-auto p-2 sm:p-4 text-white">
 
-            {/* Highly legible and compact calendar timeline */}
+            {/* Calendar timeline selection slider */}
             <div className="flex flex-col items-center bg-gradient-to-r from-black/60 via-black/90 to-black/60 backdrop-blur-md border-y border-white/10 py-2.5 sm:py-3.5 shadow-2xl relative">
 
                 <div className="flex w-full justify-between items-center gap-1 sm:gap-2 mb-2 overflow-x-auto no-scrollbar px-2 sm:px-4">
@@ -98,11 +86,7 @@ export default function ScheduleTab({ eliminatedTeams = new Set() }: { eliminate
 
             <div className="w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-50" />
 
-            {isLoading ? (
-                <div className="text-center text-sky-400 font-bold mt-1 animate-pulse bg-black/95 border border-white/10 py-5 rounded-xl text-xs">
-                    Scanning Schedule...
-                </div>
-            ) : games.length === 0 ? (
+            {games.length === 0 ? (
                 <div className="text-center text-slate-300 mt-1 bg-black/95 border border-dashed border-white/20 py-5 rounded-xl font-mono text-xs uppercase tracking-widest shadow-2xl font-bold">
                     No games scheduled for this date.
                 </div>
@@ -126,11 +110,19 @@ export default function ScheduleTab({ eliminatedTeams = new Set() }: { eliminate
                                         <span className="font-black text-[9px] sm:text-sm text-white truncate w-full drop-shadow-xl block">{game.homeTeam}</span>
                                     </div>
 
-                                    {/* Score badge - Highly Opaque */}
-                                    <div className="flex items-center justify-center gap-1.5 bg-black border border-white/10 px-2.5 py-1 rounded-lg mx-2 shadow-inner shrink-0">
-                                        <span className={`text-base sm:text-xl font-black text-[#fbbf24] w-4 text-center drop-shadow-2xl ${oswald.className}`}>{game.homeGoals ?? '-'}</span>
-                                        <span className="text-slate-400 text-xs font-black">:</span>
-                                        <span className={`text-base sm:text-xl font-black text-[#fbbf24] w-4 text-center drop-shadow-2xl ${oswald.className}`}>{game.awayGoals ?? '-'}</span>
+                                    {/* Score badge with What-If Simulator controls */}
+                                    <div className="flex items-center justify-center gap-1.5 bg-black border border-white/10 px-1 py-1 rounded-lg mx-2 shadow-inner shrink-0">
+                                        <div className="flex flex-col items-center">
+                                            <button onClick={() => adjustWhatIf(game.id, 'home', 1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▲</button>
+                                            <span className={`text-base sm:text-xl font-black text-[#fbbf24] w-4 text-center drop-shadow-2xl ${oswald.className}`}>{game.homeGoals ?? '-'}</span>
+                                            <button onClick={() => adjustWhatIf(game.id, 'home', -1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
+                                        </div>
+                                        <span className="text-slate-400 text-xs font-black self-center">:</span>
+                                        <div className="flex flex-col items-center">
+                                            <button onClick={() => adjustWhatIf(game.id, 'away', 1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▲</button>
+                                            <span className={`text-base sm:text-xl font-black text-[#fbbf24] w-4 text-center drop-shadow-2xl ${oswald.className}`}>{game.awayGoals ?? '-'}</span>
+                                            <button onClick={() => adjustWhatIf(game.id, 'away', -1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
+                                        </div>
                                     </div>
 
                                     {/* Away Team */}
