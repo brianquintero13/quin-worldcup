@@ -40,8 +40,83 @@ const getUniqueMatches = (matchesList: any[]) => {
     });
 };
 
+// Calculates and ranks the 3rd-place teams across all 12 groups to find the 8 wildcards that advance
+const getEliminatedThirdPlaceTeams = (matchesList: any[]): Set<string> => {
+    const eliminatedThirds = new Set<string>();
+    const allGroupMatches = matchesList.filter(m => m.stage === 'Group');
+    if (allGroupMatches.length === 0) return eliminatedThirds;
+
+    // Group matches by group name
+    const groups: Record<string, any[]> = {};
+    allGroupMatches.forEach(m => {
+        if (m.group) {
+            if (!groups[m.group]) groups[m.group] = [];
+            groups[m.group].push(m);
+        }
+    });
+
+    const thirdPlaceTeams: any[] = [];
+    const finishedGroupsCount = Object.keys(groups).filter(g => groups[g].every(m => m.status === 'FINISHED' || m.status === 'AWARDED')).length;
+
+    // We can only evaluate who is eliminated once all 12 groups are complete
+    if (finishedGroupsCount === 12) {
+        Object.entries(groups).forEach(([groupName, groupMatches]) => {
+            const table: Record<string, any> = {};
+            groupMatches.forEach(m => {
+                if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+                if (m.awayTeam !== 'TBD' && !table[m.awayTeam]) table[m.awayTeam] = { name: m.awayTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+            });
+            groupMatches.forEach(m => {
+                const hG = m.homeGoals || 0; const aG = m.awayGoals || 0;
+                if (table[m.homeTeam]) { table[m.homeTeam].mp++; table[m.homeTeam].gf += hG; table[m.homeTeam].ga += aG; }
+                if (table[m.awayTeam]) { table[m.awayTeam].mp++; table[m.awayTeam].gf += aG; table[m.awayTeam].ga += hG; }
+                if (m.winner === m.homeTeam) {
+                    if (table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; }
+                    if (table[m.awayTeam]) table[m.awayTeam].l++;
+                } else if (m.winner === m.awayTeam) {
+                    if (table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; }
+                    if (table[m.homeTeam]) table[m.homeTeam].l++;
+                } else if (m.winner === 'DRAW') {
+                    if (table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; }
+                    if (table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; }
+                }
+            });
+            const groupTable = Object.values(table).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
+
+            // 3rd place is index 2
+            if (groupTable[2]) {
+                thirdPlaceTeams.push({
+                    name: groupTable[2].name,
+                    pts: groupTable[2].pts,
+                    gd: groupTable[2].gf - groupTable[2].ga,
+                    gf: groupTable[2].gf,
+                    w: groupTable[2].w
+                });
+            }
+        });
+
+        // Sort third-place teams by World Cup tie-breakers [2]:
+        // 1. Points
+        // 2. Goal Difference
+        // 3. Goals Scored
+        // 4. Wins
+        thirdPlaceTeams.sort((a, b) => {
+            return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || b.w - a.w;
+        });
+
+        // The top 8 advance, while the bottom 4 (indexes 8 to 11) are eliminated [2]
+        thirdPlaceTeams.slice(8).forEach(t => {
+            eliminatedThirds.add(t.name.toUpperCase());
+        });
+    }
+
+    return eliminatedThirds;
+};
+
 const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     if (!teamName || teamName === 'TBD') return false;
+
+    // 1. Check if they have been knocked out of an active Knockout Stage match
     let lostKnockout = false;
     matchesList.forEach(m => {
         if (m.status === 'FINISHED' && m.stage !== 'Group') {
@@ -54,15 +129,20 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
         }
     });
     if (lostKnockout) return true;
+
+    // 2. Identify the group standings for wildcard assessment
     let groupName = '';
     matchesList.forEach(m => {
         if (m.stage === 'Group' && ((m.homeTeam && m.homeTeam.toUpperCase() === teamName.toUpperCase()) || (m.awayTeam && m.awayTeam.toUpperCase() === teamName.toUpperCase()))) {
             groupName = m.group;
         }
     });
+
     if (groupName) {
         const groupMatches = matchesList.filter(m => m.group === groupName);
-        if (groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED')) {
+        const groupFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED' || m.status === 'AWARDED');
+
+        if (groupFinished) {
             const table: Record<string, any> = {};
             groupMatches.forEach(m => {
                 if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
@@ -82,13 +162,20 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
             // 4th place is always automatically eliminated from the group
             if (rank === 3) return true;
 
-            // If all group matches are complete across the entire tournament, evaluate wildcards
-            const allGroupMatches = matchesList.filter(m => m.stage === 'Group');
-            if (allGroupMatches.length > 0 && allGroupMatches.every(m => m.status === 'FINISHED')) {
-                // If the team finished 3rd, check if they failed to make the Round of 32
-                if (rank === 2) {
-                    const playedR32 = matchesList.some(m => m.stage === 'R32' && ((m.homeTeam && m.homeTeam.toUpperCase() === teamName.toUpperCase()) || (m.awayTeam && m.awayTeam.toUpperCase() === teamName.toUpperCase())));
-                    if (!playedR32) return true;
+            // Evaluating 3rd place wildcards
+            if (rank === 2) {
+                const allGroupMatches = matchesList.filter(m => m.stage === 'Group');
+                const allGroupsFinished = allGroupMatches.length > 0 && allGroupMatches.every(m => m.status === 'FINISHED' || m.status === 'AWARDED');
+
+                if (allGroupsFinished) {
+                    // All 12 groups are complete. Evaluate which 4 third-place teams are eliminated.
+                    const eliminatedThirds = getEliminatedThirdPlaceTeams(matchesList);
+                    if (eliminatedThirds.has(teamName.toUpperCase())) {
+                        return true;
+                    }
+                } else {
+                    // Do not eliminate third-place teams while other groups are still in play
+                    return false;
                 }
             }
         }
@@ -209,7 +296,7 @@ export default function AutomatedDashboard() {
     const [standingsView, setStandingsView] = useState<'grid' | 'table'>('grid');
     const [matchesSubTab, setMatchesSubTab] = useState<'groups' | 'bracket'>('groups');
 
-    // State for interactive live standing projections and overrides
+    // State for interactive projections and overrides
     const [customScores, setCustomScores] = useState<Record<string, { homeGoals: number, awayGoals: number, status: string }>>({});
 
     const adjustWhatIf = (matchId: string, side: 'home' | 'away', amount: number) => {
@@ -529,7 +616,11 @@ export default function AutomatedDashboard() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                         {homeDrafter && <ManagerAvatar name={homeDrafter} size="sm" />}
-                        <span className={`font-black text-xs sm:text-sm w-4 text-center ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
+                        <div className="flex flex-col items-center">
+                            <button onClick={() => adjustWhatIf(m.id, 'home', 1)} className="text-[7px] text-slate-500 hover:text-sky-400 leading-none">▲</button>
+                            <span className={`font-black text-xs sm:text-sm w-4 text-center leading-none ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
+                            <button onClick={() => adjustWhatIf(m.id, 'home', -1)} className="text-[7px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
+                        </div>
                     </div>
                 </div>
                 <div className="h-1" />
@@ -540,7 +631,11 @@ export default function AutomatedDashboard() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                         {awayDrafter && <ManagerAvatar name={awayDrafter} size="sm" />}
-                        <span className={`font-black text-xs sm:text-sm w-4 text-center ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
+                        <div className="flex flex-col items-center">
+                            <button onClick={() => adjustWhatIf(m.id, 'away', 1)} className="text-[7px] text-slate-500 hover:text-sky-400 leading-none">▲</button>
+                            <span className={`font-black text-xs sm:text-sm w-4 text-center leading-none ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
+                            <button onClick={() => adjustWhatIf(m.id, 'away', -1)} className="text-[7px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -824,6 +919,73 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'matches' && (
                         <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
+
+                            {/* What-If Simulator Alert Banner */}
+                            {Object.keys(customScores).length > 0 && (
+                                <div className="bg-amber-600/90 border border-amber-500 rounded-lg p-3 text-xs sm:text-sm font-bold flex justify-between items-center text-white shadow-lg content-animate">
+                                    <span className="flex items-center gap-2">
+                                        <span>⚠️</span> WHAT-IF SIMULATOR ACTIVE: You are viewing simulated projections.
+                                    </span>
+                                    <button
+                                        onClick={() => setCustomScores({})}
+                                        className="bg-black/40 hover:bg-black/60 border border-white/20 px-3 py-1 rounded text-[10px] font-mono uppercase tracking-widest transition"
+                                    >
+                                        Reset Leaders
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* Today's Active Rooting Guide */}
+                            {(() => {
+                                const todayStr = new Date().toISOString().split('T')[0];
+                                let activeMatches = modifiedMatches.filter(m => m.utcDate && m.utcDate.startsWith(todayStr));
+                                if (activeMatches.length === 0) {
+                                    // Fallback: Grab up to 3 upcoming unfinished matches
+                                    activeMatches = modifiedMatches.filter(m => m.status !== 'FINISHED').slice(0, 3);
+                                }
+                                if (activeMatches.length === 0) return null;
+
+                                return (
+                                    <div className="bg-gradient-to-br from-sky-950/50 via-black/80 to-indigo-950/40 border border-sky-500/20 rounded-xl p-4 shadow-2xl content-animate">
+                                        <h3 className="text-[10px] sm:text-xs font-mono font-black text-sky-400 uppercase tracking-widest border-b border-white/5 pb-2 mb-3 flex items-center gap-2">
+                                            <span>🎯</span> Active Rooting Guide
+                                        </h3>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            {activeMatches.map(m => {
+                                                const homeDrafter = getDrafterForTeam(m.homeTeam);
+                                                const awayDrafter = getDrafterForTeam(m.awayTeam);
+                                                return (
+                                                    <div key={m.id} className="bg-black/40 border border-white/5 p-3 rounded-lg flex flex-col justify-between space-y-2">
+                                                        <div className="flex justify-between items-center text-[10px] text-slate-400 font-mono">
+                                                            <span>{m.stage}</span>
+                                                            {m.status === 'IN_PLAY' && <span className="text-red-500 animate-pulse font-black">LIVE</span>}
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <div className="flex justify-between items-center text-xs">
+                                                                <span className="flex items-center gap-1 font-black text-white">
+                                                                    <FlagIcon teamName={m.homeTeam} /> {m.homeTeam}
+                                                                </span>
+                                                                <span className="text-sky-400 font-mono text-[10px] font-black">{homeDrafter || 'Neutral'}</span>
+                                                            </div>
+                                                            <div className="flex justify-between items-center text-xs">
+                                                                <span className="flex items-center gap-1 font-black text-white">
+                                                                    <FlagIcon teamName={m.awayTeam} /> {m.awayTeam}
+                                                                </span>
+                                                                <span className="text-sky-400 font-mono text-[10px] font-black">{awayDrafter || 'Neutral'}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div className="border-t border-white/5 pt-1.5 text-[8px] sm:text-[9px] font-mono leading-relaxed text-slate-300">
+                                                            {homeDrafter && <div>• <strong className="text-white">{homeDrafter}</strong> wants <strong className="text-emerald-400">{m.homeTeam} Win (+4)</strong> & CS (+2)</div>}
+                                                            {awayDrafter && <div>• <strong className="text-white">{awayDrafter}</strong> wants <strong className="text-emerald-400">{m.awayTeam} Win (+4)</strong> & CS (+2)</div>}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 sm:gap-3 mb-2 sm:mb-3">
                                 <div className="flex flex-col gap-2.5 w-full sm:w-auto">
                                     <h2 className={`text-lg sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>ALL SCORES</h2>
@@ -964,7 +1126,7 @@ export default function AutomatedDashboard() {
                                                                                     <button onClick={() => adjustWhatIf(m.id, 'home', -1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
                                                                                 </div>
 
-                                                                                <span className="text-slate-400 font-black text-[8px] sm:text-[9px] leading-none drop-shadow-md self-center">:</span>
+                                                                                <span className="text-slate-400 font-black text-[8px] sm:text-[9px] leading-none drop-shadow-md self-center"> : </span>
 
                                                                                 {/* Away What-If Adjuster */}
                                                                                 <div className="flex flex-col items-center">
@@ -984,7 +1146,7 @@ export default function AutomatedDashboard() {
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.awayTeam} /></div>
                                                                                 <span className={`text-[9px] sm:text-xs truncate block drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
                                                                             </div>
-                                                                            {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{awayDrafter}</span>}
+                                                                            {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate block w-full drop-shadow-md">{awayDrafter}</span>}
                                                                         </div>
                                                                     </div>
                                                                 )
@@ -1004,50 +1166,50 @@ export default function AutomatedDashboard() {
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Round of 32</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'R32').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'R32').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">No Round of 32 matches populated.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'R32').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'R32').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Round of 16</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'R16').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'R16').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">Matches pending group play.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'R16').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'R16').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Quarterfinals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'QF').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'QF').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">QF matches pending.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'QF').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'QF').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Semifinals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'SF').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'SF').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">SF matches pending.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'SF').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'SF').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Finals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">Final matches pending.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
