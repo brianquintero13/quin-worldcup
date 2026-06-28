@@ -305,33 +305,53 @@ export default function AutomatedDashboard() {
 
     const getTickerHeadlines = () => {
         const headlines: string[] = [];
-        if (overallLeaders.length >= 2) {
-            headlines.push(`🏆 STANDINGS: ${overallLeaders[0].name} leads the league with ${overallLeaders[0].totalPoints} PTS!`);
-            headlines.push(`🥈 CHASE IN PROGRESS: ${overallLeaders[1].name} trails the lead by only ${overallLeaders[0].totalPoints - overallLeaders[1].totalPoints} points.`);
-        }
+        if (overallLeaders.length < 2) return headlines;
+
+        const leader = overallLeaders[0];
+        const runnerUp = overallLeaders[1];
+        const lastPlace = overallLeaders[overallLeaders.length - 1];
+        const gap = leader.totalPoints - lastPlace.totalPoints;
+
+        // 1. Live Standings & Chase
+        headlines.push(`🏆 STANDINGS: ${leader.name} leads the pack with ${leader.totalPoints} PTS!`);
+        headlines.push(`🥈 CHASE IN PROGRESS: ${runnerUp.name} trails the lead by only ${leader.totalPoints - runnerUp.totalPoints} points.`);
+
+        // 2. Real-time Live Matches
         const liveGames = uniqueMatches.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
         if (liveGames.length > 0) {
             liveGames.forEach(m => {
                 headlines.push(`📺 LIVE NOW: ${m.homeTeam} ${m.homeGoals ?? 0} - ${m.awayGoals ?? 0} ${m.awayTeam} (${m.minute ? `${m.minute}'` : 'HT'})`);
             });
         }
-        if (overallLeaders.length > 0) {
-            const lastPlace = overallLeaders[overallLeaders.length - 1];
-            const leader = overallLeaders[0];
-            headlines.push(`🚨 STAT EMERGENCY: Send thoughts and prayers to ${lastPlace.name} (only ${lastPlace.totalPoints} PTS). The tactical setup is in absolute ruins.`);
-            headlines.push(`📈 MARKET UPDATE: Stocks in ${leader.name}'s draft choices are soaring. The rest of the league is mathematically down bad.`);
-            if (bootLeaders.length > 0 && bootLeaders[0].totalGoals > 0) {
-                const bootLeader = bootLeaders[0];
-                const lowestBoot = bootLeaders[bootLeaders.length - 1];
-                headlines.push(`⚽ GOLDEN BOOT: ${bootLeader.name}'s strikers are firing absolute heat-seeking missiles (${bootLeader.totalGoals} goals).`);
-                if (lowestBoot.totalGoals === 0) {
-                    headlines.push(`💨 MISSED TARGET: ${lowestBoot.name} is currently shooting blanks. Zero goals. Someone check their boots.`);
-                }
-            }
-            if (gloveLeaders.length > 0 && gloveLeaders[0].totalCleanSheets > 0) {
-                headlines.push(`🧱 PARK THE BUS: ${gloveLeaders[0].name} has parked the bus so hard they are violating local zoning laws.`);
-            }
-        }
+
+        // 3. Unfiltered Sarcastic / Savage News Ticker Items
+        headlines.push(`🚨 STAT EMERGENCY: Send thoughts, prayers, and maybe a map to ${lastPlace.name} (only ${lastPlace.totalPoints} PTS). The tactical setup is in absolute ruins.`);
+        headlines.push(`📈 MARKET UPDATE: Stocks in ${leader.name}'s draft choices are soaring. The rest of the league is mathematically down bad.`);
+        headlines.push(`📉 FINANCIAL RUIN: Analysts predict ${lastPlace.name}'s investment in ${lastPlace.teams.join(', ')} is the worst financial decision since buying Enron stock.`);
+        headlines.push(`🧱 TERRORIST FOOTBALL: ${gloveLeaders[0].name} has parked the bus so hard they are violating local zoning laws. Someone tell them scoring is allowed.`);
+        headlines.push(`💨 MISSED TARGET: ${bootLeaders[bootLeaders.length - 1].name} is shooting complete blanks. Zero goals. Someone check if their forwards are actually blindfolded.`);
+        headlines.push(`⚖️ CONSPIRACY: Rumors suggest ${leader.name}'s draft was assisted by an elite supercomputer, while ${lastPlace.name} let a lobotomized dog pick their squad.`);
+        headlines.push(`⚠️ WARNING: High concentrations of concentrated copium detected radiating from ${lastPlace.name}'s camp. Disbelief expected to last all weekend.`);
+        headlines.push(`🏥 INJURY UPDATE: ${lastPlace.name}'s self-esteem has been ruled OUT for the remainder of the tournament after looking at the live leaderboard.`);
+        headlines.push(`🍼 BABY MODE: ${leader.name} is riding the coattails of heavy tournament favorites like an absolute parasite. Try playing on veteran mode next time.`);
+        headlines.push(`🕵️‍♂️ INVESTIGATION: Local authorities investigating whether ${lastPlace.name} actually knows what a soccer ball looks like after drafting ${lastPlace.teams.join(', ')}.`);
+        headlines.push(`🥱 SNOOZE FEST: Watching ${gloveLeaders[0].name}'s teams play is currently being trialed as a cure for chronic insomnia.`);
+        headlines.push(`🔥 SAVAGE STATS: ${leader.name} is currently outscoring ${lastPlace.name} by ${gap} points. This isn't a fantasy league, it's a public execution.`);
+
+        // 4. Sarcastic Sports Journalism Headlines
+        const wildSarcasticLines = [
+            `⚽ GOLDEN BOOT: ${bootLeaders[0].name}'s strikers are firing absolute heat-seeking missiles (${bootLeaders[0].totalGoals} goals).`,
+            `📰 TRANSFER RUMORS: Reports suggest ${lastPlace.name} is looking to trade their entire drafted roster for a bag of slightly stale potato chips.`,
+            `🕵️‍♂️ SCOUTING REPORT: Mid-table managers continue to redefine 'vanilla'. If unseasoned, boiled chicken breast played football, it would look like this.`,
+            `🚨 BREAKING: FIFA considering launching a formal inquiry into how ${lastPlace.name} manages to screw up every single tactical decision so consistently.`,
+            `💡 PRO TIP: Remind ${lastPlace.name} that the goal of the game is to get points, not collect losses like Pokémon cards.`,
+            `🤷‍♂️ STAT OF THE DAY: Even if you doubled ${lastPlace.name}'s points, they would still be trailing ${leader.name}. Tragic.`,
+            `⚡ ENERGY REPORT: ${leader.name}'s draft choices are currently running on premium rocket fuel while ${lastPlace.name}'s teams move slower than parked cars.`,
+            `📢 PRESS CONFERENCE: Asked about their draft, ${lastPlace.name} reportedly wept silently for ten minutes before leaving the media room.`
+        ];
+
+        headlines.push(...wildSarcasticLines);
+
         return headlines;
     };
 
