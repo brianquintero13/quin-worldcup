@@ -373,7 +373,15 @@ export default function AutomatedDashboard() {
         const totalExpected = managerPicks.reduce((acc, p) => acc + p.expectedPoints, 0);
         const surplus = totalActual - totalExpected;
         const avgRoi = totalExpected > 0 ? (surplus / totalExpected) * 100 : 0;
-        return { name, totalActual, totalExpected, surplus, avgRoi, picks: managerPicks };
+        return {
+            name,
+            totalActual,
+            totalExpected,
+            surplus,
+            avgRoi,
+            picks: managerPicks,
+            picksCount: managerPicks.length
+        };
     }).sort((a, b) => b.surplus - a.surplus); // Sorted by total surplus points created!
 
     const bestManager = [...managerRoiStats].sort((a, b) => b.avgRoi - a.avgRoi)[0];
