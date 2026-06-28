@@ -512,7 +512,7 @@ export default function AutomatedDashboard() {
 
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
-                .animate-marquee { display: flex; width: max-content; animation: marquee 50s linear infinite; }
+                .animate-marquee { display: flex; width: max-content; animation: marquee 80s linear infinite; }
                 .animate-marquee:hover { animation-play-state: paused; }
                 .avatar-img-custom { object-fit: cover; object-position: center 25%; }
             `}</style>
