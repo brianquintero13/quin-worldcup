@@ -202,6 +202,29 @@ export default function AutomatedDashboard() {
     const [standingsView, setStandingsView] = useState<'grid' | 'table'>('grid');
     const [matchesSubTab, setMatchesSubTab] = useState<'groups' | 'bracket'>('groups');
 
+    // State for temporary interactive "What-If" scoreboard adjustments
+    const [customScores, setCustomScores] = useState<Record<string, { homeGoals: number, awayGoals: number, status: string }>>({});
+
+    const adjustWhatIf = (matchId: string, side: 'home' | 'away', amount: number) => {
+        setCustomScores(prev => {
+            const current = prev[matchId] || {
+                homeGoals: uniqueMatches.find(m => m.id === matchId)?.homeGoals ?? 0,
+                awayGoals: uniqueMatches.find(m => m.id === matchId)?.awayGoals ?? 0,
+                status: 'IN_PLAY'
+            };
+            const nextVal = Math.max(0, (side === 'home' ? current.homeGoals : current.awayGoals) + amount);
+            return {
+                ...prev,
+                [matchId]: {
+                    ...current,
+                    homeGoals: side === 'home' ? nextVal : current.homeGoals,
+                    awayGoals: side === 'away' ? nextVal : current.awayGoals,
+                    status: 'IN_PLAY' // Force active logic state for simulated calculations
+                }
+            };
+        });
+    };
+
     useEffect(() => {
         const stateRef = ref(db, 'state');
         const unsubscribe = onValue(stateRef, (snapshot) => {
@@ -234,6 +257,30 @@ export default function AutomatedDashboard() {
 
     const uniqueMatches = getUniqueMatches(matches);
 
+    // Preprocessing system that applies live score modifications seamlessly across calculations
+    const modifiedMatches = uniqueMatches.map(m => {
+        const custom = customScores[m.id];
+        if (custom) {
+            const homeGoals = custom.homeGoals;
+            const awayGoals = custom.awayGoals;
+            const isComplete = true; // Treats overrides as active projection parameters
+            let winner = 'DRAW';
+            if (homeGoals > awayGoals) winner = m.homeTeam;
+            else if (awayGoals > homeGoals) winner = m.awayTeam;
+
+            return {
+                ...m,
+                homeGoals,
+                awayGoals,
+                status: custom.status,
+                homeCleanSheet: isComplete && awayGoals === 0,
+                awayCleanSheet: isComplete && homeGoals === 0,
+                winner
+            };
+        }
+        return m;
+    });
+
     const standings = drafters.map(name => {
         let totalPoints = 0, totalGoals = 0, totalCleanSheets = 0, wins = 0, draws = 0, losses = 0;
         const myTeams = picks.filter(p => p.drafter === name).map(p => p.team);
@@ -242,7 +289,7 @@ export default function AutomatedDashboard() {
         const csByTeam: Record<string, number> = {};
 
         myTeams.forEach(teamId => {
-            const stats = getTeamPointsAndLogs(teamId, uniqueMatches, showProjected);
+            const stats = getTeamPointsAndLogs(teamId, modifiedMatches, showProjected || Object.keys(customScores).length > 0);
             totalPoints += stats.points;
             totalGoals += stats.goals;
             totalCleanSheets += stats.cleanSheets;
@@ -287,10 +334,10 @@ export default function AutomatedDashboard() {
         return Object.values(table).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
     };
 
-    const groupNames = Array.from(new Set(uniqueMatches.map(m => m.group).filter(Boolean))).sort() as string[];
+    const groupNames = Array.from(new Set(modifiedMatches.map(m => m.group).filter(Boolean))).sort() as string[];
     const filteredGroupNames = selectedGroupFilter === 'ALL' ? groupNames : groupNames.filter(g => g === selectedGroupFilter);
     const teamToGroup = new Map<string, string>();
-    uniqueMatches.forEach(m => {
+    modifiedMatches.forEach(m => {
         if (m.stage === 'Group' && m.group) { teamToGroup.set(m.homeTeam, m.group); teamToGroup.set(m.awayTeam, m.group); }
     });
 
@@ -317,7 +364,7 @@ export default function AutomatedDashboard() {
         headlines.push(`🥈 CHASE IN PROGRESS: ${runnerUp.name} trails the lead by only ${leader.totalPoints - runnerUp.totalPoints} points.`);
 
         // 2. Real-time Live Matches
-        const liveGames = uniqueMatches.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
+        const liveGames = modifiedMatches.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
         if (liveGames.length > 0) {
             liveGames.forEach(m => {
                 headlines.push(`📺 LIVE NOW: ${m.homeTeam} ${m.homeGoals ?? 0} - ${m.awayGoals ?? 0} ${m.awayTeam} (${m.minute ? `${m.minute}'` : 'HT'})`);
@@ -357,15 +404,15 @@ export default function AutomatedDashboard() {
 
     const tickerHeadlines = getTickerHeadlines();
     const eliminatedTeamsSet = new Set<string>();
-    uniqueMatches.forEach(m => {
-        if (m.homeTeam && m.homeTeam !== 'TBD' && isTeamEliminated(m.homeTeam, uniqueMatches)) eliminatedTeamsSet.add(m.homeTeam.toUpperCase());
-        if (m.awayTeam && m.awayTeam !== 'TBD' && isTeamEliminated(m.awayTeam, uniqueMatches)) eliminatedTeamsSet.add(m.awayTeam.toUpperCase());
+    modifiedMatches.forEach(m => {
+        if (m.homeTeam && m.homeTeam !== 'TBD' && isTeamEliminated(m.homeTeam, modifiedMatches)) eliminatedTeamsSet.add(m.homeTeam.toUpperCase());
+        if (m.awayTeam && m.awayTeam !== 'TBD' && isTeamEliminated(m.awayTeam, modifiedMatches)) eliminatedTeamsSet.add(m.awayTeam.toUpperCase());
     });
 
     // Compute complete Draft Value ROI statistics based on Picks list
     const draftAnalysis = picks.map((p, index) => {
         const pickNumber = index + 1;
-        const stats = getTeamPointsAndLogs(p.team, uniqueMatches, showProjected);
+        const stats = getTeamPointsAndLogs(p.team, modifiedMatches, showProjected || Object.keys(customScores).length > 0);
         const expected = getExpectedPoints(pickNumber);
         const surplus = stats.points - expected;
         const roi = (surplus / expected) * 100;
@@ -457,8 +504,8 @@ export default function AutomatedDashboard() {
         const awayDrafter = getDrafterForTeam(m.awayTeam);
         const isHomeWin = m.winner === m.homeTeam;
         const isAwayWin = m.winner === m.awayTeam;
-        const homeEliminated = isTeamEliminated(m.homeTeam, uniqueMatches);
-        const awayEliminated = isTeamEliminated(m.awayTeam, uniqueMatches);
+        const homeEliminated = isTeamEliminated(m.homeTeam, modifiedMatches);
+        const awayEliminated = isTeamEliminated(m.awayTeam, modifiedMatches);
 
         return (
             <div key={m.id} className="bg-black/80 border border-white/10 rounded-lg p-2.5 flex flex-col w-[230px] sm:w-[250px] shadow-lg text-[10px] sm:text-xs font-semibold shrink-0">
@@ -475,7 +522,11 @@ export default function AutomatedDashboard() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                         {homeDrafter && <ManagerAvatar name={homeDrafter} size="sm" />}
-                        <span className={`font-black text-xs sm:text-sm w-4 text-center ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
+                        <div className="flex flex-col items-center">
+                            <button onClick={() => adjustWhatIf(m.id, 'home', 1)} className="text-[7px] text-slate-500 hover:text-sky-400 leading-none">▲</button>
+                            <span className={`font-black text-xs sm:text-sm w-4 text-center leading-none ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
+                            <button onClick={() => adjustWhatIf(m.id, 'home', -1)} className="text-[7px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
+                        </div>
                     </div>
                 </div>
                 <div className="h-1" />
@@ -486,7 +537,11 @@ export default function AutomatedDashboard() {
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                         {awayDrafter && <ManagerAvatar name={awayDrafter} size="sm" />}
-                        <span className={`font-black text-xs sm:text-sm w-4 text-center ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
+                        <div className="flex flex-col items-center">
+                            <button onClick={() => adjustWhatIf(m.id, 'away', 1)} className="text-[7px] text-slate-500 hover:text-sky-400 leading-none">▲</button>
+                            <span className={`font-black text-xs sm:text-sm w-4 text-center leading-none ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
+                            <button onClick={() => adjustWhatIf(m.id, 'away', -1)} className="text-[7px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -577,7 +632,7 @@ export default function AutomatedDashboard() {
                                 {selectedManager.teams.map((team: string) => {
                                     const logs = selectedManager.matchLogs.filter((l: any) => l.team === team);
                                     const teamTotal = logs.reduce((sum: number, l: any) => sum + l.points, 0);
-                                    const eliminated = isTeamEliminated(team, uniqueMatches);
+                                    const eliminated = isTeamEliminated(team, modifiedMatches);
 
                                     return (
                                         <div key={team} className={`bg-black/70 backdrop-blur-md border border-white/20 rounded-lg overflow-hidden shadow-xl ${eliminated ? 'opacity-50 grayscale' : ''}`}>
@@ -698,7 +753,7 @@ export default function AutomatedDashboard() {
                                             </div>
                                             <div className="grid grid-cols-2 gap-1 sm:gap-1.5 pl-2">
                                                 {picks.filter(p => p.drafter === drafter).map((pick, pIdx) => {
-                                                    const eliminated = isTeamEliminated(pick.team, uniqueMatches);
+                                                    const eliminated = isTeamEliminated(pick.team, modifiedMatches);
                                                     return (
                                                         <div key={pIdx} className={`bg-black/60 border border-white/20 rounded-md px-1.5 sm:px-2 py-1 sm:py-1.5 flex items-center text-[9px] sm:text-xs shadow-md min-w-0 ${eliminated ? 'opacity-35 grayscale' : ''}`}>
                                                             <FlagIcon teamName={pick.team}/>
@@ -727,7 +782,7 @@ export default function AutomatedDashboard() {
                                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 sm:gap-3">
                                                     {groupTeams.sort().map(team => {
                                                         const drafter = getDrafterForTeam(team);
-                                                        const eliminated = isTeamEliminated(team, uniqueMatches);
+                                                        const eliminated = isTeamEliminated(team, modifiedMatches);
                                                         return (
                                                             <div key={team} className={`border rounded-lg p-1.5 sm:p-2 flex flex-col justify-center items-center text-center transition-all min-w-0 shadow-lg ${eliminated ? 'opacity-30 grayscale border-white/5 bg-black/90' : drafter ? 'bg-black/90 border-white/5 opacity-70' : 'bg-black/60 border-white/30 hover:border-white/50 hover:bg-black/80'}`}>
                                                                 <div className="mb-0.5 sm:mb-1"><FlagIcon teamName={team}/></div>
@@ -752,7 +807,7 @@ export default function AutomatedDashboard() {
                                         <div key={idx} className="flex items-center justify-between bg-black/60 border border-white/10 p-1.5 sm:p-2 rounded-md min-w-0 hover:bg-black/90 transition shadow-md">
                                             <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 pr-1 sm:pr-2">
                                                 <span className={`text-[9px] sm:text-[10px] font-mono text-slate-300 font-black shrink-0 w-4 sm:w-5 drop-shadow-md ${oswald.className}`}>#{picks.length - idx}</span>
-                                                <div className={`flex items-center text-[9px] sm:text-[10px] font-black text-slate-100 min-w-0 drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${isTeamEliminated(pick.team, uniqueMatches) ? 'opacity-35 grayscale line-through text-slate-500' : ''}`}>
+                                                <div className={`flex items-center text-[9px] sm:text-[10px] font-black text-slate-100 min-w-0 drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${isTeamEliminated(pick.team, modifiedMatches) ? 'opacity-35 grayscale line-through text-slate-500' : ''}`}>
                                                     <FlagIcon teamName={pick.team}/>
                                                     <span className="truncate block whitespace-nowrap">{pick.team}</span>
                                                 </div>
@@ -824,7 +879,7 @@ export default function AutomatedDashboard() {
                                         </div>
                                     ) : (
                                         filteredGroupNames.map(group => {
-                                            const groupMatches = uniqueMatches.filter(m => m.group === group);
+                                            const groupMatches = modifiedMatches.filter(m => m.group === group);
                                             const groupTable = getRealGroupStandings(groupMatches);
 
                                             return (
@@ -851,7 +906,7 @@ export default function AutomatedDashboard() {
                                                                 </thead>
                                                                 <tbody className="divide-y divide-white/10">
                                                                 {groupTable.map((teamRow) => {
-                                                                    const teamEliminated = isTeamEliminated(teamRow.name, uniqueMatches);
+                                                                    const teamEliminated = isTeamEliminated(teamRow.name, modifiedMatches);
                                                                     return (
                                                                         <tr key={teamRow.name} className={`hover:bg-black/50 transition ${teamEliminated ? 'opacity-35 grayscale' : ''}`}>
                                                                             <td className="py-2.5 px-3 font-black text-slate-100 drop-shadow-[0_2px_2px_rgba(0,0,0,1)]">
@@ -878,8 +933,8 @@ export default function AutomatedDashboard() {
                                                             {groupMatches.map(m => {
                                                                 const homeDrafter = getDrafterForTeam(m.homeTeam);
                                                                 const awayDrafter = getDrafterForTeam(m.awayTeam);
-                                                                const homeEliminated = isTeamEliminated(m.homeTeam, uniqueMatches);
-                                                                const awayEliminated = isTeamEliminated(m.awayTeam, uniqueMatches);
+                                                                const homeEliminated = isTeamEliminated(m.homeTeam, modifiedMatches);
+                                                                const awayEliminated = isTeamEliminated(m.awayTeam, modifiedMatches);
 
                                                                 const isHomeWin = m.winner === m.homeTeam;
                                                                 const isAwayWin = m.winner === m.awayTeam;
@@ -900,11 +955,25 @@ export default function AutomatedDashboard() {
                                                                             {homeDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{homeDrafter}</span>}
                                                                         </div>
 
-                                                                        <div className="mx-1.5 sm:mx-2 flex flex-col items-center shrink-0 min-w-[50px] sm:min-w-[65px]">
-                                                                            <div className="flex items-center justify-center gap-1 sm:gap-1.5 bg-black/80 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/20 w-full shadow-inner mb-0.5 sm:mb-1">
-                                                                                <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-none drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${homeScoreColor} ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
-                                                                                <span className="text-slate-400 font-black text-[8px] sm:text-[9px] leading-none drop-shadow-md"> : </span>
-                                                                                <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-none drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${awayScoreColor} ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
+                                                                        <div className="mx-1.5 sm:mx-2 flex flex-col items-center shrink-0 min-w-[70px] sm:min-w-[85px]">
+                                                                            <div className="flex items-center justify-center gap-1.5 bg-black/80 px-1 py-1 rounded-md border border-white/20 w-full shadow-inner mb-0.5 sm:mb-1">
+
+                                                                                {/* Home What-If Adjuster */}
+                                                                                <div className="flex flex-col items-center">
+                                                                                    <button onClick={() => adjustWhatIf(m.id, 'home', 1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▲</button>
+                                                                                    <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-tight drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${homeScoreColor} ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
+                                                                                    <button onClick={() => adjustWhatIf(m.id, 'home', -1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
+                                                                                </div>
+
+                                                                                <span className="text-slate-400 font-black text-[8px] sm:text-[9px] leading-none drop-shadow-md self-center">:</span>
+
+                                                                                {/* Away What-If Adjuster */}
+                                                                                <div className="flex flex-col items-center">
+                                                                                    <button onClick={() => adjustWhatIf(m.id, 'away', 1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▲</button>
+                                                                                    <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-tight drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${awayScoreColor} ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
+                                                                                    <button onClick={() => adjustWhatIf(m.id, 'away', -1)} className="text-[8px] text-slate-500 hover:text-sky-400 leading-none">▼</button>
+                                                                                </div>
+
                                                                             </div>
                                                                             {m.status === 'IN_PLAY' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-red-500 animate-pulse drop-shadow-md">{m.minute ? `${m.minute}'` : 'LIVE'}</span>}
                                                                             {m.status === 'PAUSED' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-[#fbbf24] drop-shadow-md">HT</span>}
@@ -936,50 +1005,50 @@ export default function AutomatedDashboard() {
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Round of 32</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'R32').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'R32').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">No Round of 32 matches populated.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'R32').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'R32').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Round of 16</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'R16').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'R16').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">Matches pending group play.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'R16').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'R16').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Quarterfinals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'QF').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'QF').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">QF matches pending.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'QF').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'QF').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Semifinals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'SF').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'SF').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">SF matches pending.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'SF').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'SF').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Finals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
-                                                {uniqueMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').length === 0 ? (
+                                                {modifiedMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').length === 0 ? (
                                                     <p className="text-[10px] text-slate-400 italic text-center w-[230px]">Final matches pending.</p>
                                                 ) : (
-                                                    uniqueMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').map(m => renderBracketMatch(m))
+                                                    modifiedMatches.filter(m => m.stage === 'Final' || m.stage === '3rdPlace').map(m => renderBracketMatch(m))
                                                 )}
                                             </div>
                                         </div>
