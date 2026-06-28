@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { db } from '../lib/firebase';
 import { ref, onValue } from 'firebase/database';
 import { Oswald } from 'next/font/google';
@@ -9,7 +9,6 @@ import FlagIcon from './components/FlagIcon';
 
 const oswald = Oswald({ subsets: ['latin'], weight: ['400', '700'] });
 
-// Dynamic Manager Avatar lookup with safe Initials fallback using first names only
 const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md' | 'lg' | 'xl' }) => {
     if (!name) return null;
     const firstWord = name.trim().split(/\s+/)[0];
@@ -17,10 +16,10 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
     if (fileName === 'angelo') fileName = 'anuzzil';
     const src = `/managers/${fileName}.png`;
     const sizeClasses = {
-        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0",
-        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0",
-        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0",
-        xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0"
+        sm: "w-6 h-6 sm:w-8 sm:h-8 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0 relative z-10",
+        md: "w-12 h-12 sm:w-16 sm:h-16 rounded-full border border-white/20 object-cover avatar-img-custom bg-white/10 shrink-0 relative z-10",
+        lg: "w-24 h-24 sm:w-28 sm:h-28 rounded-full border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0 relative z-10",
+        xl: "w-28 h-28 sm:w-32 sm:h-32 rounded-2xl border-2 border-sky-400 object-cover avatar-img-custom bg-white/10 shrink-0 relative z-10"
     }[size];
 
     return (
@@ -30,7 +29,6 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
     );
 };
 
-// Helper to filter out duplicate matches before scoring runs
 const getUniqueMatches = (matchesList: any[]) => {
     const seen = new Set();
     return matchesList.filter(m => {
@@ -42,7 +40,6 @@ const getUniqueMatches = (matchesList: any[]) => {
     });
 };
 
-// Helper to dynamically calculate if a country is eliminated from the tournament
 const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     if (!teamName || teamName === 'TBD') return false;
     let lostKnockout = false;
@@ -92,6 +89,31 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     return false;
 };
 
+// Helper to determine exact expected points yield based on snake draft pick order (1 to 48)
+const getExpectedPoints = (pickNumber: number) => {
+    if (pickNumber <= 12) {
+        return 35 - (pickNumber - 1) * 0.9;
+    } else if (pickNumber <= 24) {
+        return 24 - (pickNumber - 13) * 0.7;
+    } else if (pickNumber <= 36) {
+        return 15 - (pickNumber - 25) * 0.5;
+    } else {
+        return 8 - (pickNumber - 37) * 0.35;
+    }
+};
+
+const teamsMatch = (nameA: string, nameB: string): boolean => {
+    if (!nameA || !nameB) return false;
+    const norm = (str: string) => {
+        const u = str.toUpperCase().trim();
+        if (u === 'USA' || u === 'UNITED STATES' || u === 'UNITED STATES OF AMERICA') return 'USA';
+        if (u === 'CAPE VERDE ISLANDS') return 'CAPE VERDE';
+        return u;
+    };
+    const cleanA = norm(nameA); const cleanB = norm(nameB);
+    return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
+};
+
 export default function AutomatedDashboard() {
     const [picks, setPicks] = useState<any[]>([]);
     const [drafters, setDrafters] = useState<string[]>([]);
@@ -103,20 +125,7 @@ export default function AutomatedDashboard() {
     const [showProjected, setShowProjected] = useState<boolean>(false);
     const [standingsView, setStandingsView] = useState<'grid' | 'table'>('grid');
     const [matchesSubTab, setMatchesSubTab] = useState<'groups' | 'bracket'>('groups');
-
-    // Banter Arena states
-    const [selectedRoastManager, setSelectedRoastManager] = useState<string>('');
-    const [activeRoastText, setActiveRoastText] = useState<string>('');
-    const [fighterA, setFighterA] = useState<string>('');
-    const [fighterB, setFighterB] = useState<string>('');
-    const [fightLogs, setFightLogs] = useState<string[]>([]);
-    const [fightRunning, setFightRunning] = useState<boolean>(false);
-    const [hpA, setHpA] = useState<number>(100);
-    const [hpB, setHpB] = useState<number>(100);
-    const [animA, setAnimA] = useState<string>('');
-    const [animB, setAnimB] = useState<string>('');
-    const [hitEffect, setHitEffect] = useState<string>('');
-    const fightActiveRef = useRef(false);
+    const [roiFilter, setRoiFilter] = useState<'all' | 'over' | 'under'>('all');
 
     useEffect(() => {
         const stateRef = ref(db, 'state');
@@ -143,29 +152,88 @@ export default function AutomatedDashboard() {
         return () => clearInterval(interval);
     }, []);
 
-    // Cleanup fight loop on unmount
-    useEffect(() => {
-        return () => { fightActiveRef.current = false; };
-    }, []);
-
-    const teamsMatch = (nameA: string, nameB: string): boolean => {
-        if (!nameA || !nameB) return false;
-        const norm = (str: string) => {
-            const u = str.toUpperCase().trim();
-            if (u === 'USA' || u === 'UNITED STATES' || u === 'UNITED STATES OF AMERICA') return 'USA';
-            if (u === 'CAPE VERDE ISLANDS') return 'CAPE VERDE';
-            return u;
-        };
-        const cleanA = norm(nameA); const cleanB = norm(nameB);
-        return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
-    };
-
     const getDrafterForTeam = (teamName: string) => {
         const pick = picks.find(p => teamsMatch(p.team, teamName));
         return pick ? pick.drafter : null;
     };
 
     const uniqueMatches = getUniqueMatches(matches);
+
+    // Standard points computer logic consolidated into a clean helper
+    const getTeamPointsAndLogs = (teamId: string, matchesList: any[]) => {
+        let points = 0;
+        let goals = 0;
+        let cleanSheets = 0;
+        let wins = 0, draws = 0, losses = 0;
+        let advancedFromGroup = false;
+        const logs: any[] = [];
+
+        matchesList.forEach(m => {
+            const isHome = m.homeTeam && teamsMatch(m.homeTeam, teamId);
+            const isAway = m.awayTeam && teamsMatch(m.awayTeam, teamId);
+            if (!isHome && !isAway) return;
+
+            const isFinished = m.status === 'FINISHED' || m.status === 'AWARDED';
+            const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED';
+            if (!isFinished && !isLive) return;
+            if (isLive && !showProjected) return;
+
+            let matchPts = 0;
+            let logDetails: string[] = [];
+
+            let projectedWinner = m.winner;
+            if (isLive && !projectedWinner && m.homeGoals !== null && m.awayGoals !== null) {
+                if (m.homeGoals > m.awayGoals) projectedWinner = m.homeTeam;
+                else if (m.awayGoals > m.homeGoals) projectedWinner = m.awayTeam;
+                else projectedWinner = 'DRAW';
+            }
+
+            const isWin = (isHome && projectedWinner === m.homeTeam) || (isAway && projectedWinner === m.awayTeam);
+            const isDraw = projectedWinner === 'DRAW';
+            const isLoss = projectedWinner && !isWin && !isDraw;
+
+            if (isWin) wins++; else if (isDraw) draws++; else if (isLoss) losses++;
+
+            const matchGoals = isHome ? (m.homeGoals || 0) : (m.awayGoals || 0);
+            const matchCleanSheet = (isHome && m.homeCleanSheet) || (isAway && m.awayCleanSheet) ? 1 : 0;
+
+            goals += matchGoals;
+            cleanSheets += matchCleanSheet;
+
+            if (matchGoals > 0) {
+                matchPts += (matchGoals * 1);
+                logDetails.push(`+${matchGoals * 1} (${matchGoals} Goal${matchGoals > 1 ? 's' : ''})`);
+            }
+            if (matchCleanSheet) {
+                matchPts += 2;
+                logDetails.push(`+2 (CS)`);
+            }
+            if (m.stage !== 'Group' && !advancedFromGroup) {
+                advancedFromGroup = true;
+                matchPts += 8;
+                logDetails.push(`+8 (Advance)`);
+            }
+            if (isWin) {
+                matchPts += 4; logDetails.push(`+4 (Win)`);
+                const stageBonus: any = { R32: 10, R16: 12, QF: 15, SF: 20, '3rdPlace': 10, Final: 30 };
+                if (stageBonus[m.stage]) {
+                    matchPts += stageBonus[m.stage];
+                    logDetails.push(`+${stageBonus[m.stage]} (${m.stage} Bonus)`);
+                }
+            } else if (isDraw && m.stage === 'Group') {
+                matchPts += 2; logDetails.push(`+2 (Draw)`);
+            }
+
+            points += matchPts;
+            logs.push({
+                matchId: m.id, stage: m.group && m.stage === 'Group' ? m.group : m.stage, team: teamId, opponent: isHome ? m.awayTeam : m.homeTeam,
+                score: isHome ? `${m.homeGoals ?? '-'} : ${m.awayGoals ?? '-'}` : `${m.awayGoals ?? '-'} : ${m.homeGoals ?? '-'}`,
+                result: isWin ? 'W' : isDraw ? 'D' : isLoss ? 'L' : '-', points: matchPts, details: logDetails, isLive: isLive
+            });
+        });
+
+        return { points, goals, cleanSheets, wins, draws, losses, logs };
+    };
 
     const standings = drafters.map(name => {
         let totalPoints = 0, totalGoals = 0, totalCleanSheets = 0, wins = 0, draws = 0, losses = 0;
@@ -175,73 +243,18 @@ export default function AutomatedDashboard() {
         const csByTeam: Record<string, number> = {};
 
         myTeams.forEach(teamId => {
-            goalsByTeam[teamId] = 0; csByTeam[teamId] = 0;
-            let advancedFromGroup = false;
-
-            uniqueMatches.forEach(m => {
-                const isHome = m.homeTeam && teamsMatch(m.homeTeam, teamId);
-                const isAway = m.awayTeam && teamsMatch(m.awayTeam, teamId);
-                if (!isHome && !isAway) return;
-
-                const isFinished = m.status === 'FINISHED' || m.status === 'AWARDED';
-                const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED';
-                if (!isFinished && !isLive) return;
-                if (isLive && !showProjected) return;
-
-                let matchPts = 0;
-                let logDetails: string[] = [];
-
-                let projectedWinner = m.winner;
-                if (isLive && !projectedWinner && m.homeGoals !== null && m.awayGoals !== null) {
-                    if (m.homeGoals > m.awayGoals) projectedWinner = m.homeTeam;
-                    else if (m.awayGoals > m.homeGoals) projectedWinner = m.awayTeam;
-                    else projectedWinner = 'DRAW';
-                }
-
-                const isWin = (isHome && projectedWinner === m.homeTeam) || (isAway && projectedWinner === m.awayTeam);
-                const isDraw = projectedWinner === 'DRAW';
-                const isLoss = projectedWinner && !isWin && !isDraw;
-
-                if (isWin) wins++; else if (isDraw) draws++; else if (isLoss) losses++;
-
-                const matchGoals = isHome ? (m.homeGoals || 0) : (m.awayGoals || 0);
-                const matchCleanSheet = (isHome && m.homeCleanSheet) || (isAway && m.awayCleanSheet) ? 1 : 0;
-
-                totalGoals += matchGoals; goalsByTeam[teamId] += matchGoals;
-                totalCleanSheets += matchCleanSheet; csByTeam[teamId] += matchCleanSheet;
-
-                if (matchGoals > 0) {
-                    matchPts += (matchGoals * 1);
-                    logDetails.push(`+${matchGoals * 1} (${matchGoals} Goal${matchGoals > 1 ? 's' : ''})`);
-                }
-                if (matchCleanSheet) {
-                    matchPts += 2;
-                    logDetails.push(`+2 (CS)`);
-                }
-                if (m.stage !== 'Group' && !advancedFromGroup) {
-                    advancedFromGroup = true;
-                    matchPts += 8;
-                    logDetails.push(`+8 (Advance)`);
-                }
-                if (isWin) {
-                    matchPts += 4; logDetails.push(`+4 (Win)`);
-                    const stageBonus: any = { R32: 10, R16: 12, QF: 15, SF: 20, '3rdPlace': 10, Final: 30 };
-                    if (stageBonus[m.stage]) {
-                        matchPts += stageBonus[m.stage];
-                        logDetails.push(`+${stageBonus[m.stage]} (${m.stage} Bonus)`);
-                    }
-                } else if (isDraw && m.stage === 'Group') {
-                    matchPts += 2; logDetails.push(`+2 (Draw)`);
-                }
-
-                totalPoints += matchPts;
-                matchLogs.push({
-                    matchId: m.id, stage: m.group && m.stage === 'Group' ? m.group : m.stage, team: teamId, opponent: isHome ? m.awayTeam : m.homeTeam,
-                    score: isHome ? `${m.homeGoals ?? '-'} : ${m.awayGoals ?? '-'}` : `${m.awayGoals ?? '-'} : ${m.homeGoals ?? '-'}`,
-                    result: isWin ? 'W' : isDraw ? 'D' : isLoss ? 'L' : '-', points: matchPts, details: logDetails, isLive: isLive
-                });
-            });
+            const stats = getTeamPointsAndLogs(teamId, uniqueMatches);
+            totalPoints += stats.points;
+            totalGoals += stats.goals;
+            totalCleanSheets += stats.cleanSheets;
+            wins += stats.wins;
+            draws += stats.draws;
+            losses += stats.losses;
+            goalsByTeam[teamId] = stats.goals;
+            csByTeam[teamId] = stats.cleanSheets;
+            matchLogs.push(...stats.logs);
         });
+
         return { name, teams: myTeams, totalPoints, totalGoals, totalCleanSheets, wins, draws, losses, matchLogs, goalsByTeam, csByTeam };
     });
 
@@ -277,13 +290,9 @@ export default function AutomatedDashboard() {
 
     const groupNames = Array.from(new Set(uniqueMatches.map(m => m.group).filter(Boolean))).sort() as string[];
     const filteredGroupNames = selectedGroupFilter === 'ALL' ? groupNames : groupNames.filter(g => g === selectedGroupFilter);
-
     const teamToGroup = new Map<string, string>();
     uniqueMatches.forEach(m => {
-        if (m.stage === 'Group' && m.group) {
-            teamToGroup.set(m.homeTeam, m.group);
-            teamToGroup.set(m.awayTeam, m.group);
-        }
+        if (m.stage === 'Group' && m.group) { teamToGroup.set(m.homeTeam, m.group); teamToGroup.set(m.awayTeam, m.group); }
     });
 
     const groupedTeams: Record<string, string[]> = {};
@@ -307,7 +316,6 @@ export default function AutomatedDashboard() {
                 headlines.push(`📺 LIVE NOW: ${m.homeTeam} ${m.homeGoals ?? 0} - ${m.awayGoals ?? 0} ${m.awayTeam} (${m.minute ? `${m.minute}'` : 'HT'})`);
             });
         }
-
         if (overallLeaders.length > 0) {
             const lastPlace = overallLeaders[overallLeaders.length - 1];
             const leader = overallLeaders[0];
@@ -324,18 +332,55 @@ export default function AutomatedDashboard() {
             if (gloveLeaders.length > 0 && gloveLeaders[0].totalCleanSheets > 0) {
                 headlines.push(`🧱 PARK THE BUS: ${gloveLeaders[0].name} has parked the bus so hard they are violating local zoning laws.`);
             }
-            headlines.push(`🤔 RUMOR MILL: Reports suggest ${lastPlace.name} is consulting an actual astrologer to fix their remaining fixture outcomes.`);
         }
         return headlines;
     };
 
     const tickerHeadlines = getTickerHeadlines();
-
     const eliminatedTeamsSet = new Set<string>();
     uniqueMatches.forEach(m => {
         if (m.homeTeam && m.homeTeam !== 'TBD' && isTeamEliminated(m.homeTeam, uniqueMatches)) eliminatedTeamsSet.add(m.homeTeam.toUpperCase());
         if (m.awayTeam && m.awayTeam !== 'TBD' && isTeamEliminated(m.awayTeam, uniqueMatches)) eliminatedTeamsSet.add(m.awayTeam.toUpperCase());
     });
+
+    // Computing full Draft Value ROI data based on Firebase picks order
+    const draftAnalysis = picks.map((p, index) => {
+        const pickNumber = index + 1;
+        const stats = getTeamPointsAndLogs(p.team, uniqueMatches);
+        const expected = getExpectedPoints(pickNumber);
+        const surplus = stats.points - expected;
+        const roi = (surplus / expected) * 100;
+        return {
+            team: p.team,
+            drafter: p.drafter,
+            pickNumber,
+            actualPoints: stats.points,
+            expectedPoints: expected,
+            surplus,
+            roi,
+            eliminated: eliminatedTeamsSet.has(p.team.toUpperCase())
+        };
+    });
+
+    const sortedRoiAnalysis = [...draftAnalysis].sort((a, b) => b.roi - a.roi);
+    const goldenPick = sortedRoiAnalysis[0];
+    const biggestBust = [...draftAnalysis].sort((a, b) => a.roi - b.roi)[0];
+
+    const managerRoiStats = drafters.map(name => {
+        const managerPicks = draftAnalysis.filter(da => da.drafter === name);
+        const totalActual = managerPicks.reduce((acc, p) => acc + p.actualPoints, 0);
+        const totalExpected = managerPicks.reduce((acc, p) => acc + p.expectedPoints, 0);
+        const avgRoi = totalExpected > 0 ? ((totalActual - totalExpected) / totalExpected) * 100 : 0;
+        return { name, totalActual, totalExpected, avgRoi, picksCount: managerPicks.length };
+    }).sort((a, b) => b.avgRoi - a.avgRoi);
+
+    const bestManager = managerRoiStats[0];
+
+    const filteredDraftAnalysis = draftAnalysis.filter(p => {
+        if (roiFilter === 'over') return p.roi >= 0;
+        if (roiFilter === 'under') return p.roi < 0;
+        return true;
+    }).sort((a, b) => b.roi - a.roi);
 
     const getSavageReport = () => {
         if (overallLeaders.length < 2) return null;
@@ -361,9 +406,7 @@ export default function AutomatedDashboard() {
                             <p className="text-slate-300 font-semibold leading-relaxed">
                                 {king.name} is sitting comfortably at the top with <strong className="text-emerald-400 font-bold">{king.totalPoints} PTS</strong>.
                                 Their draft choices are running wild, leaving the rest of the managers in complete shambles.
-                                {chaseGap <= 12
-                                    ? ` However, ${runnerUp.name} is lurking only ${chaseGap} points behind. Don't pop the champagne just yet.`
-                                    : ` They have a comfortable ${chaseGap}-point cushion. Absolute tactical mastery.`}
+                                {chaseGap <= 12 ? ` However, ${runnerUp.name} is lurking only ${chaseGap} points behind. Don't pop the champagne just yet.` : ` They have a comfortable ${chaseGap}-point cushion. Absolute tactical mastery.`}
                             </p>
                         </div>
                     </div>
@@ -376,8 +419,7 @@ export default function AutomatedDashboard() {
                             <p className="text-slate-300 font-semibold leading-relaxed">
                                 Down in the trenches, we find {clown.name} with a tragic <strong className="text-red-400 font-bold">{clown.totalPoints} PTS</strong>.
                                 They are currently trailing the lead by a massive <strong className="text-red-400 font-bold">{pointGap} PTS</strong>.
-                                Their teams are moving slower than a line of parked cars on a highway.
-                                Time to fire the coaching staff, rebuild the roster, or start praying for a miracle.
+                                Their teams are moving slower than a line of parked cars on a highway. Time to fire the coaching staff, rebuild the roster, or start praying for a miracle.
                             </p>
                         </div>
                     </div>
@@ -427,226 +469,6 @@ export default function AutomatedDashboard() {
         );
     };
 
-    // Advanced Procedural Roast Engine (No holds barred, rated R adjacent)
-    const handleGenerateRoast = () => {
-        if (!selectedRoastManager) return;
-        const mgr = standings.find(s => s.name === selectedRoastManager);
-        if (!mgr) return;
-
-        const isLastPlace = overallLeaders[overallLeaders.length - 1].name === mgr.name;
-        const isFirstPlace = overallLeaders[0].name === mgr.name;
-        const cleanSheets = mgr.totalCleanSheets;
-        const goals = mgr.totalGoals;
-
-        const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
-
-        const intros = [
-            `Alright, let's look at the absolute trainwreck that is ${mgr.name}.`,
-            `Look who it is. The so-called 'tactical genius', ${mgr.name}.`,
-            `Time to drag ${mgr.name} through the absolute mud.`,
-            `I honestly didn't think it was mathematically possible for ${mgr.name} to be this embarrassing, but here we are.`,
-            `Let's put a spotlight on ${mgr.name}, a manager whose tactical IQ rivals a concussed pigeon.`,
-            `Brace yourselves. We are about to analyze the joke that is ${mgr.name}'s entire existence in this league.`
-        ];
-
-        const teamRoasts = [
-            `You seriously drafted ${mgr.teams.join(', ')}. What was your strategy? Throwing darts at a map while blackout drunk?`,
-            `With a lineup consisting of ${mgr.teams.join(', ')}, it's a miracle you even remember how to breathe.`,
-            `Looking at your squad (${mgr.teams.join(', ')}), I can only assume you lost a severe bet or actively hate winning.`,
-            `Did you intentionally pick ${mgr.teams.join(', ')} just to punish yourself? Because watching your teams play is basically a war crime.`,
-            `Your reliance on ${mgr.teams[0]} is genuinely pathetic. My dead grandmother could scout better than you.`
-        ];
-
-        let rankRoast = "";
-        if (isFirstPlace) {
-            rankRoast = pick([
-                `You're currently in 1st place with ${mgr.totalPoints} PTS, but don't flatter yourself. You drafted the easiest favorites because you have zero spine.`,
-                `Wow, ${mgr.totalPoints} PTS and the #1 spot. You're riding the coattails of tournament favorites like an absolute parasite.`,
-                `Sitting at the top... for now. We all know this lead is built on pure luck and generic, coward-level draft picks. You will choke.`
-            ]);
-        } else if (isLastPlace) {
-            rankRoast = pick([
-                `Dead fucking last with ${mgr.totalPoints} PTS. You are a historical embarrassment to this friend group. Delete your account.`,
-                `Last place. ${mgr.totalPoints} PTS. Your teams are moving slower than a line of parked cars. Please just forfeit now to save us the eye-sore.`,
-                `Sitting at the absolute bottom of the barrel. Your draft was essentially a charity donation to the rest of the group. You are a walking L.`
-            ]);
-        } else {
-            rankRoast = pick([
-                `Floating in the middle of the pack with ${mgr.totalPoints} PTS. You're the human equivalent of unseasoned chicken breast. Totally irrelevant.`,
-                `${mgr.totalPoints} PTS puts you perfectly in the zone of mediocrity. Not good enough to be feared, not bad enough to be funny. Just sad.`,
-                `Middle of the table. You are entirely forgettable. In a week, no one will even remember your drafted teams existed.`
-            ]);
-        }
-
-        let statRoast = "";
-        if (cleanSheets >= 5) {
-            statRoast = pick([
-                `You've parked the bus for ${cleanSheets} clean sheets like a massive coward. Scoring goals is allowed, you know?`,
-                `Defensive mastermind? No, you're just boring. ${cleanSheets} clean sheets makes watching your games an absolute snooze-fest.`
-            ]);
-        } else if (goals <= 2) {
-            statRoast = pick([
-                `Your forwards have produced a pathetic ${goals} goals. Even with open nets, your strikers would find a way to miss.`,
-                `Only ${goals} goals? I've seen blindfolded toddlers with better finishing ability than your entire squad.`
-            ]);
-        } else if (goals >= 10) {
-            statRoast = pick([
-                `Sure, you've stumbled your way into ${goals} goals, but we all know it's purely luck. Your defense still leaks like a broken sieve.`,
-                `You managed to get ${goals} goals somehow. Even a broken clock is right twice a day.`
-            ]);
-        } else {
-            statRoast = pick([
-                `Your stats are just a chaotic mess. ${goals} goals and ${cleanSheets} clean sheets of pure, unadulterated boredom.`,
-                `Nothing stands out. You have ${goals} goals and ${cleanSheets} clean sheets. Yawn.`
-            ]);
-        }
-
-        const outros = [
-            `Do us all a favor and log out.`,
-            `Better luck next time, you absolute clown.`,
-            `Go read a fucking book on football tactics.`,
-            `I'd tell you to fix your strategy, but we both know you can't fix stupid.`,
-            `Now go sit in the corner and think about how badly you screwed this up.`
-        ];
-
-        setActiveRoastText(`${pick(intros)} ${pick(teamRoasts)} ${rankRoast} ${statRoast} ${pick(outros)}`);
-    };
-
-    // Animated Rock Em Sock Em Fighting Simulator
-    const handleSimulateFight = () => {
-        if (!fighterA || !fighterB || fighterA === fighterB) return;
-        if (fightActiveRef.current) return;
-
-        const pA = standings.find(s => s.name === fighterA);
-        const pB = standings.find(s => s.name === fighterB);
-        if (!pA || !pB) return;
-
-        fightActiveRef.current = true;
-        setFightRunning(true);
-        setHpA(100);
-        setHpB(100);
-        setAnimA('');
-        setAnimB('');
-        setHitEffect('');
-
-        const pick = (arr: string[]) => arr[Math.floor(Math.random() * arr.length)];
-
-        const initialLogs = [
-            `⚔️ BATTLE INITIATED: ${pA.name} VS ${pB.name}!`,
-            `🤖 ROCK 'EM SOCK 'EM MODE: ACTIVE. PROTECT YOUR NECK SPRINGS.`
-        ];
-        setFightLogs(initialLogs);
-
-        let currentHpA = 100;
-        let currentHpB = 100;
-        let logs = [...initialLogs];
-
-        const combatMoves = [
-            `[ATTACKER] lunges forward and decks [DEFENDER] right in the mouth, laughing about [DEFENDER]'s garbage lineup!`,
-            `[ATTACKER] connects a brutal left hook! '[DEFENDER]'s teams play like uncoordinated toddlers!'`,
-            `[ATTACKER] lands a solid low-blow. 'You only have [DEFENDER_PTS] PTS and you step into this ring?!'`,
-            `[ATTACKER] unleashes a savage headbutt. [DEFENDER]'s head is shaking loose on its spring!`,
-            `[ATTACKER] grabs a folding chair and smashes it over [DEFENDER]'s drafted squad!`,
-            `[ATTACKER] screams 'Your tactics are dogshit!' while delivering a flying knee to [DEFENDER]'s jaw!`,
-            `[ATTACKER] completely disrespects [DEFENDER] with a backhand slap. Emotional damage is severe!`,
-            `[ATTACKER] sweeps the leg! [DEFENDER] drops harder than their standings rank!`,
-            `[ATTACKER] points at the scoreboard. [DEFENDER] is momentarily distracted by their pathetic [DEFENDER_PTS] points and gets punched in the throat!`,
-            `[ATTACKER] goes feral, biting [DEFENDER]'s ear off! Total absolute savagery!`,
-            `[ATTACKER] whispers 'You drafted those teams on purpose...' and delivers a crushing uppercut!`,
-            `[ATTACKER] executes a devastating suplex. [DEFENDER]'s spine takes heavy damage!`,
-        ];
-
-        const executeTurn = () => {
-            if (!fightActiveRef.current) return;
-
-            const pointDiff = pA.totalPoints - pB.totalPoints;
-            const aWinProb = 0.5 + (pointDiff * 0.005);
-            const finalAProb = Math.max(0.2, Math.min(0.8, aWinProb));
-            const attackerIsA = Math.random() <= finalAProb;
-
-            let isCrit = Math.random() > 0.8;
-            let damage = Math.floor(Math.random() * 12) + 12;
-            if (isCrit) damage = Math.floor(damage * 1.8);
-
-            let moveStr = "";
-            const comicTexts = ['BAM!', 'POW!', 'CRACK!', 'WHACK!', 'BOOF!', 'SMASH!'];
-            const effectWord = isCrit ? 'CRITICAL!' : pick(comicTexts);
-
-            if (attackerIsA) {
-                moveStr = pick(combatMoves).replace(/\[ATTACKER\]/g, pA.name).replace(/\[DEFENDER\]/g, pB.name).replace(/\[DEFENDER_PTS\]/g, pB.totalPoints.toString());
-                setAnimA('anim-punch-r');
-
-                setTimeout(() => {
-                    if (!fightActiveRef.current) return;
-                    currentHpB = Math.max(0, currentHpB - damage);
-                    setHpB(currentHpB);
-                    setAnimB('anim-hit');
-                    setHitEffect(effectWord);
-
-                    logs.push(`👊 ${moveStr} (-${damage} HP)`);
-                    setFightLogs([...logs]);
-
-                    setTimeout(() => {
-                        if (!fightActiveRef.current) return;
-                        setAnimA('');
-                        setAnimB('');
-                        setHitEffect('');
-                        checkEnd();
-                    }, 600);
-                }, 200);
-            } else {
-                moveStr = pick(combatMoves).replace(/\[ATTACKER\]/g, pB.name).replace(/\[DEFENDER\]/g, pA.name).replace(/\[DEFENDER_PTS\]/g, pA.totalPoints.toString());
-                setAnimB('anim-punch-l');
-
-                setTimeout(() => {
-                    if (!fightActiveRef.current) return;
-                    currentHpA = Math.max(0, currentHpA - damage);
-                    setHpA(currentHpA);
-                    setAnimA('anim-hit');
-                    setHitEffect(effectWord);
-
-                    logs.push(`👊 ${moveStr} (-${damage} HP)`);
-                    setFightLogs([...logs]);
-
-                    setTimeout(() => {
-                        if (!fightActiveRef.current) return;
-                        setAnimA('');
-                        setAnimB('');
-                        setHitEffect('');
-                        checkEnd();
-                    }, 600);
-                }, 200);
-            }
-        };
-
-        const checkEnd = () => {
-            if (currentHpA <= 0 || currentHpB <= 0) {
-                if (currentHpA <= 0) {
-                    setAnimA('anim-dead');
-                    logs.push(`💀 BOING! ${pA.name}'s head literally POPS off the spring!`);
-                    logs.push(`🏆 UPSET ALERT?! ${pB.name} is the last manager standing!`);
-                } else {
-                    setAnimB('anim-dead');
-                    logs.push(`💀 BOING! ${pB.name}'s head literally POPS off the spring!`);
-                    logs.push(`🏆 FLAWLESS VICTORY! ${pA.name} absolutely demolishes ${pB.name}!`);
-                }
-                setFightLogs([...logs]);
-                setFightRunning(false);
-                fightActiveRef.current = false;
-            } else {
-                setTimeout(executeTurn, 400);
-            }
-        };
-
-        setTimeout(executeTurn, 1000);
-    };
-
-    const getHealthBarColor = (hp: number) => {
-        if (hp > 60) return 'bg-emerald-500';
-        if (hp > 30) return 'bg-amber-500';
-        return 'bg-rose-500 animate-pulse';
-    };
-
     return (
         <div className="relative min-h-screen font-sans text-slate-100 overflow-x-hidden">
 
@@ -664,46 +486,11 @@ export default function AutomatedDashboard() {
                     100% { transform: translateX(-33.33%); }
                 }
 
-                /* Rock Em Sock Em Animations */
-                @keyframes punchRight {
-                    0% { transform: translateX(0) scale(1); }
-                    50% { transform: translateX(60px) scale(1.2) rotate(15deg); z-index: 50; }
-                    100% { transform: translateX(0) scale(1); z-index: 1; }
-                }
-                @keyframes punchLeft {
-                    0% { transform: translateX(0) scale(1); }
-                    50% { transform: translateX(-60px) scale(1.2) rotate(-15deg); z-index: 50; }
-                    100% { transform: translateX(0) scale(1); z-index: 1; }
-                }
-                @keyframes shakeHit {
-                    0% { transform: translateX(0) rotate(0); filter: brightness(1) sepia(0); }
-                    20% { transform: translateX(-10px) rotate(-10deg); filter: brightness(1.5) sepia(1) hue-rotate(-50deg) saturate(5); }
-                    40% { transform: translateX(10px) rotate(10deg); }
-                    60% { transform: translateX(-10px) rotate(-10deg); }
-                    80% { transform: translateX(10px) rotate(10deg); }
-                    100% { transform: translateX(0) rotate(0); filter: brightness(1) sepia(0); }
-                }
-                @keyframes headPop {
-                    0% { transform: translateY(0) rotate(0); opacity: 1; }
-                    100% { transform: translateY(-300px) rotate(720deg); opacity: 0; }
-                }
-                @keyframes popIn {
-                    0% { transform: scale(0.5); opacity: 0; }
-                    50% { transform: scale(1.5); opacity: 1; }
-                    100% { transform: scale(1); opacity: 0; }
-                }
-
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
                 .animate-marquee { display: flex; width: max-content; animation: marquee 50s linear infinite; }
                 .animate-marquee:hover { animation-play-state: paused; }
                 .avatar-img-custom { object-fit: cover; object-position: center 25%; }
-
-                .anim-punch-r { animation: punchRight 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
-                .anim-punch-l { animation: punchLeft 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
-                .anim-hit { animation: shakeHit 0.4s ease-in-out; }
-                .anim-dead { animation: headPop 1s forwards ease-in; }
-                .anim-comic-text { animation: popIn 0.6s forwards cubic-bezier(0.175, 0.885, 0.32, 1.275); }
             `}</style>
 
             <div
@@ -716,7 +503,7 @@ export default function AutomatedDashboard() {
                                 activeTab === 'schedule' ? "url('/schedule.png')" :
                                     activeTab === 'rules' ? "url('/rules.png')" :
                                         activeTab === 'standings' ? "url('/leaderboard.png')" :
-                                            activeTab === 'banter' ? "url('/scores.png')" :
+                                            activeTab === 'banter' ? "url('/leaderboard.png')" :
                                                 "url('/awards.png')"
                 }}
             />
@@ -846,7 +633,7 @@ export default function AutomatedDashboard() {
                                     onClick={() => setActiveTab(tab as any)}
                                     className={`flex-1 md:flex-none whitespace-nowrap px-2.5 sm:px-3 py-1.5 rounded-md text-[9px] sm:text-xs uppercase tracking-wider font-black transition-all duration-300 drop-shadow-md ${activeTab === tab ? 'bg-sky-500/20 text-sky-400 shadow-md border border-sky-400/50 scale-105' : 'text-slate-300 hover:text-white hover:bg-white/10'}`}
                                 >
-                                    {tab === 'draft' ? 'Draft' : tab === 'matches' ? 'Scores' : tab === 'schedule' ? 'Schedule' : tab === 'standings' ? 'Leaderboard' : tab === 'awards' ? 'Awards' : tab === 'rules' ? 'Rules' : 'Banter'}
+                                    {tab === 'draft' ? 'Draft' : tab === 'matches' ? 'Scores' : tab === 'schedule' ? 'Schedule' : tab === 'standings' ? 'Leaderboard' : tab === 'awards' ? 'Awards' : tab === 'rules' ? 'Rules' : 'Value Board'}
                                 </button>
                             ))}
                         </div>
@@ -1101,7 +888,7 @@ export default function AutomatedDashboard() {
                                                                         </div>
 
                                                                         <div className={`flex-1 flex flex-col items-start text-left min-w-0 ${awayEliminated ? 'opacity-35 grayscale' : ''}`}>
-                                                                            <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-start min-w-0">
+                                                                            <div className="flex items-center gap-1.5 w-full justify-start min-w-0">
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.awayTeam} /></div>
                                                                                 <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
                                                                             </div>
@@ -1119,12 +906,9 @@ export default function AutomatedDashboard() {
                                 </div>
                             )}
 
-                            {/* Render interactive horizontal scrolling Tournament Bracket Board (Tree format) */}
                             {matchesSubTab === 'bracket' && (
                                 <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 sm:p-5 shadow-2xl overflow-x-auto no-scrollbar content-animate">
                                     <div className="flex gap-6 sm:gap-8 min-w-[1250px] h-[720px] items-stretch pb-2">
-
-                                        {/* Column 1: Round of 32 */}
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Round of 32</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
@@ -1135,8 +919,6 @@ export default function AutomatedDashboard() {
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Column 2: Round of 16 */}
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Round of 16</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
@@ -1147,8 +929,6 @@ export default function AutomatedDashboard() {
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Column 3: Quarterfinals */}
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Quarterfinals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
@@ -1159,8 +939,6 @@ export default function AutomatedDashboard() {
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Column 4: Semifinals */}
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0 border-r border-white/5 pr-4">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Semifinals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
@@ -1171,8 +949,6 @@ export default function AutomatedDashboard() {
                                                 )}
                                             </div>
                                         </div>
-
-                                        {/* Column 5: Finals & 3rd Place */}
                                         <div className="flex flex-col justify-around h-full w-[240px] shrink-0">
                                             <h4 className="text-[9px] font-mono text-slate-300 font-black tracking-widest uppercase border-b border-white/10 pb-1.5 mb-2 text-center shrink-0">Finals</h4>
                                             <div className="flex flex-col justify-around flex-grow py-2">
@@ -1183,7 +959,6 @@ export default function AutomatedDashboard() {
                                                 )}
                                             </div>
                                         </div>
-
                                     </div>
                                 </div>
                             )}
@@ -1208,33 +983,20 @@ export default function AutomatedDashboard() {
                                     <div className="flex bg-black/60 border border-white/10 p-0.5 rounded-lg shadow-md">
                                         <button
                                             onClick={() => setStandingsView('grid')}
-                                            className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${
-                                                standingsView === 'grid'
-                                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
-                                                    : 'text-slate-400 hover:text-white'
-                                            }`}
+                                            className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${standingsView === 'grid' ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30' : 'text-slate-400 hover:text-white'}`}
                                         >
                                             Grid
                                         </button>
                                         <button
                                             onClick={() => setStandingsView('table')}
-                                            className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${
-                                                standingsView === 'table'
-                                                    ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30'
-                                                    : 'text-slate-400 hover:text-white'
-                                            }`}
+                                            className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${standingsView === 'table' ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30' : 'text-slate-400 hover:text-white'}`}
                                         >
                                             Table
                                         </button>
                                     </div>
-
                                     <button
                                         onClick={() => setShowProjected(!showProjected)}
-                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md ${
-                                            showProjected
-                                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]'
-                                                : 'bg-black/60 border-white/10 text-slate-400 hover:text-white hover:border-white/30'
-                                        }`}
+                                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 shadow-md ${showProjected ? 'bg-emerald-500/20 text-emerald-400 border-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-black/60 border-white/10 text-slate-400 hover:text-white hover:border-white/30'}`}
                                     >
                                         <span className={`w-2 h-2 rounded-full ${showProjected ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
                                         {showProjected ? 'Live Projections On' : 'Show Live Projections'}
@@ -1251,55 +1013,27 @@ export default function AutomatedDashboard() {
                                         </div>
                                         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3 sm:gap-4">
                                             {overallLeaders.map((leader, index) => {
-                                                const rankColor =
-                                                    index === 0 ? 'bg-amber-500 text-black' :
-                                                        index === 1 ? 'bg-slate-300 text-black' :
-                                                            index === 2 ? 'bg-orange-600 text-white' :
-                                                                'bg-black/80 text-slate-300 border border-white/20';
-
+                                                const rankColor = index === 0 ? 'bg-amber-500 text-black' : index === 1 ? 'bg-slate-300 text-black' : index === 2 ? 'bg-orange-600 text-white' : 'bg-black/80 text-slate-300 border border-white/20';
                                                 return (
-                                                    <div
-                                                        key={leader.name}
-                                                        onClick={() => setSelectedManager(leader)}
-                                                        className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex flex-col items-center justify-center relative cursor-pointer hover:bg-black/90 hover:border-sky-400/50 transition-all duration-300 group shadow-md"
-                                                    >
-                                                        <div className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[8px] font-black font-mono shadow-md ${rankColor}`}>
-                                                            #{index + 1}
-                                                        </div>
-                                                        <div className="mb-2">
-                                                            <ManagerAvatar name={leader.name} size="lg" />
-                                                        </div>
+                                                    <div key={leader.name} onClick={() => setSelectedManager(leader)} className="bg-black/60 border border-white/10 rounded-xl p-2.5 flex flex-col items-center justify-center relative cursor-pointer hover:bg-black/90 hover:border-sky-400/50 transition-all duration-300 group shadow-md">
+                                                        <div className={`absolute top-2 left-2 px-1.5 py-0.5 rounded text-[8px] font-black font-mono shadow-md ${rankColor}`}>#{index + 1}</div>
+                                                        <div className="mb-2"><ManagerAvatar name={leader.name} size="lg" /></div>
                                                         <div className="text-center w-full min-w-0">
-                                                            <span className="block font-black text-[10px] sm:text-xs text-white truncate drop-shadow-md group-hover:text-sky-400 transition-colors">
-                                                                {leader.name}
-                                                            </span>
-                                                            <span className={`block text-[11px] sm:text-xs font-black text-[#fbbf24] mt-0.5 ${oswald.className}`}>
-                                                                {leader.totalPoints} PTS
-                                                            </span>
+                                                            <span className="block font-black text-[10px] sm:text-xs text-white truncate drop-shadow-md group-hover:text-sky-400 transition-colors">{leader.name}</span>
+                                                            <span className={`block text-[11px] sm:text-xs font-black text-[#fbbf24] mt-0.5 ${oswald.className}`}>{leader.totalPoints} PTS</span>
                                                         </div>
                                                     </div>
                                                 );
                                             })}
                                         </div>
                                     </div>
-
                                     {getSavageReport()}
-
                                     <div className="grid grid-cols-3 gap-2 sm:gap-5">
                                         {overallLeaders.slice(0, 3).map((leader, i) => (
-                                            <div
-                                                key={leader.name}
-                                                onClick={() => setSelectedManager(leader)}
-                                                className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 cursor-pointer hover:bg-black/40 ${
-                                                    i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' :
-                                                        i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' :
-                                                            'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'
-                                                }`}>
+                                            <div key={leader.name} onClick={() => setSelectedManager(leader)} className={`backdrop-blur-xl rounded-xl flex flex-col items-center justify-center p-3 sm:p-5 text-center transition-all duration-300 cursor-pointer hover:bg-black/40 ${i === 0 ? 'bg-gradient-to-b from-amber-500/80 to-yellow-800/90 border border-amber-400 shadow-[0_0_20px_rgba(251,191,36,0.5)] sm:shadow-[0_0_30px_rgba(251,191,36,0.6)]' : i === 1 ? 'bg-gradient-to-b from-slate-400/80 to-slate-700/90 border border-slate-300 shadow-[0_0_15px_rgba(203,213,225,0.4)] sm:shadow-[0_0_30px_rgba(203,213,225,0.5)]' : 'bg-gradient-to-b from-orange-600/80 to-amber-900/90 border border-orange-500 shadow-[0_0_15px_rgba(194,65,12,0.4)] sm:shadow-[0_0_30px_rgba(194,65,12,0.6)]'}`}>
                                                 <div className="relative mb-2.5">
                                                     <ManagerAvatar name={leader.name} size="md" />
-                                                    <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">
-                                                        {i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}
-                                                    </span>
+                                                    <span className="absolute -bottom-1 -right-1 text-xl sm:text-2xl drop-shadow-md">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
                                                 </div>
                                                 <h3 className="text-[11px] sm:text-xl md:text-2xl font-black text-white mb-0.5 sm:mb-1.5 tracking-wide truncate w-full px-1 sm:px-2 drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black]">{leader.name}</h3>
                                                 <div className={`text-2xl sm:text-5xl md:text-6xl font-black text-white leading-none mb-1 sm:mb-2.5 drop-shadow-2xl [-webkit-text-stroke:1px_black] sm:[-webkit-text-stroke:1.5px_black] ${oswald.className}`}>{leader.totalPoints}</div>
@@ -1307,11 +1041,7 @@ export default function AutomatedDashboard() {
                                                 <div className="flex flex-wrap justify-center gap-0.5 sm:gap-1.5 px-1 sm:scale-110">
                                                     {leader.teams.map(t => {
                                                         const eliminated = eliminatedTeamsSet.has(t.toUpperCase());
-                                                        return (
-                                                            <div key={t} title={t} className={eliminated ? 'opacity-35 grayscale' : ''}>
-                                                                <FlagIcon teamName={t} />
-                                                            </div>
-                                                        );
+                                                        return (<div key={t} title={t} className={eliminated ? 'opacity-35 grayscale' : ''}><FlagIcon teamName={t} /></div>);
                                                     })}
                                                 </div>
                                             </div>
@@ -1343,12 +1073,7 @@ export default function AutomatedDashboard() {
                                                 <td className="py-1.5 sm:py-3.5">
                                                     <div className="flex items-center gap-2">
                                                         <ManagerAvatar name={row.name} size="sm" />
-                                                        <button
-                                                            onClick={() => setSelectedManager(row)}
-                                                            className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-[150px] drop-shadow-md [text-shadow:0_1px_2px_black]"
-                                                        >
-                                                            {row.name}
-                                                        </button>
+                                                        <button onClick={() => setSelectedManager(row)} className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-[150px] drop-shadow-md [text-shadow:0_1px_2px_black]">{row.name}</button>
                                                     </div>
                                                 </td>
                                                 <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints}</td>
@@ -1356,11 +1081,7 @@ export default function AutomatedDashboard() {
                                                     <div className="flex gap-0.5 sm:gap-1.5 flex-wrap">
                                                         {row.teams.map(t => {
                                                             const eliminated = eliminatedTeamsSet.has(t.toUpperCase());
-                                                            return (
-                                                                <div key={t} title={t} className={eliminated ? 'opacity-35 grayscale' : ''}>
-                                                                    <FlagIcon teamName={t} />
-                                                                </div>
-                                                            );
+                                                            return (<div key={t} title={t} className={eliminated ? 'opacity-35 grayscale' : ''}><FlagIcon teamName={t} /></div>);
                                                         })}
                                                     </div>
                                                 </td>
@@ -1411,29 +1132,17 @@ export default function AutomatedDashboard() {
                                             <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">15% Pot • Individual Goals Tracker</span>
                                         </div>
                                     </div>
-
                                     <div className="space-y-1.5 flex-1">
                                         {bootLeaders.slice(0, 5).map((row, idx) => {
-                                            const breakdownText = Object.entries(row.goalsByTeam)
-                                                .filter(([_, goals]) => (goals as number) > 0)
-                                                .sort((a, b) => (b[1] as number) - (a[1] as number))
-                                                .map(([team, goals]) => `${team} (${goals})`)
-                                                .join(', ');
-
+                                            const breakdownText = Object.entries(row.goalsByTeam).filter(([_, goals]) => (goals as number) > 0).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([team, goals]) => `${team} (${goals})`).join(', ');
                                             return (
-                                                <div
-                                                    key={row.name}
-                                                    onClick={() => setSelectedManager(row)}
-                                                    className={`flex justify-between items-center py-2.5 px-4 rounded-lg border transition-all cursor-pointer ${idx === 0 ? 'bg-amber-500/10 border-amber-400/30 shadow-md scale-[1.01]' : 'bg-black/40 border-white/5 hover:border-white/15 hover:bg-black/60'}`}
-                                                >
+                                                <div key={row.name} onClick={() => setSelectedManager(row)} className={`flex justify-between items-center py-2.5 px-4 rounded-lg border transition-all cursor-pointer ${idx === 0 ? 'bg-amber-500/10 border-amber-400/30 shadow-md scale-[1.01]' : 'bg-black/40 border-white/5 hover:border-white/15 hover:bg-black/60'}`}>
                                                     <div className="flex items-center gap-2.5 min-w-0">
                                                         <span className="font-mono font-black text-xs text-slate-300 w-4 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0">
                                                             <span className="font-black text-xs sm:text-lg leading-tight break-words text-sky-400 drop-shadow-md">{row.name}</span>
-                                                            <span className="text-[8px] sm:text-[9px] text-slate-300 font-bold max-w-[120px] sm:max-w-[220px] truncate" title={breakdownText}>
-                                                                {breakdownText || "No goals yet"}
-                                                            </span>
+                                                            <span className="text-[8px] sm:text-[9px] text-slate-300 font-bold max-w-[120px] sm:max-w-[220px] truncate" title={breakdownText}>{breakdownText || "No goals yet"}</span>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-baseline gap-1 shrink-0">
@@ -1446,7 +1155,6 @@ export default function AutomatedDashboard() {
                                     </div>
                                 </div>
                             </div>
-
                             <div className="bg-gradient-to-br from-blue-500/20 via-black/40 to-slate-800/10 border border-blue-500/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
                                 <div className="bg-black/70 backdrop-blur-xl p-3.5 sm:p-4 rounded-xl h-full flex flex-col">
                                     <div className="flex items-center gap-3 mb-4 border-b border-white/20 pb-3">
@@ -1458,29 +1166,17 @@ export default function AutomatedDashboard() {
                                             <p className="text-blue-300 text-[8px] sm:text-xs font-mono font-black tracking-widest uppercase mt-0.5">10% Pot • Clean Sheets</p>
                                         </div>
                                     </div>
-
                                     <div className="space-y-1.5 flex-1">
                                         {gloveLeaders.slice(0, 5).map((row, idx) => {
-                                            const breakdownText = Object.entries(row.csByTeam)
-                                                .filter(([_, cs]) => (cs as number) > 0)
-                                                .sort((a, b) => (b[1] as number) - (a[1] as number))
-                                                .map(([team, cs]) => `${team} (${cs})`)
-                                                .join(', ');
-
+                                            const breakdownText = Object.entries(row.csByTeam).filter(([_, cs]) => (cs as number) > 0).sort((a, b) => (b[1] as number) - (a[1] as number)).map(([team, cs]) => `${team} (${cs})`).join(', ');
                                             return (
-                                                <div
-                                                    key={row.name}
-                                                    onClick={() => setSelectedManager(row)}
-                                                    className={`flex justify-between items-center py-2.5 px-4 rounded-lg border transition-all cursor-pointer ${idx === 0 ? 'bg-blue-500/10 border-blue-400/30 shadow-md scale-[1.01]' : 'bg-black/40 border-white/5 hover:border-white/15 hover:bg-black/60'}`}
-                                                >
+                                                <div key={row.name} onClick={() => setSelectedManager(row)} className={`flex justify-between items-center py-2.5 px-4 rounded-lg border transition-all cursor-pointer ${idx === 0 ? 'bg-blue-500/10 border-blue-400/30 shadow-md scale-[1.01]' : 'bg-black/40 border-white/5 hover:border-white/15 hover:bg-black/60'}`}>
                                                     <div className="flex items-center gap-2.5 min-w-0">
                                                         <span className="font-mono font-black text-xs text-slate-300 w-4 text-center">{idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`}</span>
                                                         <ManagerAvatar name={row.name} size="sm" />
                                                         <div className="flex flex-col min-w-0 font-semibold">
                                                             <span className="font-black text-xs sm:text-lg leading-tight break-words text-sky-400 drop-shadow-md">{row.name}</span>
-                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold max-w-[140px] sm:max-w-[250px] truncate" title={breakdownText}>
-                                                                {breakdownText || "No clean sheets yet"}
-                                                            </span>
+                                                            <span className="text-[10px] sm:text-xs text-slate-300 font-bold max-w-[140px] sm:max-w-[250px] truncate" title={breakdownText}>{breakdownText || "No clean sheets yet"}</span>
                                                         </div>
                                                     </div>
                                                     <div className="flex items-baseline gap-1 shrink-0">
@@ -1493,16 +1189,13 @@ export default function AutomatedDashboard() {
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     )}
 
                     {activeTab === 'rules' && (
                         <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
                             <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>LEAGUE RULES & PAYOUTS</h2>
-
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-
                                 <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
                                     <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
                                         <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
@@ -1514,7 +1207,6 @@ export default function AutomatedDashboard() {
                                                 <p className="text-emerald-300 text-[9px] sm:text-sm font-mono font-black tracking-widest uppercase mt-1 sm:mt-1.5 drop-shadow-md sm:[text-shadow:0_2px_4px_black]">Entry & Payout Structure</p>
                                             </div>
                                         </div>
-
                                         <div className="space-y-3 sm:space-y-4">
                                             <div className="flex justify-between items-center bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md">
                                                 <span className="text-slate-200 font-black text-sm sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black]">1st Place (Overall)</span>
@@ -1535,7 +1227,6 @@ export default function AutomatedDashboard() {
                                         </div>
                                     </div>
                                 </div>
-
                                 <div className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
                                     <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
                                         <div className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
@@ -1547,7 +1238,6 @@ export default function AutomatedDashboard() {
                                                 <p className="text-[#fbbf24] text-[9px] sm:text-sm font-mono font-black tracking-widest uppercase mt-1 sm:mt-1.5 drop-shadow-md sm:[text-shadow:0_2px_4px_black]">How To Earn Points</p>
                                             </div>
                                         </div>
-
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                             <div className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
                                                 <span className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+4</span>
@@ -1569,7 +1259,6 @@ export default function AutomatedDashboard() {
                                                 <span className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+8</span>
                                                 <span className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Advance out of Group</span>
                                             </div>
-
                                             <div className="col-span-1 sm:col-span-2 mt-1 sm:mt-2">
                                                 <h3 className="text-slate-300 font-mono text-[9px] sm:text-xs uppercase tracking-widest font-black mb-2 sm:mb-3 border-b border-white/10 pb-1.5 sm:pb-2 drop-shadow-md">Knockout Stage Bonuses</h3>
                                                 <div className="grid grid-cols-2 gap-2 sm:gap-3">
@@ -1603,14 +1292,11 @@ export default function AutomatedDashboard() {
                                     </div>
                                 </div>
                             </div>
-
                             <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl mt-4 sm:mt-8">
                                 <div className="bg-black/80 px-4 sm:px-6 py-3 sm:py-4 border-b border-white/20 flex justify-between items-center">
                                     <h3 className={`font-black text-white text-lg sm:text-2xl uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Format & Guidelines</h3>
                                 </div>
-
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 p-4 sm:p-8">
-
                                     <div>
                                         <h4 className="text-sky-400 font-black uppercase tracking-widest text-[11px] sm:text-sm mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2 drop-shadow-md"><span className="text-lg sm:text-xl">👥</span> Draft & Teams</h4>
                                         <ul className="space-y-2 sm:space-y-3 text-[11px] sm:text-sm text-slate-200 font-semibold drop-shadow-md leading-relaxed">
@@ -1621,7 +1307,6 @@ export default function AutomatedDashboard() {
                                             <li><span className="text-sky-400 mr-2">■</span> No trades are allowed after the draft closes.</li>
                                         </ul>
                                     </div>
-
                                     <div>
                                         <h4 className="text-sky-400 font-black uppercase tracking-widest text-[11px] sm:text-sm mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2 drop-shadow-md"><span className="text-lg sm:text-xl">⚖️</span> Tie-Breakers & Rules</h4>
                                         <ul className="space-y-2 sm:space-y-3 text-[11px] sm:text-sm text-slate-200 font-semibold drop-shadow-md leading-relaxed">
@@ -1632,150 +1317,160 @@ export default function AutomatedDashboard() {
                                             <li><span className="text-sky-400 mr-2">■</span> <strong>Strategy:</strong> Drafting four teams that make deep runs will typically outscore drafting one tournament champion and three group-stage exits.</li>
                                         </ul>
                                     </div>
-
                                 </div>
                             </div>
                         </div>
                     )}
 
                     {activeTab === 'banter' && (
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-7xl mx-auto content-animate">
-                            {/* Savage Roast Generator */}
-                            <div className="bg-gradient-to-br from-red-500/30 via-black/80 to-orange-600/20 border border-red-500/40 p-[1px] rounded-xl shadow-2xl h-full">
-                                <div className="bg-black/85 backdrop-blur-xl p-5 sm:p-6 rounded-xl h-full flex flex-col justify-between">
-                                    <div className="flex items-center gap-3 border-b border-white/10 pb-3 mb-4">
-                                        <div className="bg-black/90 p-2 rounded-lg border border-red-500/50 shadow-inner text-xl sm:text-2xl">
-                                            🔥
-                                        </div>
-                                        <div>
-                                            <h3 className={`text-sm sm:text-base font-black text-rose-400 uppercase tracking-widest ${oswald.className}`}>The Roast Room</h3>
-                                            <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider block">Real-Time Sarcastic Manager Evaluations</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4 flex-grow">
-                                        <p className="text-xs sm:text-sm text-slate-200 font-semibold leading-relaxed">
-                                            Select any manager from the league to generate a custom, dynamically computed roast reflecting their actual drafted countries, points, and current standing.
-                                        </p>
-                                        <div className="flex flex-col sm:flex-row gap-2">
-                                            <select
-                                                value={selectedRoastManager}
-                                                onChange={(e) => setSelectedRoastManager(e.target.value)}
-                                                className="bg-black border border-white/30 text-white text-sm font-black rounded-lg px-4 py-2.5 focus:outline-none focus:border-rose-500 flex-1 transition cursor-pointer"
-                                            >
-                                                <option value="">Select manager...</option>
-                                                {drafters.map(name => <option key={name} value={name}>{name}</option>)}
-                                            </select>
-                                            <button
-                                                onClick={handleGenerateRoast}
-                                                className="bg-rose-600 hover:bg-rose-700 text-white font-black text-sm uppercase tracking-widest px-6 py-2.5 rounded-lg transition-all active:scale-95 shadow-md shadow-rose-600/20"
-                                            >
-                                                Roast
-                                            </button>
-                                        </div>
-                                        {activeRoastText && (
-                                            <div className="bg-black border border-red-500/20 p-4 rounded-lg text-sm sm:text-base leading-relaxed text-slate-200 font-semibold content-animate">
-                                                {activeRoastText}
-                                            </div>
-                                        )}
-                                    </div>
+                        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 content-animate">
+                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                                <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>
+                                    DRAFT VALUE BOARD
+                                </h2>
+                                <div className="flex bg-black/60 border border-white/10 p-0.5 rounded-lg shadow-md">
+                                    <button
+                                        onClick={() => setRoiFilter('all')}
+                                        className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${roiFilter === 'all' ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        All Picks
+                                    </button>
+                                    <button
+                                        onClick={() => setRoiFilter('over')}
+                                        className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${roiFilter === 'over' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        Surplus (+ ROI)
+                                    </button>
+                                    <button
+                                        onClick={() => setRoiFilter('under')}
+                                        className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${roiFilter === 'under' ? 'bg-rose-500/20 text-rose-400 border border-rose-400/30' : 'text-slate-400 hover:text-white'}`}
+                                    >
+                                        Flops (- ROI)
+                                    </button>
                                 </div>
                             </div>
 
-                            {/* Manager Arena Simulator */}
-                            <div className="bg-gradient-to-br from-sky-500/30 via-black/80 to-slate-800/20 border border-sky-500/40 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg">
-                                <div className="bg-black/85 backdrop-blur-xl p-5 sm:p-6 rounded-xl h-full flex flex-col">
-                                    <div className="flex items-center gap-3 border-b border-white/10 pb-3 mb-4">
-                                        <div className="bg-black/90 p-2 rounded-lg border border-sky-500/50 shadow-inner text-xl sm:text-2xl">
-                                            ⚔️
-                                        </div>
-                                        <div>
-                                            <h3 className={`text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-300 to-sky-500 uppercase tracking-widest ${oswald.className}`}>Manager Arena</h3>
-                                            <span className="text-[9px] sm:text-[10px] font-mono text-slate-400 uppercase tracking-wider block">Simulate Retro RPG Squad Duels</span>
-                                        </div>
-                                    </div>
-                                    <div className="space-y-4 flex-grow flex flex-col justify-between">
-                                        <p className="text-xs sm:text-sm text-slate-200 font-semibold leading-relaxed">
-                                            Select two managers to battle. The algorithm runs a turn-based combat simulation using their drafted countries, overall points, and live performance metrics.
-                                        </p>
-                                        <div className="flex flex-col sm:flex-row gap-2.5">
-                                            <select
-                                                value={fighterA}
-                                                onChange={(e) => setFighterA(e.target.value)}
-                                                className="bg-black border border-white/30 text-white text-sm font-black rounded-lg px-4 py-2.5 focus:outline-none focus:border-sky-500 flex-1 transition cursor-pointer"
-                                            >
-                                                <option value="">Fighter A</option>
-                                                {drafters.map(name => <option key={name} value={name}>{name}</option>)}
-                                            </select>
-                                            <span className="text-center self-center text-sm font-black text-slate-400">VS</span>
-                                            <select
-                                                value={fighterB}
-                                                onChange={(e) => setFighterB(e.target.value)}
-                                                className="bg-black border border-white/30 text-white text-sm font-black rounded-lg px-4 py-2.5 focus:outline-none focus:border-sky-500 flex-1 transition cursor-pointer"
-                                            >
-                                                <option value="">Fighter B</option>
-                                                {drafters.map(name => <option key={name} value={name}>{name}</option>)}
-                                            </select>
-                                        </div>
-
-                                        {/* Visual Arena Interface */}
-                                        {fighterA && fighterB && fighterA !== fighterB && (
-                                            <div className="bg-black border border-white/10 rounded-xl p-4 my-2.5 flex justify-between items-center gap-3 content-animate shadow-2xl overflow-hidden relative">
-                                                {/* Fighter A status */}
-                                                <div className={`flex flex-col items-center gap-2 flex-1 min-w-0 transition-transform ${animA}`}>
-                                                    <ManagerAvatar name={fighterA} size="lg" />
-                                                    <span className="text-xs sm:text-sm font-black text-slate-100 truncate w-full text-center">{fighterA}</span>
-                                                    <div className="w-full bg-black border border-white/20 rounded-full h-3.5 overflow-hidden shadow-inner">
-                                                        <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpA)}`} style={{ width: `${hpA}%` }}></div>
-                                                    </div>
-                                                    <span className="text-[9px] sm:text-[11px] font-mono font-bold text-slate-300">{hpA}/100 HP</span>
-                                                </div>
-
-                                                {/* Versus Sparks & Combat Hit Text */}
-                                                <div className="flex flex-col items-center justify-center w-16 sm:w-24 shrink-0 relative h-full z-40">
-                                                    {hitEffect ? (
-                                                        <span className="absolute text-[#fbbf24] font-black text-xl sm:text-4xl italic drop-shadow-[0_0_15px_rgba(255,0,0,1)] z-50 anim-comic-text whitespace-nowrap [-webkit-text-stroke:1px_black]">
-                                                            {hitEffect}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-red-500 font-mono font-black text-base sm:text-lg italic animate-pulse">VS</span>
-                                                    )}
-                                                </div>
-
-                                                {/* Fighter B status */}
-                                                <div className={`flex flex-col items-center gap-2 flex-1 min-w-0 transition-transform ${animB}`}>
-                                                    <ManagerAvatar name={fighterB} size="lg" />
-                                                    <span className="text-xs sm:text-sm font-black text-slate-100 truncate w-full text-center">{fighterB}</span>
-                                                    <div className="w-full bg-black border border-white/20 rounded-full h-3.5 overflow-hidden shadow-inner">
-                                                        <div className={`h-full transition-all duration-300 ${getHealthBarColor(hpB)}`} style={{ width: `${hpB}%` }}></div>
-                                                    </div>
-                                                    <span className="text-[9px] sm:text-[11px] font-mono font-bold text-slate-300">{hpB}/100 HP</span>
-                                                </div>
+                            {/* Summary Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-gradient-to-br from-emerald-500/20 via-black/80 to-teal-500/10 border border-emerald-500/30 rounded-xl p-4 shadow-xl">
+                                    <span className="text-2xl mb-1.5 block">💎</span>
+                                    <h4 className="text-[10px] font-mono font-black text-emerald-400 uppercase tracking-widest">The Golden Pick</h4>
+                                    {goldenPick ? (
+                                        <div className="mt-2 space-y-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <FlagIcon teamName={goldenPick.team} />
+                                                <span className="font-black text-sm sm:text-base text-white">{goldenPick.team}</span>
                                             </div>
-                                        )}
-
-                                        <button
-                                            onClick={handleSimulateFight}
-                                            disabled={fightRunning || !fighterA || !fighterB || fighterA === fighterB}
-                                            className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-slate-800 disabled:text-slate-500 disabled:opacity-70 text-white font-black text-xs sm:text-sm uppercase tracking-widest py-3 rounded-lg transition-all active:scale-95 shadow-md shadow-sky-500/20 cursor-pointer"
-                                        >
-                                            {fightRunning ? 'Brawling...' : 'Fight!'}
-                                        </button>
-
-                                        {/* Combat Log */}
-                                        {fightLogs.length > 0 && (
-                                            <div className="bg-black border border-sky-500/20 p-3.5 rounded-lg text-xs sm:text-sm leading-relaxed text-slate-200 font-semibold space-y-1.5 content-animate h-48 overflow-y-auto no-scrollbar">
-                                                {fightLogs.map((log, idx) => {
-                                                    const isCritical = log.includes('POPS off') || log.includes('VICTORY') || log.includes('UPSET ALERT');
-                                                    return (
-                                                        <p key={idx} className={idx === 0 ? "text-sky-400 font-bold mb-2" : isCritical ? "text-[#fbbf24] font-black uppercase text-sm sm:text-base mt-2" : "text-slate-300"}>
-                                                            {log}
-                                                        </p>
-                                                    );
-                                                })}
-                                            </div>
-                                        )}
-                                    </div>
+                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
+                                                Selected by <strong className="text-sky-400">{goldenPick.drafter}</strong> at pick #{goldenPick.pickNumber}. Expected {goldenPick.expectedPoints.toFixed(1)} PTS, scored <strong className="text-emerald-400">{goldenPick.actualPoints} PTS</strong> (<span className="text-emerald-400 font-bold">+{goldenPick.roi.toFixed(1)}% ROI</span>).
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
+                                    )}
                                 </div>
+
+                                <div className="bg-gradient-to-br from-rose-500/20 via-black/80 to-red-500/10 border border-rose-500/30 rounded-xl p-4 shadow-xl">
+                                    <span className="text-2xl mb-1.5 block">📉</span>
+                                    <h4 className="text-[10px] font-mono font-black text-rose-400 uppercase tracking-widest">The Biggest Bust</h4>
+                                    {biggestBust ? (
+                                        <div className="mt-2 space-y-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <FlagIcon teamName={biggestBust.team} />
+                                                <span className="font-black text-sm sm:text-base text-white">{biggestBust.team}</span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
+                                                Selected by <strong className="text-sky-400">{biggestBust.drafter}</strong> at pick #{biggestBust.pickNumber}. Expected {biggestBust.expectedPoints.toFixed(1)} PTS, generated <strong className="text-rose-400">{biggestBust.actualPoints} PTS</strong> (<span className="text-rose-400 font-bold">{biggestBust.roi.toFixed(1)}% ROI</span>).
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
+                                    )}
+                                </div>
+
+                                <div className="bg-gradient-to-br from-sky-500/20 via-black/80 to-indigo-500/10 border border-sky-500/30 rounded-xl p-4 shadow-xl">
+                                    <span className="text-2xl mb-1.5 block">🎓</span>
+                                    <h4 className="text-[10px] font-mono font-black text-sky-400 uppercase tracking-widest">Draft Mastermind</h4>
+                                    {bestManager ? (
+                                        <div className="mt-2 space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <ManagerAvatar name={bestManager.name} size="sm" />
+                                                <span className="font-black text-sm sm:text-base text-white">{bestManager.name}</span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
+                                                Master of the draft table with an average <strong className="text-emerald-400">+{bestManager.avgRoi.toFixed(1)}% ROI</strong> across all {bestManager.picksCount} squad picks.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Manager ROI Standings */}
+                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-2xl">
+                                <div className="border-b border-white/10 pb-2 mb-3">
+                                    <h3 className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest">Manager Efficiency Leaderboard</h3>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                                    {managerRoiStats.map((mgr, index) => (
+                                        <div key={mgr.name} className="bg-black/50 border border-white/10 rounded-lg p-2.5 flex flex-col items-center justify-center text-center shadow-md relative">
+                                            <span className="absolute top-1 right-2 font-mono text-[8px] font-black text-slate-400">#{index + 1}</span>
+                                            <ManagerAvatar name={mgr.name} size="sm" />
+                                            <span className="font-black text-[11px] text-white truncate w-full mt-1.5 block">{mgr.name}</span>
+                                            <span className={`text-xs font-black block mt-0.5 ${mgr.avgRoi >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                {mgr.avgRoi >= 0 ? `+${mgr.avgRoi.toFixed(1)}%` : `${mgr.avgRoi.toFixed(1)}%`} ROI
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Main ROI Data Table */}
+                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto">
+                                <table className="w-full text-left text-[10px] sm:text-xs border-collapse min-w-[500px]">
+                                    <thead>
+                                    <tr className="border-b border-white/10 text-slate-300 text-[8px] sm:text-[9px] uppercase font-mono bg-black/80 tracking-widest font-black">
+                                        <th className="py-2.5 pl-3 sm:pl-4 w-12 text-center">Rank</th>
+                                        <th className="py-2.5">Team</th>
+                                        <th className="py-2.5">Manager</th>
+                                        <th className="py-2.5 text-center">Pick #</th>
+                                        <th className="py-2.5 text-center">Actual PTS</th>
+                                        <th className="py-2.5 text-center">Expected PTS</th>
+                                        <th className="py-2.5 text-center">Surplus</th>
+                                        <th className="py-2.5 text-right pr-3 sm:pr-4">Value ROI</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-white/10">
+                                    {filteredDraftAnalysis.length === 0 ? (
+                                        <tr>
+                                            <td colSpan={8} className="py-4 text-center text-slate-400 font-bold italic">No picks found for the selected filter.</td>
+                                        </tr>
+                                    ) : (
+                                        filteredDraftAnalysis.map((row, idx) => {
+                                            const surplusColor = row.surplus >= 0 ? 'text-emerald-400' : 'text-rose-400';
+                                            return (
+                                                <tr key={row.team} className={`hover:bg-black/40 transition ${row.eliminated ? 'opacity-40 grayscale' : ''}`}>
+                                                    <td className="py-2.5 pl-3 sm:pl-4 text-center font-mono font-black text-slate-400">#{idx + 1}</td>
+                                                    <td className="py-2.5 font-black text-white flex items-center">
+                                                        <FlagIcon teamName={row.team} /> {row.team}
+                                                    </td>
+                                                    <td className="py-2.5 font-bold text-slate-300">{row.drafter}</td>
+                                                    <td className="py-2.5 text-center font-mono font-black text-slate-300">Pick #{row.pickNumber}</td>
+                                                    <td className="py-2.5 text-center font-black text-[#fbbf24] text-xs sm:text-sm">{row.actualPoints}</td>
+                                                    <td className="py-2.5 text-center font-mono text-slate-400">{row.expectedPoints.toFixed(1)}</td>
+                                                    <td className={`py-2.5 text-center font-mono font-black ${surplusColor}`}>
+                                                        {row.surplus >= 0 ? `+${row.surplus.toFixed(1)}` : `${row.surplus.toFixed(1)}`}
+                                                    </td>
+                                                    <td className={`py-2.5 text-right pr-3 sm:pr-4 font-black ${surplusColor}`}>
+                                                        {row.roi >= 0 ? `+${row.roi.toFixed(1)}%` : `${row.roi.toFixed(1)}%`}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })
+                                    )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     )}
@@ -1783,7 +1478,6 @@ export default function AutomatedDashboard() {
                 </div>
             </div>
 
-            {/* Hidden Preloader for Background Images to Prevent Flickering on Tab Switch */}
             <div className="hidden">
                 <img src="/draft.png" alt="" />
                 <img src="/scores.png" alt="" />
@@ -1792,7 +1486,6 @@ export default function AutomatedDashboard() {
                 <img src="/leaderboard.png" alt="" />
                 <img src="/awards.png" alt="" />
             </div>
-
         </div>
     );
 }
