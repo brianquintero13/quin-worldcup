@@ -1296,7 +1296,7 @@ export default function AutomatedDashboard() {
                     {activeTab === 'schedule' && (
                         <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
                             <h2 className={`text-lg sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>MATCH SCHEDULE</h2>
-                            <ScheduleTab eliminatedTeams={eliminatedTeamsSet} modifiedMatches={modifiedMatches} adjustWhatIf={adjustWhatIf} />
+                            <ScheduleTab eliminatedTeams={eliminatedTeamsSet} customScores={customScores} adjustWhatIf={adjustWhatIf} />
                         </div>
                     )}
 
