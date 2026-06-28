@@ -89,7 +89,7 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     return false;
 };
 
-// Helper to determine exact expected points yield based on snake draft pick order (1 to 48)
+// Model baseline expected points relative to snake draft absolute pick selection
 const getExpectedPoints = (pickNumber: number) => {
     if (pickNumber <= 12) {
         return 35 - (pickNumber - 1) * 0.9;
@@ -114,6 +114,82 @@ const teamsMatch = (nameA: string, nameB: string): boolean => {
     return cleanA === cleanB || cleanA.includes(cleanB) || cleanB.includes(cleanA);
 };
 
+// Helper calculating dynamic team point outcomes cleanly
+const getTeamPointsAndLogs = (teamId: string, matchesList: any[], showProjected: boolean) => {
+    let points = 0;
+    let goals = 0;
+    let cleanSheets = 0;
+    let wins = 0, draws = 0, losses = 0;
+    let advancedFromGroup = false;
+    const logs: any[] = [];
+
+    matchesList.forEach(m => {
+        const isHome = m.homeTeam && teamsMatch(m.homeTeam, teamId);
+        const isAway = m.awayTeam && teamsMatch(m.awayTeam, teamId);
+        if (!isHome && !isAway) return;
+
+        const isFinished = m.status === 'FINISHED' || m.status === 'AWARDED';
+        const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED';
+        if (!isFinished && !isLive) return;
+        if (isLive && !showProjected) return;
+
+        let matchPts = 0;
+        let logDetails: string[] = [];
+
+        let projectedWinner = m.winner;
+        if (isLive && !projectedWinner && m.homeGoals !== null && m.awayGoals !== null) {
+            if (m.homeGoals > m.awayGoals) projectedWinner = m.homeTeam;
+            else if (m.awayGoals > m.homeGoals) projectedWinner = m.awayTeam;
+            else projectedWinner = 'DRAW';
+        }
+
+        const isWin = (isHome && projectedWinner === m.homeTeam) || (isAway && projectedWinner === m.awayTeam);
+        const isDraw = projectedWinner === 'DRAW';
+        const isLoss = projectedWinner && !isWin && !isDraw;
+
+        if (isWin) wins++; else if (isDraw) draws++; else if (isLoss) losses++;
+
+        const matchGoals = isHome ? (m.homeGoals || 0) : (m.awayGoals || 0);
+        const matchCleanSheet = (isHome && m.homeCleanSheet) || (isAway && m.awayCleanSheet) ? 1 : 0;
+
+        goals += matchGoals;
+        cleanSheets += matchCleanSheet;
+
+        if (matchGoals > 0) {
+            matchPts += (matchGoals * 1);
+            logDetails.push(`+${matchGoals * 1} (${matchGoals} Goal${matchGoals > 1 ? 's' : ''})`);
+        }
+        if (matchCleanSheet) {
+            matchPts += 2;
+            logDetails.push(`+2 (CS)`);
+        }
+        if (m.stage !== 'Group' && !advancedFromGroup) {
+            advancedFromGroup = true;
+            matchPts += 8;
+            logDetails.push(`+8 (Advance)`);
+        }
+        if (isWin) {
+            matchPts += 4; logDetails.push(`+4 (Win)`);
+            const stageBonus: any = { R32: 10, R16: 12, QF: 15, SF: 20, '3rdPlace': 10, Final: 30 };
+            if (stageBonus[m.stage]) {
+                matchPts += stageBonus[m.stage];
+                logDetails.push(`+${stageBonus[m.stage]} (${m.stage} Bonus)`);
+            }
+        } else if (isDraw && m.stage === 'Group') {
+            matchPts += 2; logDetails.push(`+2 (Draw)`);
+        }
+
+        points += matchPts;
+        logs.push({
+            matchId: m.id, stage: m.group && m.stage === 'Group' ? m.group : m.stage, team: teamId, opponent: isHome ? m.awayTeam : m.homeTeam,
+            score: isHome ? `${m.homeGoals ?? '-'} : ${m.awayGoals ?? '-'}` : `${m.awayGoals ?? '-'} : ${m.homeGoals ?? '-'}`,
+            result: isWin ? 'W' : isDraw ? 'D' : isLoss ? 'L' : '-', points: matchPts, details: logDetails, isLive: isLive
+        });
+    });
+
+    return { points, goals, cleanSheets, wins, draws, losses, logs };
+};
+
 export default function AutomatedDashboard() {
     const [picks, setPicks] = useState<any[]>([]);
     const [drafters, setDrafters] = useState<string[]>([]);
@@ -125,7 +201,6 @@ export default function AutomatedDashboard() {
     const [showProjected, setShowProjected] = useState<boolean>(false);
     const [standingsView, setStandingsView] = useState<'grid' | 'table'>('grid');
     const [matchesSubTab, setMatchesSubTab] = useState<'groups' | 'bracket'>('groups');
-    const [roiFilter, setRoiFilter] = useState<'all' | 'over' | 'under'>('all');
 
     useEffect(() => {
         const stateRef = ref(db, 'state');
@@ -159,82 +234,6 @@ export default function AutomatedDashboard() {
 
     const uniqueMatches = getUniqueMatches(matches);
 
-    // Standard points computer logic consolidated into a clean helper
-    const getTeamPointsAndLogs = (teamId: string, matchesList: any[]) => {
-        let points = 0;
-        let goals = 0;
-        let cleanSheets = 0;
-        let wins = 0, draws = 0, losses = 0;
-        let advancedFromGroup = false;
-        const logs: any[] = [];
-
-        matchesList.forEach(m => {
-            const isHome = m.homeTeam && teamsMatch(m.homeTeam, teamId);
-            const isAway = m.awayTeam && teamsMatch(m.awayTeam, teamId);
-            if (!isHome && !isAway) return;
-
-            const isFinished = m.status === 'FINISHED' || m.status === 'AWARDED';
-            const isLive = m.status === 'IN_PLAY' || m.status === 'PAUSED';
-            if (!isFinished && !isLive) return;
-            if (isLive && !showProjected) return;
-
-            let matchPts = 0;
-            let logDetails: string[] = [];
-
-            let projectedWinner = m.winner;
-            if (isLive && !projectedWinner && m.homeGoals !== null && m.awayGoals !== null) {
-                if (m.homeGoals > m.awayGoals) projectedWinner = m.homeTeam;
-                else if (m.awayGoals > m.homeGoals) projectedWinner = m.awayTeam;
-                else projectedWinner = 'DRAW';
-            }
-
-            const isWin = (isHome && projectedWinner === m.homeTeam) || (isAway && projectedWinner === m.awayTeam);
-            const isDraw = projectedWinner === 'DRAW';
-            const isLoss = projectedWinner && !isWin && !isDraw;
-
-            if (isWin) wins++; else if (isDraw) draws++; else if (isLoss) losses++;
-
-            const matchGoals = isHome ? (m.homeGoals || 0) : (m.awayGoals || 0);
-            const matchCleanSheet = (isHome && m.homeCleanSheet) || (isAway && m.awayCleanSheet) ? 1 : 0;
-
-            goals += matchGoals;
-            cleanSheets += matchCleanSheet;
-
-            if (matchGoals > 0) {
-                matchPts += (matchGoals * 1);
-                logDetails.push(`+${matchGoals * 1} (${matchGoals} Goal${matchGoals > 1 ? 's' : ''})`);
-            }
-            if (matchCleanSheet) {
-                matchPts += 2;
-                logDetails.push(`+2 (CS)`);
-            }
-            if (m.stage !== 'Group' && !advancedFromGroup) {
-                advancedFromGroup = true;
-                matchPts += 8;
-                logDetails.push(`+8 (Advance)`);
-            }
-            if (isWin) {
-                matchPts += 4; logDetails.push(`+4 (Win)`);
-                const stageBonus: any = { R32: 10, R16: 12, QF: 15, SF: 20, '3rdPlace': 10, Final: 30 };
-                if (stageBonus[m.stage]) {
-                    matchPts += stageBonus[m.stage];
-                    logDetails.push(`+${stageBonus[m.stage]} (${m.stage} Bonus)`);
-                }
-            } else if (isDraw && m.stage === 'Group') {
-                matchPts += 2; logDetails.push(`+2 (Draw)`);
-            }
-
-            points += matchPts;
-            logs.push({
-                matchId: m.id, stage: m.group && m.stage === 'Group' ? m.group : m.stage, team: teamId, opponent: isHome ? m.awayTeam : m.homeTeam,
-                score: isHome ? `${m.homeGoals ?? '-'} : ${m.awayGoals ?? '-'}` : `${m.awayGoals ?? '-'} : ${m.homeGoals ?? '-'}`,
-                result: isWin ? 'W' : isDraw ? 'D' : isLoss ? 'L' : '-', points: matchPts, details: logDetails, isLive: isLive
-            });
-        });
-
-        return { points, goals, cleanSheets, wins, draws, losses, logs };
-    };
-
     const standings = drafters.map(name => {
         let totalPoints = 0, totalGoals = 0, totalCleanSheets = 0, wins = 0, draws = 0, losses = 0;
         const myTeams = picks.filter(p => p.drafter === name).map(p => p.team);
@@ -243,7 +242,7 @@ export default function AutomatedDashboard() {
         const csByTeam: Record<string, number> = {};
 
         myTeams.forEach(teamId => {
-            const stats = getTeamPointsAndLogs(teamId, uniqueMatches);
+            const stats = getTeamPointsAndLogs(teamId, uniqueMatches, showProjected);
             totalPoints += stats.points;
             totalGoals += stats.goals;
             totalCleanSheets += stats.cleanSheets;
@@ -343,10 +342,10 @@ export default function AutomatedDashboard() {
         if (m.awayTeam && m.awayTeam !== 'TBD' && isTeamEliminated(m.awayTeam, uniqueMatches)) eliminatedTeamsSet.add(m.awayTeam.toUpperCase());
     });
 
-    // Computing full Draft Value ROI data based on Firebase picks order
+    // Compute complete Draft Value ROI statistics based on Picks list
     const draftAnalysis = picks.map((p, index) => {
         const pickNumber = index + 1;
-        const stats = getTeamPointsAndLogs(p.team, uniqueMatches);
+        const stats = getTeamPointsAndLogs(p.team, uniqueMatches, showProjected);
         const expected = getExpectedPoints(pickNumber);
         const surplus = stats.points - expected;
         const roi = (surplus / expected) * 100;
@@ -362,25 +361,22 @@ export default function AutomatedDashboard() {
         };
     });
 
-    const sortedRoiAnalysis = [...draftAnalysis].sort((a, b) => b.roi - a.roi);
-    const goldenPick = sortedRoiAnalysis[0];
-    const biggestBust = [...draftAnalysis].sort((a, b) => a.roi - b.roi)[0];
+    const sortedBestPicks = [...draftAnalysis].sort((a, b) => b.roi - a.roi);
+    const sortedWorstPicks = [...draftAnalysis].sort((a, b) => a.roi - b.roi);
+
+    const goldenPick = sortedBestPicks[0];
+    const biggestBust = sortedWorstPicks[0];
 
     const managerRoiStats = drafters.map(name => {
         const managerPicks = draftAnalysis.filter(da => da.drafter === name);
         const totalActual = managerPicks.reduce((acc, p) => acc + p.actualPoints, 0);
         const totalExpected = managerPicks.reduce((acc, p) => acc + p.expectedPoints, 0);
-        const avgRoi = totalExpected > 0 ? ((totalActual - totalExpected) / totalExpected) * 100 : 0;
-        return { name, totalActual, totalExpected, avgRoi, picksCount: managerPicks.length };
-    }).sort((a, b) => b.avgRoi - a.avgRoi);
+        const surplus = totalActual - totalExpected;
+        const avgRoi = totalExpected > 0 ? (surplus / totalExpected) * 100 : 0;
+        return { name, totalActual, totalExpected, surplus, avgRoi, picks: managerPicks };
+    }).sort((a, b) => b.surplus - a.surplus); // Sorted by total surplus points created!
 
-    const bestManager = managerRoiStats[0];
-
-    const filteredDraftAnalysis = draftAnalysis.filter(p => {
-        if (roiFilter === 'over') return p.roi >= 0;
-        if (roiFilter === 'under') return p.roi < 0;
-        return true;
-    }).sort((a, b) => b.roi - a.roi);
+    const bestManager = [...managerRoiStats].sort((a, b) => b.avgRoi - a.avgRoi)[0];
 
     const getSavageReport = () => {
         if (overallLeaders.length < 2) return null;
@@ -879,7 +875,7 @@ export default function AutomatedDashboard() {
                                                                         <div className="mx-1.5 sm:mx-2 flex flex-col items-center shrink-0 min-w-[50px] sm:min-w-[65px]">
                                                                             <div className="flex items-center justify-center gap-1 sm:gap-1.5 bg-black/80 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md border border-white/20 w-full shadow-inner mb-0.5 sm:mb-1">
                                                                                 <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-none drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${homeScoreColor} ${oswald.className}`}>{m.homeGoals !== null ? m.homeGoals : '-'}</span>
-                                                                                <span className="text-slate-400 font-black text-[8px] sm:text-[9px] leading-none drop-shadow-md">:</span>
+                                                                                <span className="text-slate-400 font-black text-[8px] sm:text-[9px] leading-none drop-shadow-md"> : </span>
                                                                                 <span className={`font-black text-sm sm:text-lg w-3 sm:w-4 text-center leading-none drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${awayScoreColor} ${oswald.className}`}>{m.awayGoals !== null ? m.awayGoals : '-'}</span>
                                                                             </div>
                                                                             {m.status === 'IN_PLAY' && <span className="text-[7px] sm:text-[8px] font-black tracking-widest text-red-500 animate-pulse drop-shadow-md">{m.minute ? `${m.minute}'` : 'LIVE'}</span>}
@@ -1324,31 +1320,9 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'banter' && (
                         <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 content-animate">
-                            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                                <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>
-                                    DRAFT VALUE BOARD
-                                </h2>
-                                <div className="flex bg-black/60 border border-white/10 p-0.5 rounded-lg shadow-md">
-                                    <button
-                                        onClick={() => setRoiFilter('all')}
-                                        className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${roiFilter === 'all' ? 'bg-sky-500/20 text-sky-400 border border-sky-400/30' : 'text-slate-400 hover:text-white'}`}
-                                    >
-                                        All Picks
-                                    </button>
-                                    <button
-                                        onClick={() => setRoiFilter('over')}
-                                        className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${roiFilter === 'over' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-400/30' : 'text-slate-400 hover:text-white'}`}
-                                    >
-                                        Surplus (+ ROI)
-                                    </button>
-                                    <button
-                                        onClick={() => setRoiFilter('under')}
-                                        className={`px-3 py-1 rounded-md text-[10px] sm:text-xs font-black uppercase tracking-wider transition-all duration-300 ${roiFilter === 'under' ? 'bg-rose-500/20 text-rose-400 border border-rose-400/30' : 'text-slate-400 hover:text-white'}`}
-                                    >
-                                        Flops (- ROI)
-                                    </button>
-                                </div>
-                            </div>
+                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>
+                                DRAFT VALUE BOARD
+                            </h2>
 
                             {/* Summary Cards */}
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -1362,7 +1336,7 @@ export default function AutomatedDashboard() {
                                                 <span className="font-black text-sm sm:text-base text-white">{goldenPick.team}</span>
                                             </div>
                                             <p className="text-[11px] text-slate-300 font-semibold leading-snug">
-                                                Selected by <strong className="text-sky-400">{goldenPick.drafter}</strong> at pick #{goldenPick.pickNumber}. Expected {goldenPick.expectedPoints.toFixed(1)} PTS, scored <strong className="text-emerald-400">{goldenPick.actualPoints} PTS</strong> (<span className="text-emerald-400 font-bold">+{goldenPick.roi.toFixed(1)}% ROI</span>).
+                                                Selected by <strong className="text-sky-400">{goldenPick.drafter}</strong> at pick #{goldenPick.pickNumber}. Expected {goldenPick.expectedPoints.toFixed(1)} PTS, generated <strong className="text-emerald-400">{goldenPick.actualPoints} PTS</strong> (<span className="text-emerald-400 font-bold">+{goldenPick.roi.toFixed(1)}% ROI</span>).
                                             </p>
                                         </div>
                                     ) : (
@@ -1398,7 +1372,7 @@ export default function AutomatedDashboard() {
                                                 <span className="font-black text-sm sm:text-base text-white">{bestManager.name}</span>
                                             </div>
                                             <p className="text-[11px] text-slate-300 font-semibold leading-snug">
-                                                Master of the draft table with an average <strong className="text-emerald-400">+{bestManager.avgRoi.toFixed(1)}% ROI</strong> across all {bestManager.picksCount} squad picks.
+                                                Master of the draft board with an average of <strong className="text-emerald-400">+{bestManager.avgRoi.toFixed(1)}% ROI</strong> across all {bestManager.picksCount} picks.
                                             </p>
                                         </div>
                                     ) : (
@@ -1407,70 +1381,125 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            {/* Manager ROI Standings */}
-                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 shadow-2xl">
-                                <div className="border-b border-white/10 pb-2 mb-3">
-                                    <h3 className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest">Manager Efficiency Leaderboard</h3>
+                            {/* Side-by-Side Top 10 Best / Worst Picks */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                {/* Top 10 Best */}
+                                <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
+                                    <div className="bg-emerald-950/40 border-b border-white/10 px-3 sm:px-4 py-2 flex justify-between items-center">
+                                        <h3 className="text-[10px] sm:text-xs font-mono font-black text-emerald-400 uppercase tracking-widest">🔥 Top 10 Best Picks (Underpriced)</h3>
+                                        <span className="text-[8px] font-mono text-slate-400">Highest ROI</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-[9px] sm:text-xs border-collapse min-w-[340px]">
+                                            <thead>
+                                            <tr className="border-b border-white/5 text-slate-300 text-[8px] sm:text-[9px] uppercase font-mono bg-black/60 tracking-widest font-black">
+                                                <th className="py-2 pl-3">Pick</th>
+                                                <th className="py-2">Team</th>
+                                                <th className="py-2">Manager</th>
+                                                <th className="py-2 text-center">PTS</th>
+                                                <th className="py-2 text-right pr-3">ROI</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                            {sortedBestPicks.slice(0, 10).map((row) => (
+                                                <tr key={row.team} className={`hover:bg-emerald-500/5 transition ${row.eliminated ? 'opacity-40' : ''}`}>
+                                                    <td className="py-2 pl-3 font-mono font-black text-slate-400">#{row.pickNumber}</td>
+                                                    <td className="py-2 font-black text-white"><FlagIcon teamName={row.team} />{row.team}</td>
+                                                    <td className="py-2 font-bold text-slate-300">{row.drafter}</td>
+                                                    <td className="py-2 text-center font-black text-emerald-400">{row.actualPoints}</td>
+                                                    <td className="py-2 text-right pr-3 font-black text-emerald-400">+{row.roi.toFixed(1)}%</td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 gap-3">
-                                    {managerRoiStats.map((mgr, index) => (
-                                        <div key={mgr.name} className="bg-black/50 border border-white/10 rounded-lg p-2.5 flex flex-col items-center justify-center text-center shadow-md relative">
-                                            <span className="absolute top-1 right-2 font-mono text-[8px] font-black text-slate-400">#{index + 1}</span>
-                                            <ManagerAvatar name={mgr.name} size="sm" />
-                                            <span className="font-black text-[11px] text-white truncate w-full mt-1.5 block">{mgr.name}</span>
-                                            <span className={`text-xs font-black block mt-0.5 ${mgr.avgRoi >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                {mgr.avgRoi >= 0 ? `+${mgr.avgRoi.toFixed(1)}%` : `${mgr.avgRoi.toFixed(1)}%`} ROI
-                                            </span>
-                                        </div>
-                                    ))}
+
+                                {/* Top 10 Worst */}
+                                <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
+                                    <div className="bg-rose-950/40 border-b border-white/10 px-3 sm:px-4 py-2 flex justify-between items-center">
+                                        <h3 className="text-[10px] sm:text-xs font-mono font-black text-rose-400 uppercase tracking-widest">📉 Top 10 Worst Picks (Overpriced)</h3>
+                                        <span className="text-[8px] font-mono text-slate-400">Lowest ROI</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-[9px] sm:text-xs border-collapse min-w-[340px]">
+                                            <thead>
+                                            <tr className="border-b border-white/5 text-slate-300 text-[8px] sm:text-[9px] uppercase font-mono bg-black/60 tracking-widest font-black">
+                                                <th className="py-2 pl-3">Pick</th>
+                                                <th className="py-2">Team</th>
+                                                <th className="py-2">Manager</th>
+                                                <th className="py-2 text-center">PTS</th>
+                                                <th className="py-2 text-right pr-3">ROI</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                            {sortedWorstPicks.slice(0, 10).map((row) => (
+                                                <tr key={row.team} className={`hover:bg-rose-500/5 transition ${row.eliminated ? 'opacity-40' : ''}`}>
+                                                    <td className="py-2 pl-3 font-mono font-black text-slate-400">#{row.pickNumber}</td>
+                                                    <td className="py-2 font-black text-white"><FlagIcon teamName={row.team} />{row.team}</td>
+                                                    <td className="py-2 font-bold text-slate-300">{row.drafter}</td>
+                                                    <td className="py-2 text-center font-black text-rose-400">{row.actualPoints}</td>
+                                                    <td className="py-2 text-right pr-3 font-black text-rose-400">{row.roi.toFixed(1)}%</td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
 
-                            {/* Main ROI Data Table */}
-                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl overflow-x-auto">
-                                <table className="w-full text-left text-[10px] sm:text-xs border-collapse min-w-[500px]">
-                                    <thead>
-                                    <tr className="border-b border-white/10 text-slate-300 text-[8px] sm:text-[9px] uppercase font-mono bg-black/80 tracking-widest font-black">
-                                        <th className="py-2.5 pl-3 sm:pl-4 w-12 text-center">Rank</th>
-                                        <th className="py-2.5">Team</th>
-                                        <th className="py-2.5">Manager</th>
-                                        <th className="py-2.5 text-center">Pick #</th>
-                                        <th className="py-2.5 text-center">Actual PTS</th>
-                                        <th className="py-2.5 text-center">Expected PTS</th>
-                                        <th className="py-2.5 text-center">Surplus</th>
-                                        <th className="py-2.5 text-right pr-3 sm:pr-4">Value ROI</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-white/10">
-                                    {filteredDraftAnalysis.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={8} className="py-4 text-center text-slate-400 font-bold italic">No picks found for the selected filter.</td>
-                                        </tr>
-                                    ) : (
-                                        filteredDraftAnalysis.map((row, idx) => {
-                                            const surplusColor = row.surplus >= 0 ? 'text-emerald-400' : 'text-rose-400';
-                                            return (
-                                                <tr key={row.team} className={`hover:bg-black/40 transition ${row.eliminated ? 'opacity-40 grayscale' : ''}`}>
-                                                    <td className="py-2.5 pl-3 sm:pl-4 text-center font-mono font-black text-slate-400">#{idx + 1}</td>
-                                                    <td className="py-2.5 font-black text-white flex items-center">
-                                                        <FlagIcon teamName={row.team} /> {row.team}
-                                                    </td>
-                                                    <td className="py-2.5 font-bold text-slate-300">{row.drafter}</td>
-                                                    <td className="py-2.5 text-center font-mono font-black text-slate-300">Pick #{row.pickNumber}</td>
-                                                    <td className="py-2.5 text-center font-black text-[#fbbf24] text-xs sm:text-sm">{row.actualPoints}</td>
-                                                    <td className="py-2.5 text-center font-mono text-slate-400">{row.expectedPoints.toFixed(1)}</td>
-                                                    <td className={`py-2.5 text-center font-mono font-black ${surplusColor}`}>
-                                                        {row.surplus >= 0 ? `+${row.surplus.toFixed(1)}` : `${row.surplus.toFixed(1)}`}
-                                                    </td>
-                                                    <td className={`py-2.5 text-right pr-3 sm:pr-4 font-black ${surplusColor}`}>
-                                                        {row.roi >= 0 ? `+${row.roi.toFixed(1)}%` : `${row.roi.toFixed(1)}%`}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    )}
-                                    </tbody>
-                                </table>
+                            {/* Manager Draft Portfolio Analysis */}
+                            <div className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 sm:p-5 shadow-2xl space-y-4">
+                                <div className="border-b border-white/10 pb-2 flex justify-between items-center">
+                                    <h3 className="text-[10px] sm:text-xs font-mono font-black text-slate-300 uppercase tracking-widest">💼 Manager Portfolios Report Card</h3>
+                                    <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider">Ordered by overall surplus points generated</span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {managerRoiStats.map((mgr) => {
+                                        const totalSurplus = mgr.totalActual - mgr.totalExpected;
+                                        const surplusClass = totalSurplus >= 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
+
+                                        return (
+                                            <div key={mgr.name} className="bg-black/60 border border-white/10 rounded-xl p-4 shadow-lg flex flex-col justify-between space-y-3">
+                                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <ManagerAvatar name={mgr.name} size="sm" />
+                                                        <span className="font-black text-xs sm:text-sm text-white uppercase tracking-wider">{mgr.name}</span>
+                                                    </div>
+                                                    <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${surplusClass}`}>
+                                                        {totalSurplus >= 0 ? `+${totalSurplus.toFixed(1)}` : `${totalSurplus.toFixed(1)}`} PTS
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-1.5 flex-grow">
+                                                    {mgr.picks.map((p) => (
+                                                        <div key={p.team} className="flex justify-between items-center text-[10px] font-semibold text-slate-200">
+                                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                                <FlagIcon teamName={p.team} />
+                                                                <span className={`truncate ${p.eliminated ? 'line-through text-slate-500 font-bold' : ''}`}>{p.team}</span>
+                                                                <span className="text-[8px] font-mono text-slate-400">#{p.pickNumber}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span className="font-mono text-slate-300 font-black">{p.actualPoints} PTS</span>
+                                                                <span className={`text-[9px] font-black ${p.roi >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                    ({p.roi >= 0 ? `+${p.roi.toFixed(0)}%` : `${p.roi.toFixed(0)}%`})
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <div className="border-t border-white/5 pt-2 flex justify-between items-center text-[10px] font-mono uppercase tracking-widest font-black">
+                                                    <span className="text-slate-400">Portfolio Return:</span>
+                                                    <span className={mgr.avgRoi >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                                        {mgr.avgRoi >= 0 ? `+${mgr.avgRoi.toFixed(1)}%` : `${mgr.avgRoi.toFixed(1)}%`} ROI
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
                     )}
