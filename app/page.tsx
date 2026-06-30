@@ -865,7 +865,7 @@ export default function AutomatedDashboard() {
                                                                 </td>
                                                                 <td className="py-1.5 sm:py-2 text-right pr-2 sm:pr-3">
                                                                     {log.points > 0 ? (
-                                                                        <span className={`font-black text-emerald-400 text-[10px] sm:text-sm bg-black/80 border border-white/10 px-1.5 sm:px-2 py-0.5 rounded shadow-sm drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+{log.points}</span>
+                                                                        <span className={`font-black text-[#10b981] text-[10px] sm:text-sm bg-black/80 border border-white/10 px-1.5 sm:px-2 py-0.5 rounded shadow-sm drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>+{log.points}</span>
                                                                     ) : (
                                                                         <span className="font-mono text-slate-300 font-bold drop-shadow-md text-[9px] sm:text-[10px]">0</span>
                                                                     )}
@@ -1315,7 +1315,7 @@ export default function AutomatedDashboard() {
                     {activeTab === 'schedule' && (
                         <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
                             <h2 className={`text-lg sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>MATCH SCHEDULE</h2>
-                            <ScheduleTab eliminatedTeams={eliminatedTeamsSet} modifiedMatches={modifiedMatches} adjustWhatIf={adjustWhatIf} />
+                            <ScheduleTab eliminatedTeams={eliminatedTeamsSet} customScores={customScores} adjustWhatIf={adjustWhatIf} />
                         </div>
                     )}
 
