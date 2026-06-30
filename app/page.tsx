@@ -355,6 +355,21 @@ const getTeamPointsAndLogs = (teamId: string, matchesList: any[], showProjected:
         });
     }
 
+    // Stable sort to ensure all Group Stage matches and advancement secure event sit together on top
+    const stageOrder = (stageName: string) => {
+        if (!stageName) return 8;
+        if (stageName.startsWith('Group') || stageName === 'Group') return 1;
+        if (stageName === 'R32') return 2;
+        if (stageName === 'R16') return 3;
+        if (stageName === 'QF') return 4;
+        if (stageName === 'SF') return 5;
+        if (stageName === '3rdPlace') return 6;
+        if (stageName === 'Final') return 7;
+        return 8;
+    };
+
+    logs.sort((a, b) => stageOrder(a.stage) - stageOrder(b.stage));
+
     return { points, goals, cleanSheets, wins, draws, losses, logs };
 };
 
@@ -1184,10 +1199,10 @@ export default function AutomatedDashboard() {
                                                                     <div key={m.id} className="flex items-center justify-between p-2 sm:p-2.5 bg-black/60 border border-white/20 rounded-lg hover:bg-black/80 hover:border-white/30 transition shadow-xl h-full">
                                                                         <div className={`flex-1 flex flex-col items-end text-right min-w-0 ${homeEliminated ? 'opacity-35 grayscale' : ''}`}>
                                                                             <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-end min-w-0">
-                                                                                <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${homeNameColor}`}>{m.homeTeam}</span>
+                                                                                <span className={`text-[9px] sm:text-xs truncate block drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${homeNameColor}`}>{m.homeTeam}</span>
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.homeTeam} /></div>
                                                                             </div>
-                                                                            {homeDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate max-w-full drop-shadow-md">{homeDrafter}</span>}
+                                                                            {homeDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate block w-full drop-shadow-md">{homeDrafter}</span>}
                                                                         </div>
 
                                                                         <div className="mx-1.5 sm:mx-2 flex flex-col items-center shrink-0 min-w-[70px] sm:min-w-[85px]">
@@ -1218,7 +1233,7 @@ export default function AutomatedDashboard() {
                                                                         <div className={`flex-1 flex flex-col items-start text-left min-w-0 ${awayEliminated ? 'opacity-35 grayscale' : ''}`}>
                                                                             <div className="flex items-center gap-1.5 w-full justify-start min-w-0">
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.awayTeam} /></div>
-                                                                                <span className={`text-[9px] sm:text-xs truncate block drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
+                                                                                <span className={`text-[9px] sm:text-xs truncate block w-full drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
                                                                             </div>
                                                                             {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate block w-full drop-shadow-md">{awayDrafter}</span>}
                                                                         </div>
