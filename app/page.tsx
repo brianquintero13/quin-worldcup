@@ -40,7 +40,7 @@ const getUniqueMatches = (matchesList: any[]) => {
     });
 };
 
-// Calculates and ranks the 3rd-place teams across all 12 groups to find the 8 wildcards that advance
+// Calculates and ranks the 3rd-place teams across all 12 groups to find the 8 wildcards that advance [2]
 const getEliminatedThirdPlaceTeams = (matchesList: any[]): Set<string> => {
     const eliminatedThirds = new Set<string>();
     const allGroupMatches = matchesList.filter(m => m.stage === 'Group');
@@ -355,17 +355,21 @@ const getTeamPointsAndLogs = (teamId: string, matchesList: any[], showProjected:
         });
     }
 
-    // Stable sort to ensure all Group Stage matches and advancement secure event sit together on top
+    // Normalized stable-sort ordering for user logs
     const stageOrder = (stageName: string) => {
-        if (!stageName) return 8;
-        if (stageName.startsWith('Group') || stageName === 'Group') return 1;
-        if (stageName === 'R32') return 2;
-        if (stageName === 'R16') return 3;
-        if (stageName === 'QF') return 4;
-        if (stageName === 'SF') return 5;
-        if (stageName === '3rdPlace') return 6;
-        if (stageName === 'Final') return 7;
-        return 8;
+        if (!stageName) return 9;
+        const normalized = stageName.toUpperCase().trim();
+        // Group stage match rows (e.g., "GROUP C", "GROUP K")
+        if (normalized.startsWith('GROUP ') && normalized !== 'GROUP') return 1;
+        // Group stage wildcard advancement row ("GROUP")
+        if (normalized === 'GROUP') return 2;
+        if (normalized === 'R32') return 3;
+        if (normalized === 'R16') return 4;
+        if (normalized === 'QF') return 5;
+        if (normalized === 'SF') return 6;
+        if (normalized === '3RDPLACE') return 7;
+        if (normalized === 'FINAL') return 8;
+        return 9;
     };
 
     logs.sort((a, b) => stageOrder(a.stage) - stageOrder(b.stage));
@@ -1311,7 +1315,7 @@ export default function AutomatedDashboard() {
                     {activeTab === 'schedule' && (
                         <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
                             <h2 className={`text-lg sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>MATCH SCHEDULE</h2>
-                            <ScheduleTab eliminatedTeams={eliminatedTeamsSet} customScores={customScores} adjustWhatIf={adjustWhatIf} />
+                            <ScheduleTab eliminatedTeams={eliminatedTeamsSet} modifiedMatches={modifiedMatches} adjustWhatIf={adjustWhatIf} />
                         </div>
                     )}
 
