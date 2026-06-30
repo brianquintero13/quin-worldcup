@@ -8,7 +8,6 @@ export async function GET(request: Request) {
         return NextResponse.json({ error: 'Date is required' }, { status: 400 });
     }
 
-    // Connects to your specific provider and handles the daily filter format
     const API_KEY = process.env.FOOTBALL_DATA_KEY || '95a6c629704947a3be9860ba3031169b';
     const url = `https://api.football-data.org/v4/competitions/2000/matches?dateFrom=${date}&dateTo=${date}`;
 
@@ -26,7 +25,6 @@ export async function GET(request: Request) {
 
         const data = await response.json();
 
-        // Exact same standardizer from your working sync-matches file
         const normalizeTeamName = (name: string) => {
             if (!name) return 'TBD';
             if (name === 'Congo DR' || name === 'DR Congo') return 'DR Congo';
@@ -36,15 +34,26 @@ export async function GET(request: Request) {
             return name;
         };
 
-        const processedMatches = (data.matches || []).map((match: any) => ({
-            id: match.id,
-            utcDate: match.utcDate,
-            status: match.status,
-            homeTeam: normalizeTeamName(match.homeTeam?.name),
-            awayTeam: normalizeTeamName(match.awayTeam?.name),
-            homeGoals: match.score?.fullTime?.home ?? match.score?.regularTime?.home ?? null,
-            awayGoals: match.score?.fullTime?.away ?? match.score?.regularTime?.away ?? null,
-        }));
+        const processedMatches = (data.matches || []).map((match: any) => {
+            let homeGoals = match.score?.fullTime?.home ?? match.score?.regularTime?.home ?? null;
+            let awayGoals = match.score?.fullTime?.away ?? match.score?.regularTime?.away ?? null;
+
+            // Subtract shootout penalties so the daily schedule scoreboard stays correct [2]
+            if (match.score?.duration === 'PENALTY_SHOOTOUT' && match.score?.penalties) {
+                if (homeGoals !== null) homeGoals -= (match.score.penalties.home ?? 0);
+                if (awayGoals !== null) awayGoals -= (match.score.penalties.away ?? 0);
+            }
+
+            return {
+                id: match.id,
+                utcDate: match.utcDate,
+                status: match.status,
+                homeTeam: normalizeTeamName(match.homeTeam?.name),
+                awayTeam: normalizeTeamName(match.awayTeam?.name),
+                homeGoals,
+                awayGoals,
+            };
+        });
 
         return NextResponse.json({ success: true, matches: processedMatches });
     } catch (error: any) {

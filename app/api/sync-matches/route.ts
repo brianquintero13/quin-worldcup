@@ -34,8 +34,15 @@ export async function GET() {
             let homeGoals = null;
             let awayGoals = null;
             if (match.score && ['IN_PLAY', 'PAUSED', 'FINISHED', 'AWARDED'].includes(status)) {
+                // Read base fullTime scores
                 homeGoals = match.score.fullTime?.home ?? match.score.regularTime?.home ?? match.score.halfTime?.home ?? 0;
                 awayGoals = match.score.fullTime?.away ?? match.score.regularTime?.away ?? match.score.halfTime?.away ?? 0;
+
+                // Subtract penalty shootout goals so they do not count as open-play goals [2]
+                if (match.score.duration === 'PENALTY_SHOOTOUT' && match.score.penalties) {
+                    homeGoals -= (match.score.penalties.home ?? 0);
+                    awayGoals -= (match.score.penalties.away ?? 0);
+                }
             }
 
             const isComplete = ['FINISHED', 'AWARDED'].includes(status);
@@ -56,9 +63,20 @@ export async function GET() {
             const isStarted = ['IN_PLAY', 'PAUSED', 'FINISHED', 'AWARDED'].includes(status);
             let winner = undefined;
             if (isStarted && homeGoals !== null && awayGoals !== null) {
-                if (homeGoals > awayGoals) winner = normalizeTeamName(match.homeTeam?.name);
-                else if (awayGoals > homeGoals) winner = normalizeTeamName(match.awayTeam?.name);
-                else if (homeGoals === awayGoals) winner = 'DRAW';
+                // If a shootout occurs, use the official winner from the API, but keep the open-play draw goals
+                if (match.score.duration === 'PENALTY_SHOOTOUT') {
+                    if (match.score.winner === 'HOME_TEAM') {
+                        winner = normalizeTeamName(match.homeTeam?.name);
+                    } else if (match.score.winner === 'AWAY_TEAM') {
+                        winner = normalizeTeamName(match.awayTeam?.name);
+                    } else {
+                        winner = 'DRAW';
+                    }
+                } else {
+                    if (homeGoals > awayGoals) winner = normalizeTeamName(match.homeTeam?.name);
+                    else if (awayGoals > homeGoals) winner = normalizeTeamName(match.awayTeam?.name);
+                    else if (homeGoals === awayGoals) winner = 'DRAW';
+                }
             }
 
             return {
