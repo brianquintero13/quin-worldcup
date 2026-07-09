@@ -537,30 +537,17 @@ export default function AutomatedDashboard() {
         }
     });
 
-    const getTickerHeadlines = () => {
+    // Savage Trash Talk Ticker Feed (Red Banner)
+    const getSavageHeadlines = () => {
         const headlines: string[] = [];
         if (overallLeaders.length < 2) return headlines;
 
         const leader = overallLeaders[0];
-        const runnerUp = overallLeaders[1];
         const lastPlace = overallLeaders[overallLeaders.length - 1];
         const gap = leader.totalPoints - lastPlace.totalPoints;
 
-        // 1. Live Standings & Chase
-        headlines.push(`🏆 STANDINGS: ${leader.name} leads the pack with ${leader.totalPoints} PTS!`);
-        headlines.push(`🥈 CHASE IN PROGRESS: ${runnerUp.name} trails the lead by only ${leader.totalPoints - runnerUp.totalPoints} points.`);
-
-        // 2. Real-time Live Matches
-        const liveGames = modifiedMatches.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
-        if (liveGames.length > 0) {
-            liveGames.forEach(m => {
-                headlines.push(`📺 LIVE NOW: ${m.homeTeam} ${m.homeGoals ?? 0} - ${m.awayGoals ?? 0} ${m.awayTeam} (${m.minute ? `${m.minute}'` : 'HT'})`);
-            });
-        }
-
-        // 3. Unfiltered Sarcastic / Savage News Ticker Items
+        // Trash talk targeting specific low performance stats
         headlines.push(`🚨 STAT EMERGENCY: Send thoughts, prayers, and maybe a map to ${lastPlace.name} (only ${lastPlace.totalPoints} PTS). The tactical setup is in absolute ruins.`);
-        headlines.push(`📈 MARKET UPDATE: Stocks in ${leader.name}'s draft choices are soaring. The rest of the league is mathematically down bad.`);
         headlines.push(`📉 FINANCIAL RUIN: Analysts predict ${lastPlace.name}'s investment in ${lastPlace.teams.join(', ')} is the worst financial decision since buying Enron stock.`);
         headlines.push(`🧱 TERRORIST FOOTBALL: ${gloveLeaders[0].name} has parked the bus so hard they are violating local zoning laws. Someone tell them scoring is allowed.`);
         headlines.push(`💨 MISSED TARGET: ${bootLeaders[bootLeaders.length - 1].name} is shooting complete blanks. Zero goals. Someone check if their forwards are actually blindfolded.`);
@@ -572,24 +559,76 @@ export default function AutomatedDashboard() {
         headlines.push(`🥱 SNOOZE FEST: Watching ${gloveLeaders[0].name}'s teams play is currently being trialed as a cure for chronic insomnia.`);
         headlines.push(`🔥 SAVAGE STATS: ${leader.name} is currently outscoring ${lastPlace.name} by ${gap} points. This isn't a fantasy league, it's a public execution.`);
 
-        // 4. Sarcastic Sports Journalism Headlines
-        const wildSarcasticLines = [
-            `⚽ GOLDEN BOOT: ${bootLeaders[0].name}'s strikers are firing absolute heat-seeking missiles (${bootLeaders[0].totalGoals} goals).`,
-            `📰 TRANSFER RUMORS: Reports suggest ${lastPlace.name} is looking to trade their entire drafted roster for a bag of slightly stale potato chips.`,
-            `🕵️‍♂️ SCOUTING REPORT: Mid-table managers continue to redefine 'vanilla'. If unseasoned, boiled chicken breast played football, it would look like this.`,
-            `🚨 BREAKING: FIFA considering launching a formal inquiry into how ${lastPlace.name} manages to screw up every single tactical decision so consistently.`,
-            `💡 PRO TIP: Remind ${lastPlace.name} that the goal of the game is to get points, not collect losses like Pokémon cards.`,
-            `🤷‍♂️ STAT OF THE DAY: Even if you doubled ${lastPlace.name}'s points, they would still be trailing ${leader.name}. Tragic.`,
-            `⚡ ENERGY REPORT: ${leader.name}'s draft choices are currently running on premium rocket fuel while ${lastPlace.name}'s teams move slower than parked cars.`,
-            `📢 PRESS CONFERENCE: Asked about their draft, ${lastPlace.name} reportedly wept silently for ten minutes before leaving the media room.`
-        ];
+        // Mid table mediocrity roasts
+        if (overallLeaders[3]) {
+            headlines.push(`🥱 MID-TABLE MEDIOCRITY: ${overallLeaders[3].name} is currently stuck in No-Man's Land. Not good enough to challenge, not bad enough to get a funny slide.`);
+        }
+        if (overallLeaders[4]) {
+            headlines.push(`🕵️‍♂️ SCOUTING REPORT: ${overallLeaders[4].name}'s squad continue to redefine 'vanilla'. If unseasoned, boiled chicken breast played football, it would look like this.`);
+        }
 
-        headlines.push(...wildSarcasticLines);
+        const mostLossesManager = [...standings].sort((a, b) => b.losses - a.losses)[0];
+        headlines.push(`🤡 LOSS MAGNET: ${mostLossesManager.name} is collecting losses like they are rare trading cards (${mostLossesManager.losses} losses). Tactical absolute disaster.`);
+
+        const lowestGoalsManager = [...standings].sort((a, b) => a.totalGoals - b.totalGoals)[0];
+        headlines.push(`💨 SHOOTING BLANKS: ${lowestGoalsManager.name}'s teams have combined for a tragic ${lowestGoalsManager.totalGoals} goals. Are their forwards wearing cement boots?`);
 
         return headlines;
     };
 
-    const tickerHeadlines = getTickerHeadlines();
+    // Positive / Hype Feed (Green Banner)
+    const getHypeHeadlines = () => {
+        const headlines: string[] = [];
+        if (overallLeaders.length < 2) return headlines;
+
+        const leader = overallLeaders[0];
+        const runnerUp = overallLeaders[1];
+        const third = overallLeaders[2];
+
+        // Standings and Podium highlights
+        headlines.push(`🏆 CHAMPIONSHIP PACER: ${leader.name} is running the table with ${leader.totalPoints} PTS! Professional Pep Guardiola energy.`);
+        if (runnerUp) {
+            headlines.push(`🥈 IN HOT PURSUIT: ${runnerUp.name} is sitting in 2nd place (${runnerUp.totalPoints} PTS), ready to strike at the first sign of leader weakness!`);
+        }
+        if (third) {
+            headlines.push(`🥉 PODIUM WATCH: ${third.name} holds the podium strong with ${third.totalPoints} PTS! Solid tactical execution.`);
+        }
+
+        // Steals and ROI highlights
+        if (goldenPick) {
+            headlines.push(`💎 TACTICAL GENIUS: ${goldenPick.drafter} drafting ${goldenPick.team} at Pick #${goldenPick.pickNumber} is officially the steal of the century! (+${goldenPick.roi.toFixed(1)}% ROI).`);
+        }
+        const secondBest = sortedBestPicks[1];
+        if (secondBest) {
+            headlines.push(`🌟 SLEEPER MASTERCLASS: ${secondBest.drafter}'s selection of ${secondBest.team} at Pick #${secondBest.pickNumber} is yielding a gorgeous +${secondBest.surplus.toFixed(1)} PTS above expected!`);
+        }
+
+        // Live matches rolling alerts
+        const liveGames = modifiedMatches.filter(m => m.status === 'IN_PLAY' || m.status === 'PAUSED');
+        if (liveGames.length > 0) {
+            liveGames.forEach(m => {
+                headlines.push(`📺 LIVE WATCH: ${m.homeTeam} ${m.homeGoals ?? 0} - ${m.awayGoals ?? 0} ${m.awayTeam} (${m.minute ? `${m.minute}'` : 'HT'}). Essential viewing!`);
+            });
+        }
+
+        // Win streak and defense accolades
+        const mostWinsManager = [...standings].sort((a, b) => b.wins - a.wins)[0];
+        headlines.push(`🔥 WIN MACHINE: ${mostWinsManager.name} is dominating matchdays with a massive ${mostWinsManager.wins} wins! Incredibly clinical.`);
+
+        if (gloveLeaders[0] && gloveLeaders[0].totalCleanSheets > 0) {
+            headlines.push(`🧱 PARKING THE LIMOUSINE: ${gloveLeaders[0].name} has locked down defense with ${gloveLeaders[0].totalCleanSheets} clean sheets! Unbreakable structure.`);
+        }
+
+        if (bootLeaders[0] && bootLeaders[0].totalGoals > 0) {
+            headlines.push(`⚽ APEX PREDATOR: ${bootLeaders[0].name} leads the Golden Boot race with ${bootLeaders[0].totalGoals} goals! High-powered offensive setup.`);
+        }
+
+        return headlines;
+    };
+
+    const savageHeadlines = getSavageHeadlines();
+    const hypeHeadlines = getHypeHeadlines();
+
     const eliminatedTeamsSet = new Set<string>();
     modifiedMatches.forEach(m => {
         if (m.homeTeam && m.homeTeam !== 'TBD' && isTeamEliminated(m.homeTeam, modifiedMatches)) eliminatedTeamsSet.add(m.homeTeam.toUpperCase());
@@ -754,8 +793,13 @@ export default function AutomatedDashboard() {
 
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
-                .animate-marquee { display: flex; width: max-content; animation: marquee 130s linear infinite; }
-                .animate-marquee:hover { animation-play-state: paused; }
+
+                .animate-marquee-savage { display: flex; width: max-content; animation: marquee 110s linear infinite; }
+                .animate-marquee-savage:hover { animation-play-state: paused; }
+
+                .animate-marquee-hype { display: flex; width: max-content; animation: marquee 130s linear infinite; }
+                .animate-marquee-hype:hover { animation-play-state: paused; }
+
                 .avatar-img-custom { object-fit: cover; object-position: center 25%; }
             `}</style>
 
@@ -906,21 +950,40 @@ export default function AutomatedDashboard() {
                     </div>
                 </header>
 
-                {/* ESPN-Style Live News Ticker Tape */}
-                {tickerHeadlines.length > 0 && (
-                    <div className="bg-red-600/85 backdrop-blur-md border-y border-red-500 py-2 overflow-hidden w-full max-w-7xl mx-auto rounded-lg mb-4 sm:mb-5 shadow-lg relative flex items-center content-animate">
-                        <div className="absolute left-0 z-10 bg-red-700 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-white shadow-md select-none">
-                            Live news
+                {/* Stacked Dual News Banners */}
+                <div className="flex flex-col gap-2 w-full max-w-7xl mx-auto mb-4 sm:mb-5 content-animate">
+                    {/* SAVAGE REPORT (RED) - Funny, talking trash about multiple managers/teams */}
+                    {savageHeadlines.length > 0 && (
+                        <div className="bg-rose-600/95 backdrop-blur-md border-y border-rose-500 py-2.5 overflow-hidden w-full rounded-lg shadow-lg relative flex items-center">
+                            <div className="absolute left-0 z-10 bg-rose-700 px-3.5 py-1.5 text-[9px] sm:text-xs font-black uppercase tracking-widest text-white shadow-md select-none">
+                                Savage News
+                            </div>
+                            <div className={`flex whitespace-nowrap pl-28 animate-marquee-savage text-sm sm:text-base font-black uppercase tracking-wider text-white gap-16 ${oswald.className}`}>
+                                {[...savageHeadlines, ...savageHeadlines, ...savageHeadlines].map((headline, idx) => (
+                                    <span key={idx} className="flex items-center gap-2">
+                                        {headline}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                        <div className="flex whitespace-nowrap pl-24 animate-marquee font-mono text-[10px] sm:text-xs font-bold uppercase tracking-wider text-white gap-16">
-                            {[...tickerHeadlines, ...tickerHeadlines, ...tickerHeadlines].map((headline, idx) => (
-                                <span key={idx} className="flex items-center gap-2">
-                                    {headline}
-                                </span>
-                            ))}
+                    )}
+
+                    {/* TACTICAL HYPE (GREEN) - Positive highlights, sleepers, accolades */}
+                    {hypeHeadlines.length > 0 && (
+                        <div className="bg-emerald-600/95 backdrop-blur-md border-y border-emerald-500 py-2.5 overflow-hidden w-full rounded-lg shadow-lg relative flex items-center">
+                            <div className="absolute left-0 z-10 bg-emerald-700 px-3.5 py-1.5 text-[9px] sm:text-xs font-black uppercase tracking-widest text-white shadow-md select-none">
+                                Hype Report
+                            </div>
+                            <div className={`flex whitespace-nowrap pl-28 animate-marquee-hype text-sm sm:text-base font-black uppercase tracking-wider text-white gap-16 ${oswald.className}`}>
+                                {[...hypeHeadlines, ...hypeHeadlines, ...hypeHeadlines].map((headline, idx) => (
+                                    <span key={idx} className="flex items-center gap-2">
+                                        {headline}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                )}
+                    )}
+                </div>
 
                 <div key={`content-${activeTab}`} className="content-animate">
 
@@ -1203,7 +1266,7 @@ export default function AutomatedDashboard() {
                                                                     <div key={m.id} className="flex items-center justify-between p-2 sm:p-2.5 bg-black/60 border border-white/20 rounded-lg hover:bg-black/80 hover:border-white/30 transition shadow-xl h-full">
                                                                         <div className={`flex-1 flex flex-col items-end text-right min-w-0 ${homeEliminated ? 'opacity-35 grayscale' : ''}`}>
                                                                             <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-end min-w-0">
-                                                                                <span className={`text-[9px] sm:text-xs truncate block drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${homeNameColor}`}>{m.homeTeam}</span>
+                                                                                <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${homeNameColor}`}>{m.homeTeam}</span>
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.homeTeam} /></div>
                                                                             </div>
                                                                             {homeDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate block w-full drop-shadow-md">{homeDrafter}</span>}
