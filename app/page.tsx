@@ -544,19 +544,32 @@ export default function AutomatedDashboard() {
 
         const leader = overallLeaders[0];
         const lastPlace = overallLeaders[overallLeaders.length - 1];
+        if (!leader || !lastPlace) return headlines;
+
         const gap = leader.totalPoints - lastPlace.totalPoints;
 
         // Trash talk targeting specific low performance stats
         headlines.push(`🚨 STAT EMERGENCY: Send thoughts, prayers, and maybe a map to ${lastPlace.name} (only ${lastPlace.totalPoints} PTS). The tactical setup is in absolute ruins.`);
-        headlines.push(`📉 FINANCIAL RUIN: Analysts predict ${lastPlace.name}'s investment in ${lastPlace.teams.join(', ')} is the worst financial decision since buying Enron stock.`);
-        headlines.push(`🧱 TERRORIST FOOTBALL: ${gloveLeaders[0].name} has parked the bus so hard they are violating local zoning laws. Someone tell them scoring is allowed.`);
-        headlines.push(`💨 MISSED TARGET: ${bootLeaders[bootLeaders.length - 1].name} is shooting complete blanks. Zero goals. Someone check if their forwards are actually blindfolded.`);
+        headlines.push(`📈 MARKET UPDATE: Stocks in ${leader.name}'s draft choices are soaring. The rest of the league is mathematically down bad.`);
+        headlines.push(`📉 FINANCIAL RUIN: Analysts predict ${lastPlace.name}'s investment in ${lastPlace.teams?.join(', ') || 'their teams'} is the worst financial decision since buying Enron stock.`);
+
+        if (gloveLeaders[0]) {
+            headlines.push(`🧱 TERRORIST FOOTBALL: ${gloveLeaders[0].name} has parked the bus so hard they are violating local zoning laws. Someone tell them scoring is allowed.`);
+        }
+        if (bootLeaders[bootLeaders.length - 1]) {
+            headlines.push(`💨 MISSED TARGET: ${bootLeaders[bootLeaders.length - 1].name} is shooting complete blanks. Zero goals. Someone check if their forwards are actually blindfolded.`);
+        }
+
         headlines.push(`⚖️ CONSPIRACY: Rumors suggest ${leader.name}'s draft was assisted by an elite supercomputer, while ${lastPlace.name} let a lobotomized dog pick their squad.`);
         headlines.push(`⚠️ WARNING: High concentrations of concentrated copium detected radiating from ${lastPlace.name}'s camp. Disbelief expected to last all weekend.`);
         headlines.push(`🏥 INJURY UPDATE: ${lastPlace.name}'s self-esteem has been ruled OUT for the remainder of the tournament after looking at the live leaderboard.`);
         headlines.push(`🍼 BABY MODE: ${leader.name} is riding the coattails of heavy tournament favorites like an absolute parasite. Try playing on veteran mode next time.`);
-        headlines.push(`🕵️‍♂️ INVESTIGATION: Local authorities investigating whether ${lastPlace.name} actually knows what a soccer ball looks like after drafting ${lastPlace.teams.join(', ')}.`);
-        headlines.push(`🥱 SNOOZE FEST: Watching ${gloveLeaders[0].name}'s teams play is currently being trialed as a cure for chronic insomnia.`);
+        headlines.push(`🕵️‍♂️ INVESTIGATION: Local authorities investigating whether ${lastPlace.name} actually knows what a soccer ball looks like after drafting ${lastPlace.teams?.join(', ') || 'their teams'}.`);
+
+        if (gloveLeaders[0]) {
+            headlines.push(`🥱 SNOOZE FEST: Watching ${gloveLeaders[0].name}'s teams play is currently being trialed as a cure for chronic insomnia.`);
+        }
+
         headlines.push(`🔥 SAVAGE STATS: ${leader.name} is currently outscoring ${lastPlace.name} by ${gap} points. This isn't a fantasy league, it's a public execution.`);
 
         // Mid table mediocrity roasts
@@ -568,10 +581,14 @@ export default function AutomatedDashboard() {
         }
 
         const mostLossesManager = [...standings].sort((a, b) => b.losses - a.losses)[0];
-        headlines.push(`🤡 LOSS MAGNET: ${mostLossesManager.name} is collecting losses like they are rare trading cards (${mostLossesManager.losses} losses). Tactical absolute disaster.`);
+        if (mostLossesManager) {
+            headlines.push(`🤡 LOSS MAGNET: ${mostLossesManager.name} is collecting losses like they are rare trading cards (${mostLossesManager.losses} losses). Tactical absolute disaster.`);
+        }
 
         const lowestGoalsManager = [...standings].sort((a, b) => a.totalGoals - b.totalGoals)[0];
-        headlines.push(`💨 SHOOTING BLANKS: ${lowestGoalsManager.name}'s teams have combined for a tragic ${lowestGoalsManager.totalGoals} goals. Are their forwards wearing cement boots?`);
+        if (lowestGoalsManager) {
+            headlines.push(`💨 SHOOTING BLANKS: ${lowestGoalsManager.name}'s teams have combined for a tragic ${lowestGoalsManager.totalGoals} goals. Are their forwards wearing cement boots?`);
+        }
 
         return headlines;
     };
@@ -584,6 +601,7 @@ export default function AutomatedDashboard() {
         const leader = overallLeaders[0];
         const runnerUp = overallLeaders[1];
         const third = overallLeaders[2];
+        if (!leader) return headlines;
 
         // Standings and Podium highlights
         headlines.push(`🏆 CHAMPIONSHIP PACER: ${leader.name} is running the table with ${leader.totalPoints} PTS! Professional Pep Guardiola energy.`);
@@ -591,7 +609,7 @@ export default function AutomatedDashboard() {
             headlines.push(`🥈 IN HOT PURSUIT: ${runnerUp.name} is sitting in 2nd place (${runnerUp.totalPoints} PTS), ready to strike at the first sign of leader weakness!`);
         }
         if (third) {
-            headlines.push(`🥉 PODIUM WATCH: ${third.name} holds the podium strong with ${third.totalPoints} PTS! Solid tactical execution.`);
+            headlines.push(`🥉 BRONZE FORCE: ${third.name} holds the podium strong with ${third.totalPoints} PTS! Solid tactical execution.`);
         }
 
         // Steals and ROI highlights
@@ -613,7 +631,9 @@ export default function AutomatedDashboard() {
 
         // Win streak and defense accolades
         const mostWinsManager = [...standings].sort((a, b) => b.wins - a.wins)[0];
-        headlines.push(`🔥 WIN MACHINE: ${mostWinsManager.name} is dominating matchdays with a massive ${mostWinsManager.wins} wins! Incredibly clinical.`);
+        if (mostWinsManager) {
+            headlines.push(`🔥 WIN MACHINE: ${mostWinsManager.name} is dominating matchdays with a massive ${mostWinsManager.wins} wins! Incredibly clinical.`);
+        }
 
         if (gloveLeaders[0] && gloveLeaders[0].totalCleanSheets > 0) {
             headlines.push(`🧱 PARKING THE LIMOUSINE: ${gloveLeaders[0].name} has locked down defense with ${gloveLeaders[0].totalCleanSheets} clean sheets! Unbreakable structure.`);
@@ -793,7 +813,7 @@ export default function AutomatedDashboard() {
 
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
-
+                
                 .animate-marquee-savage { display: flex; width: max-content; animation: marquee 110s linear infinite; }
                 .animate-marquee-savage:hover { animation-play-state: paused; }
 
@@ -1017,7 +1037,7 @@ export default function AutomatedDashboard() {
                                 </div>
                             </div>
 
-                            <div className="lg:col-span-2 bg-black/70 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden flex flex-col h-auto max-h-[80vh] shadow-2xl">
+                            <div className="lg:col-span-2 bg-black/70 backdrop-blur-xl border border-white/20 overflow-hidden flex flex-col h-auto max-h-[80vh] shadow-2xl">
                                 <div className="p-2.5 sm:p-3 border-b border-white/20 bg-black/80 flex justify-between items-center gap-2">
                                     <h2 className="text-[9px] sm:text-xs font-mono font-black text-slate-200 uppercase tracking-widest truncate drop-shadow-md">Tournament Field</h2>
                                     <input type="text" placeholder="Search..." value={draftSearch} onChange={(e) => setDraftSearch(e.target.value)} className="bg-black/60 border border-white/30 text-white rounded-md px-2 sm:px-2.5 py-0.5 sm:py-1 text-[9px] sm:text-xs focus:outline-none focus:border-sky-400 w-24 sm:w-40 transition shadow-inner font-bold placeholder-slate-400" />
@@ -1265,11 +1285,11 @@ export default function AutomatedDashboard() {
                                                                 return (
                                                                     <div key={m.id} className="flex items-center justify-between p-2 sm:p-2.5 bg-black/60 border border-white/20 rounded-lg hover:bg-black/80 hover:border-white/30 transition shadow-xl h-full">
                                                                         <div className={`flex-1 flex flex-col items-end text-right min-w-0 ${homeEliminated ? 'opacity-35 grayscale' : ''}`}>
-                                                                            <div className="flex items-center gap-1 sm:gap-1.5 w-full justify-end min-w-0">
-                                                                                <span className={`text-[9px] sm:text-xs truncate drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${homeNameColor}`}>{m.homeTeam}</span>
+                                                                            <div className="flex items-center gap-1.5 min-w-0 justify-end">
+                                                                                <span className={`text-[9px] sm:text-xs truncate block ${homeNameColor}`}>{m.homeTeam}</span>
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.homeTeam} /></div>
                                                                             </div>
-                                                                            {homeDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate block w-full drop-shadow-md">{homeDrafter}</span>}
+                                                                            {homeDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate block w-full text-right">{homeDrafter}</span>}
                                                                         </div>
 
                                                                         <div className="mx-1.5 sm:mx-2 flex flex-col items-center shrink-0 min-w-[70px] sm:min-w-[85px]">
@@ -1298,11 +1318,11 @@ export default function AutomatedDashboard() {
                                                                         </div>
 
                                                                         <div className={`flex-1 flex flex-col items-start text-left min-w-0 ${awayEliminated ? 'opacity-35 grayscale' : ''}`}>
-                                                                            <div className="flex items-center gap-1.5 w-full justify-start min-w-0">
+                                                                            <div className="flex items-center gap-1.5 min-w-0 justify-start">
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.awayTeam} /></div>
-                                                                                <span className={`text-[9px] sm:text-xs truncate block w-full drop-shadow-[0_2px_2px_rgba(0,0,0,1)] ${awayNameColor}`}>{m.awayTeam}</span>
+                                                                                <span className={`text-[9px] sm:text-xs truncate block ${awayNameColor}`}>{m.awayTeam}</span>
                                                                             </div>
-                                                                            {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate block w-full drop-shadow-md">{awayDrafter}</span>}
+                                                                            {awayDrafter && <span className="text-[7px] sm:text-[8px] text-sky-400 font-black font-mono mt-0.5 sm:mt-1 shrink-0 truncate block w-full text-left">{awayDrafter}</span>}
                                                                         </div>
                                                                     </div>
                                                                 )
