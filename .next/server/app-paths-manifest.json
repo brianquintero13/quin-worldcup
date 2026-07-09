@@ -1,6 +1,6 @@
 {
   "/_not-found/page": "app/_not-found/page.js",
   "/api/sync-matches/route": "app/api/sync-matches/route.js",
-  "/page": "app/page.js",
-  "/api/schedule/route": "app/api/schedule/route.js"
+  "/api/schedule/route": "app/api/schedule/route.js",
+  "/page": "app/page.js"
 }
