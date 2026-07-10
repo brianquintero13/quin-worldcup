@@ -1192,7 +1192,7 @@ export default function AutomatedDashboard() {
                         <div
                             className="bg-rose-600/95 backdrop-blur-md border-y border-rose-500 py-2.5 overflow-hidden w-full rounded-lg shadow-lg relative flex items-center h-12">
                             <div
-                                className="absolute left-0 z-40 bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500 px-5 sm:px-6 h-full flex items-center rounded-l-lg border-y border-l border-black [-webkit-text-stroke:1.2px_black] [text-shadow:0_1.5px_2px_rgba(0,0,0,0.8)] text-sm sm:text-base md:text-lg font-extrabold uppercase tracking-widest text-amber-100 ring-2 ring-amber-300/40 shadow-[6px_0_20px_rgba(0,0,0,0.6)] select-none border-r-4 border-black/50">
+                                className="absolute left-0 z-20 bg-rose-700 px-5 sm:px-6 h-full flex items-center rounded-l-lg border-y border-l border-black [-webkit-text-stroke:1.2px_black] [text-shadow:0_1.5px_2px_rgba(0,0,0,0.8)] text-xs sm:text-sm md:text-base font-black uppercase tracking-widest text-white shadow-md select-none border-r-4 border-black/50 shadow-[4px_0_10px_rgba(0,0,0,0.3)]">
                                 Savage News
                             </div>
                             <div
@@ -1211,7 +1211,7 @@ export default function AutomatedDashboard() {
                         <div
                             className="bg-emerald-600/95 backdrop-blur-md border-y border-emerald-500 py-2.5 overflow-hidden w-full rounded-lg shadow-lg relative flex items-center h-12">
                             <div
-                                className="absolute left-0 z-40 bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-500 px-5 sm:px-6 h-full flex items-center rounded-l-lg border-y border-l border-black [-webkit-text-stroke:1.2px_black] [text-shadow:0_1.5px_2px_rgba(0,0,0,0.8)] text-sm sm:text-base md:text-lg font-extrabold uppercase tracking-widest text-amber-50 ring-2 ring-amber-300/30 shadow-[6px_0_20px_rgba(0,0,0,0.6)] select-none border-r-4 border-black/50">
+                                className="absolute left-0 z-20 bg-emerald-700 px-5 sm:px-6 h-full flex items-center rounded-l-lg border-y border-l border-black [-webkit-text-stroke:1.2px_black] [text-shadow:0_1.5px_2px_rgba(0,0,0,0.8)] text-xs sm:text-sm md:text-base font-black uppercase tracking-widest text-white shadow-md select-none border-r-4 border-black/50 shadow-[4px_0_10px_rgba(0,0,0,0.3)]">
                                 Hype Report
                             </div>
                             <div
@@ -1304,7 +1304,7 @@ export default function AutomatedDashboard() {
                             </div>
 
                             <div
-                                className="bg-black/70 backdrop-blur-xl border border-white/20 overflow-hidden flex flex-col h-auto max-h-[80vh] shadow-2xl">
+                                className="bg-black/70 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden flex flex-col h-auto max-h-[80vh] shadow-2xl">
                                 <div className="p-2.5 sm:p-3 border-b border-white/20 bg-black/80">
                                     <h2 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-200 uppercase tracking-widest drop-shadow-md">Pick
                                         Log</h2>
@@ -1846,7 +1846,7 @@ export default function AutomatedDashboard() {
                                                                 className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-[150px] drop-shadow-md [text-shadow:0_1px_2px_black]">{row.name}</button>
                                                     </div>
                                                 </td>
-                                                <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints}</td>
+                                                <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints; }</td>
                                                 <td className="py-1.5 sm:py-3.5">
                                                     <div className="flex gap-0.5 sm:gap-1.5 flex-wrap">
                                                         {row.teams.map(t => {
@@ -1972,7 +1972,7 @@ export default function AutomatedDashboard() {
                                         <div
                                             className="bg-black/80 p-1.5 rounded-lg border border-blue-400/50 shadow-inner">
                                             <span
-                                                className="text-xl sm:text-3xl block leading-none drop-shadow-md">🧤</span>
+                                                className="text-xl sm:text-2xl block leading-none drop-shadow-md">🧤</span>
                                         </div>
                                         <div>
                                             <h3 className={`text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-blue-500 uppercase tracking-widest ${oswald.className}`}>Golden
@@ -2071,415 +2071,415 @@ export default function AutomatedDashboard() {
                                 </div>
                                 <div
                                     className="bg-gradient-to-br from-amber-500/30 to-orange-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
-                                                <div
-                                                    className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
-                                                    <div
-                                                        className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
-                                                        <div
-                                                            className="bg-black/80 p-2 sm:p-4 rounded-xl border border-amber-400/50 shadow-inner">
+                                    <div
+                                        className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
+                                        <div
+                                            className="flex items-center gap-3 sm:gap-5 mb-4 sm:mb-6 border-b border-white/20 pb-3 sm:pb-5">
+                                            <div
+                                                className="bg-black/80 p-2 sm:p-4 rounded-xl border border-amber-400/50 shadow-inner">
                                                 <span
                                                     className="text-3xl sm:text-5xl block leading-none drop-shadow-md">📊</span>
-                                                        </div>
-                                                        <div>
-                                                            <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>Scoring
-                                                                System</h2>
-                                                            <p className="text-[#fbbf24] text-[9px] sm:text-sm font-mono font-black tracking-widest uppercase mt-1 sm:mt-1.5 drop-shadow-md sm:[text-shadow:0_2px_4px_black]">How
-                                                                To Earn Points</p>
-                                                        </div>
-                                                    </div>
-                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                                                        <div
-                                                            className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
-                                                <span
-                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+4</span>
-                                                            <span
-                                                                className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win Match</span>
-                                                        </div>
-                                                        <div
-                                                            className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
-                                                <span
-                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+2</span>
-                                                            <span
-                                                                className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Group Draw</span>
-                                                        </div>
-                                                        <div
-                                                            className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
-                                                <span
-                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+1</span>
-                                                            <span
-                                                                className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Goal Scored</span>
-                                                        </div>
-                                                        <div
-                                                            className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
-                                                <span
-                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+2</span>
-                                                            <span
-                                                                className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Clean Sheet</span>
-                                                        </div>
-                                                        <div
-                                                            className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3 sm:col-span-2">
-                                                <span
-                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+8</span>
-                                                            <span
-                                                                className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Advance out of Group</span>
-                                                        </div>
-                                                        <div className="col-span-1 sm:col-span-2 mt-1 sm:mt-2">
-                                                            <h3 className="text-slate-300 font-mono text-[9px] sm:text-xs uppercase tracking-widest font-black mb-2 sm:mb-3 border-b border-white/10 pb-1.5 sm:pb-2 drop-shadow-md">Knockout
-                                                                Stage Bonuses</h3>
-                                                            <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                                                                <div
-                                                                    className="flex justify-between items-center text-xs sm:text-sm font-black">
-                                                        <span
-                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win R32</span>
-                                                                    <span
-                                                                        className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+10</span>
-                                                                </div>
-                                                                <div
-                                                                    className="flex justify-between items-center text-xs sm:text-sm font-black">
-                                                        <span
-                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win R16</span>
-                                                                    <span
-                                                                        className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+12</span>
-                                                                </div>
-                                                                <div
-                                                                    className="flex justify-between items-center text-xs sm:text-sm font-black">
-                                                        <span
-                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win QF</span>
-                                                                    <span
-                                                                        className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+15</span>
-                                                                </div>
-                                                                <div
-                                                                    className="flex justify-between items-center text-xs sm:text-sm font-black">
-                                                        <span
-                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win SF</span>
-                                                                    <span
-                                                                        className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+20</span>
-                                                                </div>
-                                                                <div
-                                                                    className="flex justify-between items-center text-xs sm:text-sm font-black">
-                                                        <span
-                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win 3rd</span>
-                                                                    <span
-                                                                        className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+10</span>
-                                                                </div>
-                                                                <div
-                                                                    className="flex justify-between items-center text-xs sm:text-sm font-black">
-                                                        <span
-                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win Final</span>
-                                                                    <span
-                                                                        className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>+30</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                            </div>
+                                            <div>
+                                                <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-amber-500 uppercase tracking-widest drop-shadow-md sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>Scoring
+                                                    System</h2>
+                                                <p className="text-[#fbbf24] text-[9px] sm:text-sm font-mono font-black tracking-widest uppercase mt-1 sm:mt-1.5 drop-shadow-md sm:[text-shadow:0_2px_4px_black]">How
+                                                    To Earn Points</p>
                                             </div>
                                         </div>
-                                        <div
-                                            className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl mt-4 sm:mt-8">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                                             <div
-                                                className="bg-black/80 px-4 sm:px-6 py-3 sm:py-4 border-b border-white/20 flex justify-between items-center">
-                                                <h3 className={`font-black text-white text-lg sm:text-2xl uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Format
-                                                    & Guidelines</h3>
+                                                className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
+                                                <span
+                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+4</span>
+                                                <span
+                                                    className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win Match</span>
                                             </div>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 p-4 sm:p-8">
-                                                <div>
-                                                    <h4 className="text-sky-400 font-black uppercase tracking-widest text-[11px] sm:text-sm mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2 drop-shadow-md">
-                                                        <span className="text-lg sm:text-xl">👥</span> Draft & Teams</h4>
-                                                    <ul className="space-y-2 sm:space-y-3 text-[11px] sm:text-sm text-slate-200 font-semibold drop-shadow-md leading-relaxed">
-                                                        <li><span className="text-sky-400 mr-2">■</span> Exactly 12 players
-                                                            participate.
-                                                        </li>
-                                                        <li><span className="text-sky-400 mr-2">■</span> Each player drafts 4
-                                                            national teams via a snake draft format.
-                                                        </li>
-                                                        <li><span className="text-sky-400 mr-2">■</span> All 48 tournament teams are
-                                                            drafted, meaning every match affects the standings.
-                                                        </li>
-                                                        <li><span className="text-sky-400 mr-2">■</span> Drafts are locked before
-                                                            the June 11, 2026 kickoff.
-                                                        </li>
-                                                        <li><span className="text-sky-400 mr-2">■</span> No trades are allowed after
-                                                            the draft closes.
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                                <div>
-                                                    <h4 className="text-sky-400 font-black uppercase tracking-widest text-[11px] sm:text-sm mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2 drop-shadow-md">
-                                                        <span className="text-lg sm:text-xl">⚖️</span> Tie-Breakers & Rules</h4>
-                                                    <ul className="space-y-2 sm:space-y-3 text-[11px] sm:text-sm text-slate-200 font-semibold drop-shadow-md leading-relaxed">
-                                                        <li><span className="text-sky-400 mr-2">■</span> <strong>Stacking
-                                                            Points:</strong> Advancement and win bonuses stack on a single match
-                                                            result. (e.g., A quarterfinal win earns 19 points: 4 for the win + 15
-                                                            for advancing).
-                                                        </li>
-                                                        <li><span className="text-sky-400 mr-2">■</span>
-                                                            <strong>Penalties:</strong> Goals scored during penalty shootouts do not
-                                                            count toward your total.
-                                                        </li>
-                                                        <li><span className="text-sky-400 mr-2">■</span> <strong>Clean
-                                                            Sheets:</strong> Clean sheets are judged at the 90-minute mark only,
-                                                            excluding shootouts.
-                                                        </li>
-                                                        <li><span className="text-sky-400 mr-2">■</span>
-                                                            <strong>Tie-Breakers:</strong> In the event of a tie for the Golden Boot
-                                                            or Golden Glove, the prize is split equally between the tied players.
-                                                        </li>
-                                                        <li><span className="text-sky-400 mr-2">■</span>
-                                                            <strong>Strategy:</strong> Drafting four teams that make deep runs will
-                                                            typically outscore drafting one tournament champion and three
-                                                            group-stage exits.
-                                                        </li>
-                                                    </ul>
+                                            <div
+                                                className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
+                                                <span
+                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+2</span>
+                                                <span
+                                                    className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Group Draw</span>
+                                            </div>
+                                            <div
+                                                className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
+                                                <span
+                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+1</span>
+                                                <span
+                                                    className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Goal Scored</span>
+                                            </div>
+                                            <div
+                                                className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3">
+                                                <span
+                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+2</span>
+                                                <span
+                                                    className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Clean Sheet</span>
+                                            </div>
+                                            <div
+                                                className="bg-black/60 border border-white/10 p-3 sm:p-4 rounded-xl shadow-md flex items-center gap-2 sm:gap-3 sm:col-span-2">
+                                                <span
+                                                    className={`text-[#fbbf24] font-black text-lg sm:text-2xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+8</span>
+                                                <span
+                                                    className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black]">Advance out of Group</span>
+                                            </div>
+                                            <div className="col-span-1 sm:col-span-2 mt-1 sm:mt-2">
+                                                <h3 className="text-slate-300 font-mono text-[9px] sm:text-xs uppercase tracking-widest font-black mb-2 sm:mb-3 border-b border-white/10 pb-1.5 sm:pb-2 drop-shadow-md">Knockout
+                                                    Stage Bonuses</h3>
+                                                <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                                                    <div
+                                                        className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span
+                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win R32</span>
+                                                        <span
+                                                            className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+10</span>
+                                                    </div>
+                                                    <div
+                                                        className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span
+                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win R16</span>
+                                                        <span
+                                                            className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+12</span>
+                                                    </div>
+                                                    <div
+                                                        className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span
+                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win QF</span>
+                                                        <span
+                                                            className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+15</span>
+                                                    </div>
+                                                    <div
+                                                        className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span
+                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win SF</span>
+                                                        <span
+                                                            className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+20</span>
+                                                    </div>
+                                                    <div
+                                                        className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span
+                                                            className="text-white drop-shadow-md [-webkit-text-stroke:0.5px_black]">Win 3rd</span>
+                                                        <span
+                                                            className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+10</span>
+                                                    </div>
+                                                    <div
+                                                        className="flex justify-between items-center text-xs sm:text-sm font-black">
+                                                        <span
+                                                            className="text-white drop-shadow-md [-webkit-text-stroke:1px_black]">Win Final</span>
+                                                        <span
+                                                            className={`text-[#fbbf24] text-base sm:text-xl drop-shadow-md [-webkit-text-stroke:1px_black] ${oswald.className}`}>+30</span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    )}
+                                </div>
+                            </div>
+                            <div
+                                className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl mt-4 sm:mt-8">
+                                <div
+                                    className="bg-black/80 px-4 sm:px-6 py-3 sm:py-4 border-b border-white/20 flex justify-between items-center">
+                                    <h3 className={`font-black text-white text-lg sm:text-2xl uppercase tracking-widest drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>Format
+                                        & Guidelines</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-8 p-4 sm:p-8">
+                                    <div>
+                                        <h4 className="text-sky-400 font-black uppercase tracking-widest text-[11px] sm:text-sm mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2 drop-shadow-md">
+                                            <span className="text-lg sm:text-xl">👥</span> Draft & Teams</h4>
+                                        <ul className="space-y-2 sm:space-y-3 text-[11px] sm:text-sm text-slate-200 font-semibold drop-shadow-md leading-relaxed">
+                                            <li><span className="text-sky-400 mr-2">■</span> Exactly 12 players
+                                                participate.
+                                            </li>
+                                            <li><span className="text-sky-400 mr-2">■</span> Each player drafts 4
+                                                national teams via a snake draft format.
+                                            </li>
+                                            <li><span className="text-sky-400 mr-2">■</span> All 48 tournament teams are
+                                                drafted, meaning every match affects the standings.
+                                            </li>
+                                            <li><span className="text-sky-400 mr-2">■</span> Drafts are locked before
+                                                the June 11, 2026 kickoff.
+                                            </li>
+                                            <li><span className="text-sky-400 mr-2">■</span> No trades are allowed after
+                                                the draft closes.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sky-400 font-black uppercase tracking-widest text-[11px] sm:text-sm mb-3 sm:mb-4 flex items-center gap-2 border-b border-white/10 pb-2 drop-shadow-md">
+                                            <span className="text-lg sm:text-xl">⚖️</span> Tie-Breakers & Rules</h4>
+                                        <ul className="space-y-2 sm:space-y-3 text-[11px] sm:text-sm text-slate-200 font-semibold drop-shadow-md leading-relaxed">
+                                            <li><span className="text-sky-400 mr-2">■</span> <strong>Stacking
+                                                Points:</strong> Advancement and win bonuses stack on a single match
+                                                result. (e.g., A quarterfinal win earns 19 points: 4 for the win + 15
+                                                for advancing).
+                                            </li>
+                                            <li><span className="text-sky-400 mr-2">■</span>
+                                                <strong>Penalties:</strong> Goals scored during penalty shootouts do not
+                                                count toward your total.
+                                            </li>
+                                            <li><span className="text-sky-400 mr-2">■</span> <strong>Clean
+                                                Sheets:</strong> Clean sheets are judged at the 90-minute mark only,
+                                                excluding shootouts.
+                                            </li>
+                                            <li><span className="text-sky-400 mr-2">■</span>
+                                                <strong>Tie-Breakers:</strong> In the event of a tie for the Golden Boot
+                                                or Golden Glove, the prize is split equally between the tied players.
+                                            </li>
+                                            <li><span className="text-sky-400 mr-2">■</span>
+                                                <strong>Strategy:</strong> Drafting four teams that make deep runs will
+                                                typically outscore drafting one tournament champion and three
+                                                group-stage exits.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                                    {activeTab === 'banter' && (
-                                        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 content-animate">
-                                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>
-                                                DRAFT VALUE BOARD
-                                            </h2>
+                    {activeTab === 'banter' && (
+                        <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6 content-animate">
+                            <h2 className={`text-xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>
+                                DRAFT VALUE BOARD
+                            </h2>
 
-                                            {/* Summary Cards */}
-                                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                                <div
-                                                    className="bg-gradient-to-br from-emerald-500/20 via-black/80 to-teal-500/10 border border-emerald-500/30 rounded-xl p-4 shadow-xl">
-                                                    <span className="text-2xl mb-1.5 block">💎</span>
-                                                    <h4 className="text-[10px] font-mono font-black text-emerald-400 uppercase tracking-widest">The
-                                                        Golden Pick</h4>
-                                                    {goldenPick ? (
-                                                        <div className="mt-2 space-y-1">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <FlagIcon teamName={goldenPick.team}/>
-                                                                <span
-                                                                    className="font-black text-sm sm:text-base text-white">{goldenPick.team}</span>
-                                                            </div>
-                                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
-                                                                Selected by <strong
-                                                                className="text-sky-400">{goldenPick.drafter}</strong> at pick
-                                                                #{goldenPick.pickNumber}.
-                                                                Expected {goldenPick.expectedPoints.toFixed(1)} PTS, generated <strong
-                                                                className="text-emerald-400">{goldenPick.actualPoints} PTS</strong> (<span
-                                                                className="text-emerald-400 font-bold">+{goldenPick.roi.toFixed(1)}% ROI</span>).
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
-                                                    )}
-                                                </div>
-
-                                                <div
-                                                    className="bg-gradient-to-br from-rose-500/20 via-black/80 to-red-500/10 border border-rose-500/30 rounded-xl p-4 shadow-xl">
-                                                    <span className="text-2xl mb-1.5 block">📉</span>
-                                                    <h4 className="text-[10px] font-mono font-black text-rose-400 uppercase tracking-widest">The
-                                                        Biggest Bust</h4>
-                                                    {biggestBust ? (
-                                                        <div className="mt-2 space-y-1">
-                                                            <div className="flex items-center gap-1.5">
-                                                                <FlagIcon teamName={biggestBust.team}/>
-                                                                <span
-                                                                    className="font-black text-sm sm:text-base text-white">{biggestBust.team}</span>
-                                                            </div>
-                                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
-                                                                Selected by <strong
-                                                                className="text-sky-400">{biggestBust.drafter}</strong> at pick
-                                                                #{biggestBust.pickNumber}.
-                                                                Expected {biggestBust.expectedPoints.toFixed(1)} PTS, generated <strong
-                                                                className="text-rose-400">{biggestBust.actualPoints} PTS</strong> (<span
-                                                                className="text-rose-400 font-bold">{biggestBust.roi.toFixed(1)}% ROI</span>).
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
-                                                    )}
-                                                </div>
-
-                                                <div
-                                                    className="bg-gradient-to-br from-sky-500/20 via-black/80 to-indigo-500/10 border border-sky-500/30 rounded-xl p-4 shadow-xl">
-                                                    <span className="text-2xl mb-1.5 block">🎓</span>
-                                                    <h4 className="text-[10px] font-mono font-black text-sky-400 uppercase tracking-widest">Draft
-                                                        Mastermind</h4>
-                                                    {bestManager ? (
-                                                        <div className="mt-2 space-y-1">
-                                                            <div className="flex items-center gap-2">
-                                                                <ManagerAvatar name={bestManager.name} size="sm"/>
-                                                                <span
-                                                                    className="font-black text-sm sm:text-base text-white">{bestManager.name}</span>
-                                                            </div>
-                                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
-                                                                Master of the draft board with an average of <strong
-                                                                className="text-emerald-400">+{bestManager.avgRoi.toFixed(1)}%
-                                                                ROI</strong> across all {bestManager.picksCount} picks.
-                                                            </p>
-                                                        </div>
-                                                    ) : (
-                                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
-                                                    )}
-                                                </div>
+                            {/* Summary Cards */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div
+                                    className="bg-gradient-to-br from-emerald-500/20 via-black/80 to-teal-500/10 border border-emerald-500/30 rounded-xl p-4 shadow-xl">
+                                    <span className="text-2xl mb-1.5 block">💎</span>
+                                    <h4 className="text-[10px] font-mono font-black text-emerald-400 uppercase tracking-widest">The
+                                        Golden Pick</h4>
+                                    {goldenPick ? (
+                                        <div className="mt-2 space-y-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <FlagIcon teamName={goldenPick.team}/>
+                                                <span
+                                                    className="font-black text-sm sm:text-base text-white">{goldenPick.team}</span>
                                             </div>
-
-                                            {/* Side-by-Side Top 10 Best / Worst Picks */}
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
-                                                {/* Top 10 Best */}
-                                                <div
-                                                    className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
-                                                    <div
-                                                        className="bg-emerald-950/40 border-b border-white/10 px-3 sm:px-4 py-2 flex justify-between items-center">
-                                                        <h3 className="text-[10px] sm:text-xs font-mono font-black text-emerald-400 uppercase tracking-widest">🔥
-                                                            Top 10 Best Picks (Underpriced)</h3>
-                                                        <span className="text-[8px] font-mono text-slate-400">Highest ROI</span>
-                                                    </div>
-                                                    <div className="overflow-x-auto">
-                                                        <table
-                                                            className="w-full text-left text-[9px] sm:text-xs border-collapse min-w-[340px]">
-                                                            <thead>
-                                                            <tr className="border-b border-white/5 text-slate-300 text-[8px] sm:text-[9px] uppercase font-mono bg-black/60 tracking-widest font-black">
-                                                                <th className="py-2 pl-3">Pick</th>
-                                                                <th className="py-2">Team</th>
-                                                                <th className="py-2">Manager</th>
-                                                                <th className="py-2 text-center">PTS</th>
-                                                                <th className="py-2 text-right pr-3">ROI</th>
-                                                            </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-white/5">
-                                                            {sortedBestPicks.slice(0, 10).map((row) => (
-                                                                <tr key={row.team}
-                                                                    className={`hover:bg-emerald-500/5 transition ${row.eliminated ? 'opacity-40' : ''}`}>
-                                                                    <td className="py-2 pl-3 font-mono font-black text-slate-400">#{row.pickNumber}</td>
-                                                                    <td className="py-2 font-black text-white"><FlagIcon
-                                                                        teamName={row.team}/>{row.team}</td>
-                                                                    <td className="py-2 font-bold text-slate-300">{row.drafter}</td>
-                                                                    <td className="py-2 text-center font-black text-emerald-400">{row.actualPoints}</td>
-                                                                    <td className="py-2 text-right pr-3 font-black text-emerald-400">+{row.roi.toFixed(1)}%</td>
-                                                                </tr>
-                                                            ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-
-                                                {/* Top 10 Worst */}
-                                                <div
-                                                    className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
-                                                    <div
-                                                        className="bg-rose-950/40 border-b border-white/10 px-3 sm:px-4 py-2 flex justify-between items-center">
-                                                        <h3 className="text-[10px] sm:text-xs font-mono font-black text-rose-400 uppercase tracking-widest">📉
-                                                            Top 10 Worst Picks (Overpriced)</h3>
-                                                        <span className="text-[8px] font-mono text-slate-400">Lowest ROI</span>
-                                                    </div>
-                                                    <div className="overflow-x-auto">
-                                                        <table
-                                                            className="w-full text-left text-[9px] sm:text-xs border-collapse min-w-[340px]">
-                                                            <thead>
-                                                            <tr className="border-b border-white/5 text-slate-300 text-[8px] sm:text-[9px] uppercase font-mono bg-black/60 tracking-widest font-black">
-                                                                <th className="py-2 pl-3">Pick</th>
-                                                                <th className="py-2">Team</th>
-                                                                <th className="py-2">Manager</th>
-                                                                <th className="py-2 text-center">PTS</th>
-                                                                <th className="py-2 text-right pr-3">ROI</th>
-                                                            </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-white/5">
-                                                            {sortedWorstPicks.slice(0, 10).map((row) => (
-                                                                <tr key={row.team}
-                                                                    className={`hover:bg-rose-500/5 transition ${row.eliminated ? 'opacity-40' : ''}`}>
-                                                                    <td className="py-2 pl-3 font-mono font-black text-slate-400">#{row.pickNumber}</td>
-                                                                    <td className="py-2 font-black text-white"><FlagIcon
-                                                                        teamName={row.team}/>{row.team}</td>
-                                                                    <td className="py-2 font-bold text-slate-300">{row.drafter}</td>
-                                                                    <td className="py-2 text-center font-black text-rose-400">{row.actualPoints}</td>
-                                                                    <td className="py-2 text-right pr-3 font-black text-rose-400">{row.roi.toFixed(1)}%</td>
-                                                                </tr>
-                                                            ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Manager Draft Portfolio Analysis */}
-                                            <div
-                                                className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 sm:p-5 shadow-2xl space-y-4">
-                                                <div className="border-b border-white/10 pb-2 flex justify-between items-center">
-                                                    <h3 className="text-[10px] sm:text-xs font-mono font-black text-slate-300 uppercase tracking-widest">💼
-                                                        Manager Portfolios Report Card</h3>
-                                                    <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider">Ordered by overall surplus points generated</span>
-                                                </div>
-
-                                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                                                    {managerRoiStats.map((mgr) => {
-                                                        const totalSurplus = mgr.totalActual - mgr.totalExpected;
-                                                        const surplusClass = totalSurplus >= 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
-
-                                                        return (
-                                                            <div key={mgr.name}
-                                                                 className="bg-black/60 border border-white/10 rounded-xl p-4 shadow-lg flex flex-col justify-between space-y-3">
-                                                                <div
-                                                                    className="flex justify-between items-center border-b border-white/5 pb-2">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <ManagerAvatar name={mgr.name} size="sm"/>
-                                                                        <span
-                                                                            className="font-black text-xs sm:text-sm text-white uppercase tracking-wider">{mgr.name}</span>
-                                                                    </div>
-                                                                    <span
-                                                                        className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${surplusClass}`}>
-                                                        {totalSurplus >= 0 ? `+${totalSurplus.toFixed(1)}` : `${totalSurplus.toFixed(1)}`} PTS
-                                                    </span>
-                                                                </div>
-
-                                                                <div className="space-y-1.5 flex-grow">
-                                                                    {mgr.picks.map((p) => (
-                                                                        <div key={p.team}
-                                                                             className="flex justify-between items-center text-[10px] font-semibold text-slate-200">
-                                                                            <div className="flex items-center gap-1.5 min-w-0">
-                                                                                <FlagIcon teamName={p.team}/>
-                                                                                <span
-                                                                                    className={`truncate ${p.eliminated ? 'line-through text-slate-500 font-bold' : ''}`}>{p.team}</span>
-                                                                                <span
-                                                                                    className="text-[8px] font-mono text-slate-400">#{p.pickNumber}</span>
-                                                                            </div>
-                                                                            <div className="flex items-center gap-2 shrink-0">
-                                                                <span
-                                                                    className="font-mono text-slate-300 font-black">{p.actualPoints} PTS</span>
-                                                                                <span
-                                                                                    className={`text-[9px] font-black ${p.roi >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                                                                    ({p.roi >= 0 ? `+${p.roi.toFixed(0)}%` : `${p.roi.toFixed(0)}%`})
-                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    ))}
-                                                                </div>
-
-                                                                <div
-                                                                    className="border-t border-white/5 pt-2 flex justify-between items-center text-[10px] font-mono uppercase tracking-widest font-black">
-                                                                    <span className="text-slate-400">Portfolio Return:</span>
-                                                                    <span
-                                                                        className={mgr.avgRoi >= 0 ? 'text-emerald-400' : 'text-[#f43f5e]'}>
-                                                        {mgr.avgRoi >= 0 ? `+${mgr.avgRoi.toFixed(1)}%` : `${mgr.avgRoi.toFixed(1)}%`} ROI
-                                                    </span>
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                </div>
-                                            </div>
+                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
+                                                Selected by <strong
+                                                className="text-sky-400">{goldenPick.drafter}</strong> at pick
+                                                #{goldenPick.pickNumber}.
+                                                Expected {goldenPick.expectedPoints.toFixed(1)} PTS, generated <strong
+                                                className="text-emerald-400">{goldenPick.actualPoints} PTS</strong> (<span
+                                                className="text-emerald-400 font-bold">+{goldenPick.roi.toFixed(1)}% ROI</span>).
+                                            </p>
                                         </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
                                     )}
+                                </div>
 
+                                <div
+                                    className="bg-gradient-to-br from-rose-500/20 via-black/80 to-red-500/10 border border-rose-500/30 rounded-xl p-4 shadow-xl">
+                                    <span className="text-2xl mb-1.5 block">📉</span>
+                                    <h4 className="text-[10px] font-mono font-black text-rose-400 uppercase tracking-widest">The
+                                        Biggest Bust</h4>
+                                    {biggestBust ? (
+                                        <div className="mt-2 space-y-1">
+                                            <div className="flex items-center gap-1.5">
+                                                <FlagIcon teamName={biggestBust.team}/>
+                                                <span
+                                                    className="font-black text-sm sm:text-base text-white">{biggestBust.team}</span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
+                                                Selected by <strong
+                                                className="text-sky-400">{biggestBust.drafter}</strong> at pick
+                                                #{biggestBust.pickNumber}.
+                                                Expected {biggestBust.expectedPoints.toFixed(1)} PTS, generated <strong
+                                                className="text-rose-400">{biggestBust.actualPoints} PTS</strong> (<span
+                                                className="text-rose-400 font-bold">{biggestBust.roi.toFixed(1)}% ROI</span>).
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
+                                    )}
+                                </div>
+
+                                <div
+                                    className="bg-gradient-to-br from-sky-500/20 via-black/80 to-indigo-500/10 border border-sky-500/30 rounded-xl p-4 shadow-xl">
+                                    <span className="text-2xl mb-1.5 block">🎓</span>
+                                    <h4 className="text-[10px] font-mono font-black text-sky-400 uppercase tracking-widest">Draft
+                                        Mastermind</h4>
+                                    {bestManager ? (
+                                        <div className="mt-2 space-y-1">
+                                            <div className="flex items-center gap-2">
+                                                <ManagerAvatar name={bestManager.name} size="sm"/>
+                                                <span
+                                                    className="font-black text-sm sm:text-base text-white">{bestManager.name}</span>
+                                            </div>
+                                            <p className="text-[11px] text-slate-300 font-semibold leading-snug">
+                                                Master of the draft board with an average of <strong
+                                                className="text-emerald-400">+{bestManager.avgRoi.toFixed(1)}%
+                                                ROI</strong> across all {bestManager.picksCount} picks.
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs text-slate-400 mt-2 font-mono">Calculating...</p>
+                                    )}
                                 </div>
                             </div>
 
-                            <div className="hidden">
-                                <img src="/draft.png" alt=""/>
-                                <img src="/scores.png" alt=""/>
-                                <img src="/schedule.png" alt=""/>
-                                <img src="/rules.png" alt=""/>
-                                <img src="/leaderboard.png" alt=""/>
-                                <img src="/awards.png" alt=""/>
+                            {/* Side-by-Side Top 10 Best / Worst Picks */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                                {/* Top 10 Best */}
+                                <div
+                                    className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
+                                    <div
+                                        className="bg-emerald-950/40 border-b border-white/10 px-3 sm:px-4 py-2 flex justify-between items-center">
+                                        <h3 className="text-[10px] sm:text-xs font-mono font-black text-emerald-400 uppercase tracking-widest">🔥
+                                            Top 10 Best Picks (Underpriced)</h3>
+                                        <span className="text-[8px] font-mono text-slate-400">Highest ROI</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table
+                                            className="w-full text-left text-[9px] sm:text-xs border-collapse min-w-[340px]">
+                                            <thead>
+                                            <tr className="border-b border-white/5 text-slate-300 text-[8px] sm:text-[9px] uppercase font-mono bg-black/60 tracking-widest font-black">
+                                                <th className="py-2 pl-3">Pick</th>
+                                                <th className="py-2">Team</th>
+                                                <th className="py-2">Manager</th>
+                                                <th className="py-2 text-center">PTS</th>
+                                                <th className="py-2 text-right pr-3">ROI</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                            {sortedBestPicks.slice(0, 10).map((row) => (
+                                                <tr key={row.team}
+                                                    className={`hover:bg-emerald-500/5 transition ${row.eliminated ? 'opacity-40' : ''}`}>
+                                                    <td className="py-2 pl-3 font-mono font-black text-slate-400">#{row.pickNumber}</td>
+                                                    <td className="py-2 font-black text-white"><FlagIcon
+                                                        teamName={row.team}/>{row.team}</td>
+                                                    <td className="py-2 font-bold text-slate-300">{row.drafter}</td>
+                                                    <td className="py-2 text-center font-black text-emerald-400">{row.actualPoints}</td>
+                                                    <td className="py-2 text-right pr-3 font-black text-emerald-400">+{row.roi.toFixed(1)}%</td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                {/* Top 10 Worst */}
+                                <div
+                                    className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl overflow-hidden shadow-2xl">
+                                    <div
+                                        className="bg-rose-950/40 border-b border-white/10 px-3 sm:px-4 py-2 flex justify-between items-center">
+                                        <h3 className="text-[10px] sm:text-xs font-mono font-black text-rose-400 uppercase tracking-widest">📉
+                                            Top 10 Worst Picks (Overpriced)</h3>
+                                        <span className="text-[8px] font-mono text-slate-400">Lowest ROI</span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table
+                                            className="w-full text-left text-[9px] sm:text-xs border-collapse min-w-[340px]">
+                                            <thead>
+                                            <tr className="border-b border-white/5 text-slate-300 text-[8px] sm:text-[9px] uppercase font-mono bg-black/60 tracking-widest font-black">
+                                                <th className="py-2 pl-3">Pick</th>
+                                                <th className="py-2">Team</th>
+                                                <th className="py-2">Manager</th>
+                                                <th className="py-2 text-center">PTS</th>
+                                                <th className="py-2 text-right pr-3">ROI</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-white/5">
+                                            {sortedWorstPicks.slice(0, 10).map((row) => (
+                                                <tr key={row.team}
+                                                    className={`hover:bg-rose-500/5 transition ${row.eliminated ? 'opacity-40' : ''}`}>
+                                                    <td className="py-2 pl-3 font-mono font-black text-slate-400">#{row.pickNumber}</td>
+                                                    <td className="py-2 font-black text-white"><FlagIcon
+                                                        teamName={row.team}/>{row.team}</td>
+                                                    <td className="py-2 font-bold text-slate-300">{row.drafter}</td>
+                                                    <td className="py-2 text-center font-black text-rose-400">{row.actualPoints}</td>
+                                                    <td className="py-2 text-right pr-3 font-black text-rose-400">{row.roi.toFixed(1)}%</td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Manager Draft Portfolio Analysis */}
+                            <div
+                                className="bg-black/70 backdrop-blur-xl border border-white/20 rounded-xl p-4 sm:p-5 shadow-2xl space-y-4">
+                                <div className="border-b border-white/10 pb-2 flex justify-between items-center">
+                                    <h3 className="text-[10px] sm:text-xs font-mono font-black text-slate-300 uppercase tracking-widest">💼
+                                        Manager Portfolios Report Card</h3>
+                                    <span className="text-[8px] font-mono text-slate-400 uppercase tracking-wider">Ordered by overall surplus points generated</span>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    {managerRoiStats.map((mgr) => {
+                                        const totalSurplus = mgr.totalActual - mgr.totalExpected;
+                                        const surplusClass = totalSurplus >= 0 ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-rose-400 bg-rose-500/10 border-rose-500/30';
+
+                                        return (
+                                            <div key={mgr.name}
+                                                 className="bg-black/60 border border-white/10 rounded-xl p-4 shadow-lg flex flex-col justify-between space-y-3">
+                                                <div
+                                                    className="flex justify-between items-center border-b border-white/5 pb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <ManagerAvatar name={mgr.name} size="sm"/>
+                                                        <span
+                                                            className="font-black text-xs sm:text-sm text-white uppercase tracking-wider">{mgr.name}</span>
+                                                    </div>
+                                                    <span
+                                                        className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${surplusClass}`}>
+                                                        {totalSurplus >= 0 ? `+${totalSurplus.toFixed(1)}` : `${totalSurplus.toFixed(1)}`} PTS
+                                                    </span>
+                                                </div>
+
+                                                <div className="space-y-1.5 flex-grow">
+                                                    {mgr.picks.map((p) => (
+                                                        <div key={p.team}
+                                                             className="flex justify-between items-center text-[10px] font-semibold text-slate-200">
+                                                            <div className="flex items-center gap-1.5 min-w-0">
+                                                                <FlagIcon teamName={p.team}/>
+                                                                <span
+                                                                    className={`truncate ${p.eliminated ? 'line-through text-slate-500 font-bold' : ''}`}>{p.team}</span>
+                                                                <span
+                                                                    className="text-[8px] font-mono text-slate-400">#{p.pickNumber}</span>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 shrink-0">
+                                                                <span
+                                                                    className="font-mono text-slate-300 font-black">{p.actualPoints} PTS</span>
+                                                                <span
+                                                                    className={`text-[9px] font-black ${p.roi >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                                                    ({p.roi >= 0 ? `+${p.roi.toFixed(0)}%` : `${p.roi.toFixed(0)}%`})
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+
+                                                <div
+                                                    className="border-t border-white/5 pt-2 flex justify-between items-center text-[10px] font-mono uppercase tracking-widest font-black">
+                                                    <span className="text-slate-400">Portfolio Return:</span>
+                                                    <span
+                                                        className={mgr.avgRoi >= 0 ? 'text-emerald-400' : 'text-[#f43f5e]'}>
+                                                        {mgr.avgRoi >= 0 ? `+${mgr.avgRoi.toFixed(1)}%` : `${mgr.avgRoi.toFixed(1)}%`} ROI
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
                         </div>
-                    );
-                    }
+                    )}
+
+                </div>
+            </div>
+
+            <div className="hidden">
+                <img src="/draft.png" alt=""/>
+                <img src="/scores.png" alt=""/>
+                <img src="/schedule.png" alt=""/>
+                <img src="/rules.png" alt=""/>
+                <img src="/leaderboard.png" alt=""/>
+                <img src="/awards.png" alt=""/>
+            </div>
+        </div>
+    );
+}
