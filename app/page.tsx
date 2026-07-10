@@ -1946,7 +1946,7 @@ export default function AutomatedDashboard() {
 
                                                 <div className="border-t border-white/5 pt-2 flex justify-between items-center text-[10px] font-mono uppercase tracking-widest font-black">
                                                     <span className="text-slate-400">Portfolio Return:</span>
-                                                    <span className={mgr.avgRoi >= 0 ? 'text-emerald-400' : 'text-rose-400'}>
+                                                    <span className={mgr.avgRoi >= 0 ? 'text-emerald-400' : 'text-[#f43f5e]'}>
                                                         {mgr.avgRoi >= 0 ? `+${mgr.avgRoi.toFixed(1)}%` : `${mgr.avgRoi.toFixed(1)}%`} ROI
                                                     </span>
                                                 </div>
