@@ -30,6 +30,7 @@ const ManagerAvatar = ({ name, size = 'sm' }: { name: string, size?: 'sm' | 'md'
 };
 
 const getUniqueMatches = (matchesList: any[]) => {
+    if (!matchesList) return [];
     const seen = new Set();
     return matchesList.filter(m => {
         if (!m) return false;
@@ -43,7 +44,7 @@ const getUniqueMatches = (matchesList: any[]) => {
 // Calculates and ranks the 3rd-place teams across all 12 groups to find the 8 wildcards that advance [2]
 const getEliminatedThirdPlaceTeams = (matchesList: any[]): Set<string> => {
     const eliminatedThirds = new Set<string>();
-    const allGroupMatches = matchesList.filter(m => m.stage === 'Group');
+    const allGroupMatches = matchesList.filter(m => m && m.stage === 'Group');
     if (allGroupMatches.length === 0) return eliminatedThirds;
 
     // Group matches by group name
@@ -56,29 +57,29 @@ const getEliminatedThirdPlaceTeams = (matchesList: any[]): Set<string> => {
     });
 
     const thirdPlaceTeams: any[] = [];
-    const finishedGroupsCount = Object.keys(groups).filter(g => groups[g].every(m => m.status === 'FINISHED' || m.status === 'AWARDED')).length;
+    const finishedGroupsCount = Object.keys(groups).filter(g => groups[g].every(m => m && (m.status === 'FINISHED' || m.status === 'AWARDED'))).length;
 
     // We can only evaluate who is eliminated once all 12 groups are complete
     if (finishedGroupsCount === 12) {
         Object.entries(groups).forEach(([groupName, groupMatches]) => {
             const table: Record<string, any> = {};
             groupMatches.forEach(m => {
-                if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
-                if (m.awayTeam !== 'TBD' && !table[m.awayTeam]) table[m.awayTeam] = { name: m.awayTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+                if (m.homeTeam && m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+                if (m.awayTeam && m.awayTeam !== 'TBD' && !table[m.awayTeam]) table[m.awayTeam] = { name: m.awayTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
             });
             groupMatches.forEach(m => {
                 const hG = m.homeGoals || 0; const aG = m.awayGoals || 0;
-                if (table[m.homeTeam]) { table[m.homeTeam].mp++; table[m.homeTeam].gf += hG; table[m.homeTeam].ga += aG; }
-                if (table[m.awayTeam]) { table[m.awayTeam].mp++; table[m.awayTeam].gf += aG; table[m.awayTeam].ga += hG; }
+                if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].mp++; table[m.homeTeam].gf += hG; table[m.homeTeam].ga += aG; }
+                if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].mp++; table[m.awayTeam].gf += aG; table[m.awayTeam].ga += hG; }
                 if (m.winner === m.homeTeam) {
-                    if (table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; }
-                    if (table[m.awayTeam]) table[m.awayTeam].l++;
+                    if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; }
+                    if (m.awayTeam && table[m.awayTeam]) table[m.awayTeam].l++;
                 } else if (m.winner === m.awayTeam) {
-                    if (table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; }
-                    if (table[m.homeTeam]) table[m.homeTeam].l++;
+                    if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; }
+                    if (m.homeTeam && table[m.homeTeam]) table[m.homeTeam].l++;
                 } else if (m.winner === 'DRAW') {
-                    if (table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; }
-                    if (table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; }
+                    if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; }
+                    if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; }
                 }
             });
             const groupTable = Object.values(table).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
@@ -96,17 +97,15 @@ const getEliminatedThirdPlaceTeams = (matchesList: any[]): Set<string> => {
         });
 
         // Sort third-place teams by World Cup tie-breakers [2]:
-        // 1. Points
-        // 2. Goal Difference
-        // 3. Goals Scored
-        // 4. Wins
         thirdPlaceTeams.sort((a, b) => {
             return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf || b.w - a.w;
         });
 
         // The top 8 advance, while the bottom 4 (indexes 8 to 11) are eliminated [2]
         thirdPlaceTeams.slice(8).forEach(t => {
-            eliminatedThirds.add(t.name.toUpperCase());
+            if (t.name) {
+                eliminatedThirds.add(t.name.toUpperCase());
+            }
         });
     }
 
@@ -114,12 +113,12 @@ const getEliminatedThirdPlaceTeams = (matchesList: any[]): Set<string> => {
 };
 
 const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
-    if (!teamName || teamName === 'TBD') return false;
+    if (!teamName || teamName === 'TBD' || !matchesList) return false;
 
     // 1. Check if they have been knocked out of an active Knockout Stage match
     let lostKnockout = false;
     matchesList.forEach(m => {
-        if (m.status === 'FINISHED' && m.stage !== 'Group') {
+        if (m && m.status === 'FINISHED' && m.stage !== 'Group') {
             const isHome = m.homeTeam && m.homeTeam.toUpperCase() === teamName.toUpperCase();
             const isAway = m.awayTeam && m.awayTeam.toUpperCase() === teamName.toUpperCase();
             if (isHome || isAway) {
@@ -133,39 +132,46 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
     // 2. Identify the group standings for wildcard assessment
     let groupName = '';
     matchesList.forEach(m => {
-        if (m.stage === 'Group' && ((m.homeTeam && m.homeTeam.toUpperCase() === teamName.toUpperCase()) || (m.awayTeam && m.awayTeam.toUpperCase() === teamName.toUpperCase()))) {
+        if (m && m.stage === 'Group' && ((m.homeTeam && m.homeTeam.toUpperCase() === teamName.toUpperCase()) || (m.awayTeam && m.awayTeam.toUpperCase() === teamName.toUpperCase()))) {
             groupName = m.group;
         }
     });
 
     if (groupName) {
-        const groupMatches = matchesList.filter(m => m.group === groupName);
-        const groupFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED' || m.status === 'AWARDED');
+        const groupMatches = matchesList.filter(m => m && m.group === groupName);
+        const groupFinished = groupMatches.length > 0 && groupMatches.every(m => m && (m.status === 'FINISHED' || m.status === 'AWARDED'));
 
         if (groupFinished) {
             const table: Record<string, any> = {};
             groupMatches.forEach(m => {
-                if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
-                if (m.awayTeam !== 'TBD' && !table[m.awayTeam]) table[m.awayTeam] = { name: m.awayTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+                if (m.homeTeam && m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+                if (m.awayTeam && m.awayTeam !== 'TBD' && !table[m.awayTeam]) table[m.awayTeam] = { name: m.awayTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
             });
             groupMatches.forEach(m => {
                 const hG = m.homeGoals || 0; const aG = m.awayGoals || 0;
-                if (table[m.homeTeam]) { table[m.homeTeam].mp++; table[m.homeTeam].gf += hG; table[m.homeTeam].ga += aG; }
-                if (table[m.awayTeam]) { table[m.awayTeam].mp++; table[m.awayTeam].gf += aG; table[m.awayTeam].ga += hG; }
-                if (m.winner === m.homeTeam) { if (table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; } if (table[m.awayTeam]) table[m.awayTeam].l++; }
-                else if (m.winner === m.awayTeam) { if (table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; } if (table[m.homeTeam]) table[m.homeTeam].l++; }
-                else if (m.winner === 'DRAW') { if (table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; } if (table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; } }
+                if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].mp++; table[m.homeTeam].gf += hG; table[m.homeTeam].ga += aG; }
+                if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].mp++; table[m.awayTeam].gf += aG; table[m.awayTeam].ga += hG; }
+                if (m.winner === m.homeTeam) {
+                    if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; }
+                    if (m.awayTeam && table[m.awayTeam]) table[m.awayTeam].l++;
+                } else if (m.winner === m.awayTeam) {
+                    if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; }
+                    if (m.homeTeam && table[m.homeTeam]) table[m.homeTeam].l++;
+                } else if (m.winner === 'DRAW') {
+                    if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; }
+                    if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; }
+                }
             });
             const groupTable = Object.values(table).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
-            const rank = groupTable.findIndex((t: any) => t.name.toUpperCase() === teamName.toUpperCase());
+            const rank = groupTable.findIndex((t: any) => t.name && t.name.toUpperCase() === teamName.toUpperCase());
 
             // 4th place is always automatically eliminated from the group
             if (rank === 3) return true;
 
             // Evaluating 3rd place wildcards
             if (rank === 2) {
-                const allGroupMatches = matchesList.filter(m => m.stage === 'Group');
-                const allGroupsFinished = allGroupMatches.length > 0 && allGroupMatches.every(m => m.status === 'FINISHED' || m.status === 'AWARDED');
+                const allGroupMatches = matchesList.filter(m => m && m.stage === 'Group');
+                const allGroupsFinished = allGroupMatches.length > 0 && allGroupMatches.every(m => m && (m.status === 'FINISHED' || m.status === 'AWARDED'));
 
                 if (allGroupsFinished) {
                     // All 12 groups are complete. Evaluate which 4 third-place teams are eliminated.
@@ -185,55 +191,55 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
 
 // Check if a team has mathematically or physically advanced to the Round of 32
 const hasTeamAdvanced = (teamName: string, matchesList: any[]): boolean => {
-    if (!teamName || teamName === 'TBD') return false;
+    if (!teamName || teamName === 'TBD' || !matchesList) return false;
 
     // 1. If they have already played in a knockout match, they definitely advanced
-    const playedKnockout = matchesList.some(m => m.stage !== 'Group' && (teamsMatch(m.homeTeam, teamName) || teamsMatch(m.awayTeam, teamName)));
+    const playedKnockout = matchesList.some(m => m && m.stage !== 'Group' && (teamsMatch(m.homeTeam, teamName) || teamsMatch(m.awayTeam, teamName)));
     if (playedKnockout) return true;
 
     // 2. Identify the group standings
     let groupName = '';
     matchesList.forEach(m => {
-        if (m.stage === 'Group' && (teamsMatch(m.homeTeam, teamName) || teamsMatch(m.awayTeam, teamName))) {
+        if (m && m.stage === 'Group' && (teamsMatch(m.homeTeam, teamName) || teamsMatch(m.awayTeam, teamName))) {
             groupName = m.group;
         }
     });
 
     if (groupName) {
-        const groupMatches = matchesList.filter(m => m.group === groupName);
-        const groupFinished = groupMatches.length > 0 && groupMatches.every(m => m.status === 'FINISHED' || m.status === 'AWARDED');
+        const groupMatches = matchesList.filter(m => m && m.group === groupName);
+        const groupFinished = groupMatches.length > 0 && groupMatches.every(m => m && (m.status === 'FINISHED' || m.status === 'AWARDED'));
 
         if (groupFinished) {
             const table: Record<string, any> = {};
             groupMatches.forEach(m => {
-                if (m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
-                if (m.awayTeam !== 'TBD' && !table[m.awayTeam]) table[m.awayTeam] = { name: m.awayTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+                if (m.homeTeam && m.homeTeam !== 'TBD' && !table[m.homeTeam]) table[m.homeTeam] = { name: m.homeTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
+                if (m.awayTeam && m.awayTeam !== 'TBD' && !table[m.awayTeam]) table[m.awayTeam] = { name: m.awayTeam, mp: 0, w: 0, d: 0, l: 0, gf: 0, ga: 0, pts: 0 };
             });
             groupMatches.forEach(m => {
                 const hG = m.homeGoals || 0; const aG = m.awayGoals || 0;
-                if (table[m.homeTeam]) { table[m.homeTeam].mp++; table[m.homeTeam].gf += hG; table[m.homeTeam].ga += aG; }
-                if (table[m.awayTeam]) { table[m.awayTeam].mp++; table[m.awayTeam].gf += aG; table[m.awayTeam].ga += hG; }
+                if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].mp++; table[m.homeTeam].gf += hG; table[m.homeTeam].ga += aG; }
+                if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].mp++; table[m.awayTeam].gf += aG; table[m.awayTeam].ga += hG; }
                 if (m.winner === m.homeTeam) {
-                    if (table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; }
-                    if (table[m.awayTeam]) table[m.awayTeam].l++;
+                    if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; }
+                    if (m.awayTeam && table[m.awayTeam]) table[m.awayTeam].l++;
                 } else if (m.winner === m.awayTeam) {
-                    if (table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; }
-                    if (table[m.homeTeam]) table[m.homeTeam].l++;
+                    if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; }
+                    if (m.homeTeam && table[m.homeTeam]) table[m.homeTeam].l++;
                 } else if (m.winner === 'DRAW') {
-                    if (table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; }
-                    if (table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; }
+                    if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; }
+                    if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; }
                 }
             });
             const groupTable = Object.values(table).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
-            const rank = groupTable.findIndex((t: any) => t.name.toUpperCase() === teamName.toUpperCase());
+            const rank = groupTable.findIndex((t: any) => t.name && t.name.toUpperCase() === teamName.toUpperCase());
 
             // Top 2 always advance
             if (rank === 0 || rank === 1) return true;
 
             // 3rd place advances if they are in the top 8 wildcard list
             if (rank === 2) {
-                const allGroupMatches = matchesList.filter(m => m.stage === 'Group');
-                const allGroupsFinished = allGroupMatches.length > 0 && allGroupMatches.every(m => m.status === 'FINISHED' || m.status === 'AWARDED');
+                const allGroupMatches = matchesList.filter(m => m && m.stage === 'Group');
+                const allGroupsFinished = allGroupMatches.length > 0 && allGroupMatches.every(m => m && (m.status === 'FINISHED' || m.status === 'AWARDED'));
                 if (allGroupsFinished) {
                     const eliminatedThirds = getEliminatedThirdPlaceTeams(matchesList);
                     if (!eliminatedThirds.has(teamName.toUpperCase())) {
@@ -279,7 +285,10 @@ const getTeamPointsAndLogs = (teamId: string, matchesList: any[], showProjected:
     let wins = 0, draws = 0, losses = 0;
     const logs: any[] = [];
 
+    if (!matchesList) return { points, goals, cleanSheets, wins, draws, losses, logs };
+
     matchesList.forEach(m => {
+        if (!m) return;
         const isHome = m.homeTeam && teamsMatch(m.homeTeam, teamId);
         const isAway = m.awayTeam && teamsMatch(m.awayTeam, teamId);
         if (!isHome && !isAway) return;
@@ -813,7 +822,7 @@ export default function AutomatedDashboard() {
 
                 .bg-animate { animation: bgReveal 1.5s ease-out forwards; }
                 .content-animate { animation: contentPop 1.2s cubic-bezier(0.16, 1, 0.3, 1) 0.8s both; }
-                
+
                 .animate-marquee-savage { display: flex; width: max-content; animation: marquee 110s linear infinite; }
                 .animate-marquee-savage:hover { animation-play-state: paused; }
 
@@ -1070,7 +1079,7 @@ export default function AutomatedDashboard() {
 
                             <div className="bg-black/70 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden flex flex-col h-auto max-h-[80vh] shadow-2xl">
                                 <div className="p-2.5 sm:p-3 border-b border-white/20 bg-black/80">
-                                    <h2 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-200 uppercase tracking-widest drop-shadow-md">Pick Log</h2>
+                                    <h2 className="text-[9px] sm:text-xs font-mono font-black text-slate-200 uppercase tracking-widest drop-shadow-md">Pick Log</h2>
                                 </div>
                                 <div className="overflow-y-auto p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
                                     {[...picks].reverse().map((pick, idx) => (
@@ -1285,7 +1294,7 @@ export default function AutomatedDashboard() {
                                                                 return (
                                                                     <div key={m.id} className="flex items-center justify-between p-2 sm:p-2.5 bg-black/60 border border-white/20 rounded-lg hover:bg-black/80 hover:border-white/30 transition shadow-xl h-full">
                                                                         <div className={`flex-1 flex flex-col items-end text-right min-w-0 ${homeEliminated ? 'opacity-35 grayscale' : ''}`}>
-                                                                            <div className="flex items-center gap-1.5 min-w-0 justify-end">
+                                                                            <div className="flex items-center gap-1 min-w-0 justify-end">
                                                                                 <span className={`text-[9px] sm:text-xs truncate block ${homeNameColor}`}>{m.homeTeam}</span>
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.homeTeam} /></div>
                                                                             </div>
