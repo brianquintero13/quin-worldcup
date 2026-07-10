@@ -151,16 +151,9 @@ const isTeamEliminated = (teamName: string, matchesList: any[]): boolean => {
                 const hG = m.homeGoals || 0; const aG = m.awayGoals || 0;
                 if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].mp++; table[m.homeTeam].gf += hG; table[m.homeTeam].ga += aG; }
                 if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].mp++; table[m.awayTeam].gf += aG; table[m.awayTeam].ga += hG; }
-                if (m.winner === m.homeTeam) {
-                    if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; }
-                    if (m.awayTeam && table[m.awayTeam]) table[m.awayTeam].l++;
-                } else if (m.winner === m.awayTeam) {
-                    if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; }
-                    if (m.homeTeam && table[m.homeTeam]) table[m.homeTeam].l++;
-                } else if (m.winner === 'DRAW') {
-                    if (m.homeTeam && table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; }
-                    if (m.awayTeam && table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; }
-                }
+                if (m.winner === m.homeTeam) { if (table[m.homeTeam]) { table[m.homeTeam].w++; table[m.homeTeam].pts += 3; } if (table[m.awayTeam]) table[m.awayTeam].l++; }
+                else if (m.winner === m.awayTeam) { if (table[m.awayTeam]) { table[m.awayTeam].w++; table[m.awayTeam].pts += 3; } if (table[m.homeTeam]) table[m.homeTeam].l++; }
+                else if (m.winner === 'DRAW') { if (table[m.homeTeam]) { table[m.homeTeam].d++; table[m.homeTeam].pts++; } if (table[m.awayTeam]) { table[m.awayTeam].d++; table[m.awayTeam].pts++; } }
             });
             const groupTable = Object.values(table).sort((a: any, b: any) => b.pts - a.pts || (b.gf - b.ga) - (a.gf - a.ga) || b.gf - a.gf);
             const rank = groupTable.findIndex((t: any) => t.name && t.name.toUpperCase() === teamName.toUpperCase());
@@ -400,6 +393,13 @@ export default function AutomatedDashboard() {
 
     // State for temporary interactive projections and overrides
     const [customScores, setCustomScores] = useState<Record<string, { homeGoals: number, awayGoals: number, status: string }>>({});
+
+    // Mount safety state to prevent Next.js hydration crashes [4]
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     const adjustWhatIf = (matchId: string, side: 'home' | 'away', amount: number) => {
         setCustomScores(prev => {
@@ -744,7 +744,6 @@ export default function AutomatedDashboard() {
                             </div>
                             <p className="text-slate-300 font-semibold leading-relaxed">
                                 Down in the trenches, we find {clown.name} with a tragic <strong className="text-red-400 font-bold">{clown.totalPoints} PTS</strong>.
-                                They are currently trailing the lead by a massive <strong className="text-red-400 font-bold">{pointGap} PTS</strong>.
                                 Their teams are moving slower than a line of parked cars on a highway. Time to fire the coaching staff, rebuild the roster, or start praying for a miracle.
                             </p>
                         </div>
@@ -802,6 +801,17 @@ export default function AutomatedDashboard() {
             </div>
         );
     };
+
+    // Client-side mounted fallback element to prevent server-to-client hydration mismatches [4]
+    if (!mounted) {
+        return (
+            <div className="relative min-h-screen bg-black flex flex-col justify-center items-center">
+                <div className="text-center font-mono font-black text-sky-400 text-xs sm:text-sm tracking-widest animate-pulse uppercase">
+                    Loading Dashboard...
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="relative min-h-screen font-sans text-slate-100 overflow-x-hidden">
@@ -1079,7 +1089,7 @@ export default function AutomatedDashboard() {
 
                             <div className="bg-black/70 backdrop-blur-xl rounded-xl border border-white/20 overflow-hidden flex flex-col h-auto max-h-[80vh] shadow-2xl">
                                 <div className="p-2.5 sm:p-3 border-b border-white/20 bg-black/80">
-                                    <h2 className="text-[9px] sm:text-xs font-mono font-black text-slate-200 uppercase tracking-widest drop-shadow-md">Pick Log</h2>
+                                    <h2 className="text-[9px] sm:text-[10px] font-mono font-black text-slate-200 uppercase tracking-widest drop-shadow-md">Pick Log</h2>
                                 </div>
                                 <div className="overflow-y-auto p-2.5 sm:p-3 space-y-1.5 sm:space-y-2">
                                     {[...picks].reverse().map((pick, idx) => (
@@ -1294,7 +1304,7 @@ export default function AutomatedDashboard() {
                                                                 return (
                                                                     <div key={m.id} className="flex items-center justify-between p-2 sm:p-2.5 bg-black/60 border border-white/20 rounded-lg hover:bg-black/80 hover:border-white/30 transition shadow-xl h-full">
                                                                         <div className={`flex-1 flex flex-col items-end text-right min-w-0 ${homeEliminated ? 'opacity-35 grayscale' : ''}`}>
-                                                                            <div className="flex items-center gap-1 min-w-0 justify-end">
+                                                                            <div className="flex items-center gap-1.5 min-w-0 justify-end">
                                                                                 <span className={`text-[9px] sm:text-xs truncate block ${homeNameColor}`}>{m.homeTeam}</span>
                                                                                 <div className="shrink-0"><FlagIcon teamName={m.homeTeam} /></div>
                                                                             </div>
