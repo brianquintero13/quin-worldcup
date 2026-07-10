@@ -1192,7 +1192,7 @@ export default function AutomatedDashboard() {
                         <div
                             className="bg-rose-600/95 backdrop-blur-md border-y border-rose-500 py-2.5 overflow-hidden w-full rounded-lg shadow-lg relative flex items-center h-12">
                             <div
-                                className="absolute left-0 z-20 bg-rose-700 px-5 sm:px-6 h-full flex items-center rounded-l-lg border-y border-l border-black [-webkit-text-stroke:1.2px_black] [text-shadow:0_1.5px_2px_rgba(0,0,0,0.8)] text-xs sm:text-sm md:text-base font-black uppercase tracking-widest text-white shadow-md select-none border-r-4 border-black/50 shadow-[4px_0_10px_rgba(0,0,0,0.3)]">
+                                className="absolute left-0 z-40 bg-gradient-to-r from-rose-700 via-rose-600 to-rose-500 px-5 sm:px-6 h-full flex items-center rounded-l-lg border-y border-l border-black [-webkit-text-stroke:1.2px_black] [text-shadow:0_1.5px_2px_rgba(0,0,0,0.8)] text-sm sm:text-base md:text-lg font-extrabold uppercase tracking-widest text-amber-100 ring-2 ring-amber-300/40 shadow-[6px_0_20px_rgba(0,0,0,0.6)] select-none border-r-4 border-black/50">
                                 Savage News
                             </div>
                             <div
@@ -1211,7 +1211,7 @@ export default function AutomatedDashboard() {
                         <div
                             className="bg-emerald-600/95 backdrop-blur-md border-y border-emerald-500 py-2.5 overflow-hidden w-full rounded-lg shadow-lg relative flex items-center h-12">
                             <div
-                                className="absolute left-0 z-20 bg-emerald-700 px-5 sm:px-6 h-full flex items-center rounded-l-lg border-y border-l border-black [-webkit-text-stroke:1.2px_black] [text-shadow:0_1.5px_2px_rgba(0,0,0,0.8)] text-xs sm:text-sm md:text-base font-black uppercase tracking-widest text-white shadow-md select-none border-r-4 border-black/50 shadow-[4px_0_10px_rgba(0,0,0,0.3)]">
+                                className="absolute left-0 z-40 bg-gradient-to-r from-emerald-700 via-emerald-600 to-emerald-500 px-5 sm:px-6 h-full flex items-center rounded-l-lg border-y border-l border-black [-webkit-text-stroke:1.2px_black] [text-shadow:0_1.5px_2px_rgba(0,0,0,0.8)] text-sm sm:text-base md:text-lg font-extrabold uppercase tracking-widest text-amber-50 ring-2 ring-amber-300/30 shadow-[6px_0_20px_rgba(0,0,0,0.6)] select-none border-r-4 border-black/50">
                                 Hype Report
                             </div>
                             <div
