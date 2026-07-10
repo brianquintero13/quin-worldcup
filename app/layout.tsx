@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import './global.css'; // <-- This imports Tailwind CSS globally
 
 export const metadata = {
     title: 'World Cup 2026 Live Draft',
