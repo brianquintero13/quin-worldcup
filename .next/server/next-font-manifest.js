@@ -1,1 +1,1 @@
-self.__NEXT_FONT_MANIFEST='{"pages":{},"app":{"/Users/brianquintero/Documents/GitHub/LeagueWorldCup/app/page":["static/media/bd9b9909c3a641ff-s.p.woff2","static/media/bd9b9909c3a641ff-s.p.woff2"]},"appUsingSizeAdjust":true,"pagesUsingSizeAdjust":false}';
+self.__NEXT_FONT_MANIFEST="{\n  \"app\": {\n    \"[project]/app/page\": [\n      \"static/media/6ad1cda2f16975ee-s.p.2j22bd4n1tlhh.woff2\"\n    ]\n  },\n  \"appUsingSizeAdjust\": true,\n  \"pages\": {},\n  \"pagesUsingSizeAdjust\": false\n}"

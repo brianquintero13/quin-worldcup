@@ -546,7 +546,58 @@ export default function AutomatedDashboard() {
         }
     });
 
-    // Savage Trash Talk Ticker Feed (Red Banner)
+    // 1. CALCULATE ELIMINATIONS FIRST
+    const eliminatedTeamsSet = new Set<string>();
+    modifiedMatches.forEach(m => {
+        if (m.homeTeam && m.homeTeam !== 'TBD' && isTeamEliminated(m.homeTeam, modifiedMatches)) eliminatedTeamsSet.add(m.homeTeam.toUpperCase());
+        if (m.awayTeam && m.awayTeam !== 'TBD' && isTeamEliminated(m.awayTeam, modifiedMatches)) eliminatedTeamsSet.add(m.awayTeam.toUpperCase());
+    });
+
+    // 2. CALCULATE DRAFT VALUE/ROI NEXT
+    const draftAnalysis = picks.map((p, index) => {
+        const pickNumber = index + 1;
+        const stats = getTeamPointsAndLogs(p.team, modifiedMatches, showProjected || Object.keys(customScores).length > 0);
+        const expected = getExpectedPoints(pickNumber);
+        const surplus = stats.points - expected;
+        const roi = (surplus / expected) * 100;
+        return {
+            team: p.team,
+            drafter: p.drafter,
+            pickNumber,
+            actualPoints: stats.points,
+            expectedPoints: expected,
+            surplus,
+            roi,
+            eliminated: eliminatedTeamsSet.has(p.team.toUpperCase())
+        };
+    });
+
+    const sortedBestPicks = [...draftAnalysis].sort((a, b) => b.roi - a.roi);
+    const sortedWorstPicks = [...draftAnalysis].sort((a, b) => a.roi - b.roi);
+
+    const goldenPick = sortedBestPicks[0];
+    const biggestBust = sortedWorstPicks[0];
+
+    const managerRoiStats = drafters.map(name => {
+        const managerPicks = draftAnalysis.filter(da => da.drafter === name);
+        const totalActual = managerPicks.reduce((acc, p) => acc + p.actualPoints, 0);
+        const totalExpected = managerPicks.reduce((acc, p) => acc + p.expectedPoints, 0);
+        const surplus = totalActual - totalExpected;
+        const avgRoi = totalExpected > 0 ? (surplus / totalExpected) * 100 : 0;
+        return {
+            name,
+            totalActual,
+            totalExpected,
+            surplus,
+            avgRoi,
+            picks: managerPicks,
+            picksCount: managerPicks.length
+        };
+    }).sort((a, b) => b.surplus - a.surplus); // Sorted by total surplus points created!
+
+    const bestManager = [...managerRoiStats].sort((a, b) => b.avgRoi - a.avgRoi)[0];
+
+    // 3. NOW GENERATE HEADLINES
     const getSavageHeadlines = () => {
         const headlines: string[] = [];
         if (overallLeaders.length < 2) return headlines;
@@ -657,56 +708,6 @@ export default function AutomatedDashboard() {
 
     const savageHeadlines = getSavageHeadlines();
     const hypeHeadlines = getHypeHeadlines();
-
-    const eliminatedTeamsSet = new Set<string>();
-    modifiedMatches.forEach(m => {
-        if (m.homeTeam && m.homeTeam !== 'TBD' && isTeamEliminated(m.homeTeam, modifiedMatches)) eliminatedTeamsSet.add(m.homeTeam.toUpperCase());
-        if (m.awayTeam && m.awayTeam !== 'TBD' && isTeamEliminated(m.awayTeam, modifiedMatches)) eliminatedTeamsSet.add(m.awayTeam.toUpperCase());
-    });
-
-    // Compute complete Draft Value ROI statistics based on Picks list
-    const draftAnalysis = picks.map((p, index) => {
-        const pickNumber = index + 1;
-        const stats = getTeamPointsAndLogs(p.team, modifiedMatches, showProjected || Object.keys(customScores).length > 0);
-        const expected = getExpectedPoints(pickNumber);
-        const surplus = stats.points - expected;
-        const roi = (surplus / expected) * 100;
-        return {
-            team: p.team,
-            drafter: p.drafter,
-            pickNumber,
-            actualPoints: stats.points,
-            expectedPoints: expected,
-            surplus,
-            roi,
-            eliminated: eliminatedTeamsSet.has(p.team.toUpperCase())
-        };
-    });
-
-    const sortedBestPicks = [...draftAnalysis].sort((a, b) => b.roi - a.roi);
-    const sortedWorstPicks = [...draftAnalysis].sort((a, b) => a.roi - b.roi);
-
-    const goldenPick = sortedBestPicks[0];
-    const biggestBust = sortedWorstPicks[0];
-
-    const managerRoiStats = drafters.map(name => {
-        const managerPicks = draftAnalysis.filter(da => da.drafter === name);
-        const totalActual = managerPicks.reduce((acc, p) => acc + p.actualPoints, 0);
-        const totalExpected = managerPicks.reduce((acc, p) => acc + p.expectedPoints, 0);
-        const surplus = totalActual - totalExpected;
-        const avgRoi = totalExpected > 0 ? (surplus / totalExpected) * 100 : 0;
-        return {
-            name,
-            totalActual,
-            totalExpected,
-            surplus,
-            avgRoi,
-            picks: managerPicks,
-            picksCount: managerPicks.length
-        };
-    }).sort((a, b) => b.surplus - a.surplus); // Sorted by total surplus points created!
-
-    const bestManager = [...managerRoiStats].sort((a, b) => b.avgRoi - a.avgRoi)[0];
 
     const getSavageReport = () => {
         if (overallLeaders.length < 2) return null;
