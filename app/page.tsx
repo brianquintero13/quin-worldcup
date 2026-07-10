@@ -1846,7 +1846,7 @@ export default function AutomatedDashboard() {
                                                                 className="font-black text-[10px] sm:text-sm text-sky-400 hover:text-[#fbbf24] transition text-left truncate max-w-[90px] sm:max-w-[150px] drop-shadow-md [text-shadow:0_1px_2px_black]">{row.name}</button>
                                                     </div>
                                                 </td>
-                                                <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints; }</td>
+                                                <td className={`py-1.5 sm:py-3.5 font-black text-[#fbbf24] text-[13px] sm:text-xl drop-shadow-md [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>{row.totalPoints}</td>
                                                 <td className="py-1.5 sm:py-3.5">
                                                     <div className="flex gap-0.5 sm:gap-1.5 flex-wrap">
                                                         {row.teams.map(t => {
