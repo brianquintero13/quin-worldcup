@@ -1528,7 +1528,7 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'schedule' && (
                         <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
-                            <h2 className={`text-lg sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>MATCH SCHEDULE</h2>
+                            <h2 className={`text-lg sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-xl [-webkit-text-stroke:0.5px_black] ${oswald.className}`}>MATCH SCHEDULE</h2>
                             <ScheduleTab eliminatedTeams={eliminatedTeamsSet} customScores={customScores} adjustWhatIf={adjustWhatIf}/>
                         </div>
                     )}
@@ -1755,7 +1755,7 @@ export default function AutomatedDashboard() {
 
                     {activeTab === 'rules' && (
                         <div className="max-w-7xl mx-auto space-y-4 sm:space-y-6">
-                            <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-widest drop-shadow-xl sm:[-webkit-text-stroke:1px_black] ${oswald.className}`}>LEAGUE RULES & PAYOUTS</h2>
+                            <h2 className={`text-xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#fbbf24] to-orange-500 uppercase tracking-xl [-webkit-text-stroke:1px_black] ${oswald.className}`}>LEAGUE RULES & PAYOUTS</h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                                 <div className="bg-gradient-to-br from-emerald-500/30 to-teal-600/30 p-[1px] rounded-xl shadow-2xl h-full drop-shadow-lg card-fut-premium">
                                     <div className="bg-black/70 backdrop-blur-xl p-4 sm:p-8 rounded-xl h-full flex flex-col">
